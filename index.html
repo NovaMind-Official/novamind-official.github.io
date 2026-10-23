@@ -6255,5 +6255,267 @@ function exAskTutor(){
 <script>
 (function(){var t=0;addEventListener("pointermove",function(e){var s=document.getElementById("sph");if(!s||t)return;t=1;requestAnimationFrame(function(){t=0;var r=s.getBoundingClientRect();var dx=(e.clientX-(r.left+r.width/2))/innerWidth,dy=(e.clientY-(r.top+r.height/2))/innerHeight;s.style.setProperty("--ry",(dx*50)+"deg");s.style.setProperty("--rx",(-18-dy*40)+"deg")})},{passive:true})})();
 </script>
+<script id="phr-tools2">
+(function(){
+if(window.__phrT2)return;window.__phrT2=1;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const hap=t=>{try{haptic(t||"light")}catch(_){}};
+const toast=(m,t)=>{try{showToast(m,t)}catch(_){}};
+/* ---------- styles ---------- */
+const st=document.createElement("style");st.textContent=`
+#t2{position:fixed;inset:0;z-index:47000;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+#t2.show{display:flex}
+#t2 .t2-card{--c:#E8C468;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;overscroll-behavior:contain;border-radius:30px 30px 0 0;padding:10px 20px calc(26px + env(safe-area-inset-bottom));color:#fff;background:linear-gradient(180deg,rgba(34,25,16,.9),rgba(12,9,6,.96));-webkit-backdrop-filter:blur(30px) saturate(1.6);backdrop-filter:blur(30px) saturate(1.6);border:1px solid rgba(255,255,255,.1);border-bottom:0;box-shadow:0 -30px 80px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.12);animation:t2In .55s cubic-bezier(.18,1.08,.32,1)}
+@keyframes t2In{from{transform:translateY(100%)}to{transform:none}}
+#t2 .t2-grip{width:44px;height:5px;border-radius:5px;background:rgba(255,255,255,.22);margin:2px auto 14px}
+#t2 .t2-top{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+#t2 .t2-ic{width:44px;height:44px;border-radius:15px;display:grid;place-items:center;flex-shrink:0;background:linear-gradient(145deg,color-mix(in srgb,var(--c) 45%,#000),color-mix(in srgb,var(--c) 12%,#000));border:1px solid color-mix(in srgb,var(--c) 55%,transparent);color:var(--c);box-shadow:0 8px 22px -8px var(--c)}
+#t2 .t2-ic svg{width:22px;height:22px}
+#t2 h2{margin:0;font:700 20px/1.1 'Playfair Display','Vazirmatn',serif}
+#t2 .t2-sub{font:400 12.5px 'Space Grotesk','Vazirmatn',sans-serif;color:rgba(255,255,255,.55);margin-top:3px}
+#t2 .t2-x{margin-left:auto;background:rgba(255,255,255,.07);border:0;color:#fff;width:34px;height:34px;border-radius:50%;font-size:15px;cursor:pointer}
+#t2 .t2-btn{width:100%;padding:14px;border:0;border-radius:16px;font:700 14px 'Space Grotesk','Vazirmatn',sans-serif;cursor:pointer;color:#1a1206;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 70%,#fff),var(--c));box-shadow:0 10px 26px -10px var(--c);margin-top:10px;transition:transform .2s}
+#t2 .t2-btn:active{transform:scale(.97)}
+#t2 .t2-btn.ghost{background:rgba(255,255,255,.07);color:#fff;box-shadow:none;border:1px solid rgba(255,255,255,.12)}
+#t2 .t2-btn[disabled]{opacity:.4;pointer-events:none}
+#t2 label{display:block;font:600 11px 'Space Mono',monospace;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,.5);margin:14px 0 6px}
+#t2 input,#t2 textarea,#t2 select{width:100%;box-sizing:border-box;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#fff;font:400 14px 'Space Grotesk','Vazirmatn',sans-serif;outline:none}
+#t2 textarea{min-height:110px;resize:vertical;font-family:'Space Mono',monospace;font-size:12.5px;line-height:1.5}
+#t2 input:focus,#t2 textarea:focus{border-color:var(--c)}
+#t2 .dq-strip{display:flex;gap:6px;margin:6px 0 16px}
+#t2 .dq-strip i{flex:1;height:6px;border-radius:6px;background:rgba(255,255,255,.1)}
+#t2 .dq-strip i.on{background:var(--c);box-shadow:0 0 10px var(--c)}
+#t2 .dq-q{font:600 18px/1.35 'Space Grotesk','Vazirmatn',sans-serif;margin:4px 0 16px}
+#t2 .dq-tag{display:inline-block;font:600 10.5px 'Space Mono',monospace;letter-spacing:1.4px;color:var(--c);text-transform:uppercase}
+#t2 .dq-o{display:block;width:100%;text-align:left;padding:14px 16px;margin-bottom:9px;border-radius:16px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#fff;font:500 15px 'Space Grotesk','Vazirmatn',sans-serif;cursor:pointer;transition:transform .2s,background .2s,border-color .2s}
+#t2 .dq-o:active{transform:scale(.98)}
+#t2 .dq-o.ok{background:rgba(61,220,151,.18);border-color:#3DDC97}
+#t2 .dq-o.no{background:rgba(255,95,86,.16);border-color:#FF5F56;animation:t2Shake .35s}
+#t2 .dq-o.lock{pointer-events:none}
+@keyframes t2Shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+#t2 .dq-ex{margin:6px 0 4px;padding:13px 15px;border-radius:16px;background:rgba(255,255,255,.05);border-left:3px solid var(--c);font:400 13.5px/1.5 'Space Grotesk','Vazirmatn',sans-serif;color:rgba(255,255,255,.82);animation:t2Up .4s ease}
+@keyframes t2Up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#t2 .dq-big{text-align:center;padding:10px 0 4px}
+#t2 .dq-fire{font-size:54px;line-height:1;filter:drop-shadow(0 0 18px var(--c));animation:t2Fire 1.6s ease-in-out infinite}
+@keyframes t2Fire{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.1) rotate(3deg)}}
+#t2 .dq-n{font:700 44px/1 'Playfair Display',serif;margin-top:8px}
+#t2 .dq-week{display:flex;justify-content:space-between;margin:18px 0 6px}
+#t2 .dq-d{display:flex;flex-direction:column;align-items:center;gap:6px;font:600 10.5px 'Space Mono',monospace;color:rgba(255,255,255,.45)}
+#t2 .dq-d b{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(255,255,255,.14);font-size:13px;color:transparent}
+#t2 .dq-d.on b{background:var(--c);border-color:var(--c);color:#1a1206;box-shadow:0 0 14px var(--c)}
+#t2 .dq-d.today b{border-color:var(--c)}
+#t2 .lr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:8px;margin-top:8px}
+#t2 .lr-s{padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)}
+#t2 .lr-s small{display:block;font:600 9.5px 'Space Mono',monospace;letter-spacing:1.2px;color:rgba(255,255,255,.45);text-transform:uppercase}
+#t2 .lr-s b{font:600 15px 'Space Mono',monospace;color:var(--c)}
+#t2 .lr-tab{overflow-x:auto;border-radius:14px;border:1px solid rgba(255,255,255,.09);margin-top:10px}
+#t2 table{border-collapse:collapse;width:100%;font:12px 'Space Mono',monospace}
+#t2 th,#t2 td{padding:7px 10px;text-align:right;border-bottom:1px solid rgba(255,255,255,.07);white-space:nowrap}
+#t2 th{color:var(--c);text-align:left;font-weight:600}
+#t2 .st-link{word-break:break-all;font:11.5px 'Space Mono',monospace;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.2);color:rgba(255,255,255,.75);max-height:84px;overflow:hidden;margin-top:12px}
+#t2 .st-msg{padding:12px 14px;border-radius:16px;margin:8px 0;font:400 14px/1.5 'Space Grotesk','Vazirmatn',sans-serif;background:rgba(255,255,255,.05)}
+#t2 .st-msg.u{background:color-mix(in srgb,var(--c) 16%,transparent);margin-left:30px}
+#t2 .st-msg p{margin:4px 0}#t2 .st-msg pre{overflow:auto;background:rgba(0,0,0,.35);padding:10px;border-radius:10px}
+#t2 .st-seg{display:flex;gap:6px;margin-top:6px}#t2 .st-seg button{flex:1;padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#fff;font:600 13px 'Space Grotesk',sans-serif;cursor:pointer}
+#t2 .st-seg button.on{background:var(--c);color:#1a1206;border-color:var(--c)}
+body.light-theme #t2 .t2-card{background:linear-gradient(180deg,rgba(255,252,245,.94),rgba(246,240,228,.98));color:#241c0e;border-color:rgba(43,35,19,.12)}
+body.light-theme #t2 .t2-sub,body.light-theme #t2 label,body.light-theme #t2 .dq-d{color:rgba(36,28,14,.6)}
+body.light-theme #t2 .t2-x,body.light-theme #t2 .t2-btn.ghost,body.light-theme #t2 .dq-o,body.light-theme #t2 .lr-s,body.light-theme #t2 .st-msg,body.light-theme #t2 .dq-ex,body.light-theme #t2 .st-seg button{background:rgba(43,35,19,.05);color:#241c0e;border-color:rgba(43,35,19,.12)}
+body.light-theme #t2 .dq-ex{color:#3b3120}
+body.light-theme #t2 input,body.light-theme #t2 textarea,body.light-theme #t2 select{background:#fff;color:#241c0e;border-color:rgba(43,35,19,.15)}
+body.light-theme #t2 .st-seg button.on{background:var(--c);color:#1a1206}
+body.light-theme #t2 .st-link{background:rgba(43,35,19,.04);color:#3b3120}
+body.light-theme #t2 .dq-o.ok{background:rgba(61,220,151,.22)}body.light-theme #t2 .dq-o.no{background:rgba(255,95,86,.18)}
+body.light-theme #t2 .t2-grip{background:rgba(43,35,19,.22)}
+body.light-theme #t2 .dq-d b{border-color:rgba(43,35,19,.2)}
+@media(min-width:700px){#t2{align-items:center}#t2 .t2-card{border-radius:30px;border-bottom:1px solid rgba(255,255,255,.1)}}
+@media(prefers-reduced-motion:reduce){#t2 *{animation:none!important}}
+`;document.head.appendChild(st);
+/* ---------- sheet ---------- */
+let root=null;
+function sheet(color,icon,title,sub,body){
+  if(!root){root=document.createElement("div");root.id="t2";root.onclick=e=>{if(e.target===root)t2close()};document.body.appendChild(root);
+    // drag to dismiss
+    let y0=null,dy=0;
+    root.addEventListener("touchstart",e=>{const c=root.querySelector(".t2-card");if(!c||c.scrollTop>0)return;y0=e.touches[0].clientY;dy=0},{passive:true});
+    root.addEventListener("touchmove",e=>{if(y0==null)return;const c=root.querySelector(".t2-card");dy=Math.max(0,e.touches[0].clientY-y0);if(dy>0&&c){c.style.transition="none";c.style.transform="translateY("+dy+"px)";c.style.animation="none"}},{passive:true});
+    root.addEventListener("touchend",()=>{if(y0==null)return;const c=root.querySelector(".t2-card");if(c){c.style.transition="transform .3s";c.style.transform=""}if(dy>110)t2close();y0=null;dy=0});
+  }
+  root.innerHTML=`<div class="t2-card" style="--c:${color}"><div class="t2-grip"></div><div class="t2-top"><div class="t2-ic">${icon}</div><div><h2>${title}</h2><div class="t2-sub">${sub}</div></div><button class="t2-x" onclick="t2close()" aria-label="Close">✕</button></div><div id="t2-body">${body}</div></div>`;
+  root.classList.add("show");hap("light");
+}
+function t2close(){root&&root.classList.remove("show")}
+window.t2close=t2close;
+const body=h=>{const b=$("#t2-body");if(b)b.innerHTML=h};
+const askAI=txt=>{t2close();try{fillAndFocus(txt)}catch(_){}};
+window.t2ask=i=>{const q=window.__dqCur&&window.__dqCur[i];if(q)askAI("Explain this in more depth: "+q[1]+" (answer: "+q[2][q[3]]+")")};
+const IC={
+ flame:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4 0 7-2.6 7-6.6 0-3-1.8-5-3.4-6.6-.5 2-1.6 3-2.6 3 .3-3-.7-6.4-4-8.8.2 3.4-1.6 5.2-3 7C4.8 11.8 5 13.6 5 15.4 5 19.4 8 22 12 22z"/></svg>',
+ flask:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6L4.5 19a1.6 1.6 0 0 0 1.4 2.4h12.2a1.6 1.6 0 0 0 1.4-2.4L14 9V3"/><path d="M7.5 15h9"/></svg>',
+ people:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.4-3.4 3-5.4 6-5.4s5.6 2 6 5.4"/><circle cx="17.2" cy="9" r="2.4"/><path d="M16.5 14.4c2.4.1 4.1 1.6 4.5 4.4"/></svg>'};
+/* ---------- tiles ---------- */
+function addTiles(){
+  const m=$("#tools-menu");if(!m||m.dataset.t2)return;m.dataset.t2=1;
+  const mk=(name,sub,color,ic,fn,pv)=>{const d=document.createElement("div");d.className="tool-tile";d.style.setProperty("--tile-color",color);d.dataset.pv=pv;d.setAttribute("onclick",fn);d.innerHTML=`<i class="tt-ic">${ic}</i><span class="tt-n">${name}</span><small class="tt-s">${sub}</small>`;return d};
+  const grid=n=>{const l=[...m.querySelectorAll(".tool-group-label")].find(x=>x.textContent.trim().toLowerCase()===n);return l&&l.nextElementSibling};
+  const s=grid("study"),a=grid("assistant");
+  if(s){s.appendChild(mk("Daily Challenge","3 questions a day","#FF9F43",IC.flame,"openDaily()","pulse"));s.appendChild(mk("Lab Report","Data to report","#4FD1C5",IC.flask,"openLab()","page"))}
+  if(a)a.appendChild(mk("Study Together","Share a session","#7C9CFF",IC.people,"openTogether()","orbit"));
+}
+/* ---------- DAILY CHALLENGE ---------- */
+const PHR_DQ=[
+["Math","What is d/dx of x³?",["3x²","x²","3x","x³/3"],0,"Power rule: bring the exponent down and subtract one, so x³ becomes 3x²."],
+["Math","What is the sum of the interior angles of a hexagon?",["540°","720°","900°","360°"],1,"(n − 2) × 180° with n = 6 gives 4 × 180° = 720°."],
+["Math","What is ∫₀³ 2x dx?",["6","9","3","12"],1,"The antiderivative is x². Evaluate: 3² − 0² = 9."],
+["Math","If log₂ x = 5, what is x?",["10","25","32","64"],2,"log₂ x = 5 means x = 2⁵ = 32."],
+["Math","What are the roots of x² − 5x + 6 = 0?",["1 and 6","2 and 3","−2 and −3","−1 and 6"],1,"Factor: (x − 2)(x − 3) = 0, so x = 2 or x = 3."],
+["Math","Two fair coins are flipped. What is the probability of two heads?",["1/2","1/3","1/4","1/8"],2,"Independent events multiply: 1/2 × 1/2 = 1/4."],
+["Math","What is the slope of the line through (1, 2) and (3, 8)?",["2","3","4","6"],1,"Slope = (8 − 2) / (3 − 1) = 6/2 = 3."],
+["Math","What is i² (where i is the imaginary unit)?",["1","−1","i","0"],1,"The imaginary unit is defined by i² = −1."],
+["Math","What is sin 30°?",["√3/2","1","1/2","√2/2"],2,"sin 30° = 1/2, from the 30-60-90 triangle."],
+["Math","In how many ways can 4 different books be arranged on a shelf?",["12","16","24","48"],2,"4! = 4 × 3 × 2 × 1 = 24."],
+["Math","What is d/dx of sin x?",["−cos x","cos x","−sin x","tan x"],1,"The derivative of sin x is cos x."],
+["Math","What is the median of 3, 9, 4, 7, 5?",["4","5","6","7"],1,"Sorted: 3, 4, 5, 7, 9. The middle value is 5."],
+["Physics","What is the SI unit of force?",["Joule","Watt","Newton","Pascal"],2,"Force is measured in newtons: 1 N = 1 kg·m/s²."],
+["Physics","Near Earth's surface, free-fall acceleration is about…",["1.6 m/s²","9.8 m/s²","98 m/s²","3.0 m/s²"],1,"g ≈ 9.8 m/s², ignoring air resistance."],
+["Physics","If a car doubles its speed, its kinetic energy becomes…",["2×","3×","4×","8×"],2,"KE = ½mv², so doubling v multiplies KE by 2² = 4."],
+["Physics","What is the approximate speed of light in vacuum?",["3 × 10⁶ m/s","3 × 10⁸ m/s","3 × 10¹⁰ m/s","3 × 10⁵ m/s"],1,"c ≈ 3 × 10⁸ m/s (299,792,458 m/s)."],
+["Physics","A 12 V source drives a 4 Ω resistor. What is the current?",["0.33 A","3 A","8 A","48 A"],1,"Ohm's law: I = V / R = 12 / 4 = 3 A."],
+["Physics","Which of these does not need a medium to travel?",["Sound","Water waves","Light","Waves on a string"],2,"Electromagnetic waves such as light travel through vacuum."],
+["Physics","Two 10 Ω resistors are connected in parallel. The total is…",["20 Ω","10 Ω","5 Ω","2.5 Ω"],2,"1/R = 1/10 + 1/10 = 1/5, so R = 5 Ω."],
+["Physics","Ignoring air, which launch angle gives a projectile the greatest range?",["30°","45°","60°","90°"],1,"Range ∝ sin 2θ, which is largest when 2θ = 90°, so θ = 45°."],
+["Physics","A 2 kg ball moves at 3 m/s. What is its momentum?",["1.5 kg·m/s","5 kg·m/s","6 kg·m/s","9 kg·m/s"],2,"p = mv = 2 × 3 = 6 kg·m/s."],
+["Physics","A wave has a frequency of 50 Hz. Its period is…",["0.2 s","0.02 s","0.5 s","50 s"],1,"T = 1 / f = 1 / 50 = 0.02 s."],
+["Physics","An object is beyond 2f of a convex lens. The image is…",["Virtual and upright","Real, inverted, smaller","Real, inverted, larger","No image forms"],1,"Beyond 2f the image forms between f and 2f: real, inverted and diminished."],
+["Physics","A 10 N force moves a box 5 m in its direction. How much work is done?",["2 J","15 J","50 J","500 J"],2,"W = F × d = 10 × 5 = 50 J."],
+["Chemistry","What is the atomic number of carbon?",["4","6","8","12"],1,"Carbon has 6 protons, so its atomic number is 6."],
+["Chemistry","What is the pH of pure water at 25 °C?",["0","5","7","14"],2,"Pure water is neutral: [H⁺] = 10⁻⁷ M, so pH = 7."],
+["Chemistry","Which of these is a noble gas?",["Nitrogen","Chlorine","Argon","Oxygen"],2,"Argon is in group 18, the noble gases."],
+["Chemistry","How many moles are in 36 g of water (M = 18 g/mol)?",["1","2","18","36"],1,"n = m / M = 36 / 18 = 2 mol."],
+["Chemistry","What type of bond holds NaCl together?",["Covalent","Metallic","Ionic","Hydrogen"],2,"Sodium gives an electron to chlorine, forming an ionic bond."],
+["Chemistry","Balance: H₂ + O₂ → H₂O. What are the coefficients?",["1, 1, 1","2, 1, 2","1, 2, 1","2, 2, 1"],1,"2H₂ + O₂ → 2H₂O balances 4 H and 2 O on both sides."],
+["Chemistry","Which element is the most electronegative?",["Oxygen","Chlorine","Fluorine","Nitrogen"],2,"Fluorine has the highest electronegativity on the Pauling scale."],
+["Chemistry","Avogadro's number is approximately…",["6.022 × 10²³","6.022 × 10³²","3.0 × 10⁸","9.1 × 10⁻³¹"],0,"One mole contains 6.022 × 10²³ particles."],
+["Chemistry","Group 17 of the periodic table is called the…",["Alkali metals","Halogens","Noble gases","Chalcogens"],1,"Fluorine, chlorine, bromine and iodine are the halogens."],
+["Chemistry","What is the oxidation state of Mn in KMnO₄?",["+2","+4","+6","+7"],3,"K is +1 and four O are −8, so Mn must be +7."],
+["Chemistry","What is the shape of a methane (CH₄) molecule?",["Linear","Trigonal planar","Tetrahedral","Octahedral"],2,"Four bonding pairs and no lone pairs give a tetrahedral shape."],
+["Chemistry","N₂ + 3H₂ ⇌ 2NH₃. Raising the pressure shifts the equilibrium…",["To the left","To the right","Nowhere","It stops the reaction"],1,"The right side has fewer gas moles (2 vs 4), so pressure favours it."],
+["Tech","What is binary 1011 in decimal?",["9","10","11","13"],2,"8 + 0 + 2 + 1 = 11."],
+["Tech","Which single logic gate type can build every other gate?",["AND","OR","NAND","XOR"],2,"NAND (and NOR) are universal gates."],
+["Tech","Why does an LED need a series resistor?",["To make it brighter","To limit the current","To change its colour","To store charge"],1,"Without it the current is unlimited and the LED burns out."],
+["Tech","What is the XOR of 1 and 1?",["0","1","2","Undefined"],0,"XOR is 1 only when the inputs differ, so 1 XOR 1 = 0."],
+["Tech","What is the time complexity of binary search?",["O(n)","O(log n)","O(n²)","O(1)"],1,"Each step halves the search space, giving O(log n)."],
+["Tech","What is hexadecimal FF in decimal?",["15","16","255","256"],2,"F × 16 + F = 15 × 16 + 15 = 255."],
+["Tech","A capacitor stores energy in…",["A magnetic field","An electric field","Heat","Chemical bonds"],1,"The electric field between its plates holds the energy: ½CV²."],
+["Tech","Which data structure is Last-In, First-Out?",["Queue","Stack","Array","Graph"],1,"A stack pops the most recently pushed item first."],
+["Tech","An RC circuit has R = 1 kΩ and C = 1 µF. What is τ = RC?",["1 µs","1 ms","1 s","1 kΩ"],1,"1000 Ω × 10⁻⁶ F = 10⁻³ s = 1 ms."],
+["Tech","How many different values can 4 bits represent?",["4","8","16","32"],2,"2⁴ = 16 values (0 to 15)."],
+["Tech","An ideal diode conducts current…",["In both directions","In one direction only","Only when hot","Never"],1,"It conducts forward and blocks reverse current."],
+["Tech","In 8-bit two's complement, 11111111 represents…",["255","−127","−1","−128"],2,"All ones is −1 in two's complement."]
+];
+const dkey=d=>{d=d||new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const dnum=()=>{const d=new Date();return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5)};
+function rng(seed){let s=seed>>>0||1;return()=>{s^=s<<13;s>>>=0;s^=s>>>17;s^=s<<5;s>>>=0;return s/4294967296}}
+function perm(n,seed){const r=rng(seed*2654435761),a=[...Array(n).keys()];for(let i=n-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function dqToday(){const d=dnum(),n=PHR_DQ.length,out=[];for(let k=0;k<3;k++){const g=d*3+k,cyc=Math.floor(g/n),p=perm(n,cyc+7);const q=PHR_DQ[p[g%n]];
+  // seeded option shuffle so the right answer moves around
+  const o=perm(4,g+11);const opts=o.map(i=>q[2][i]);out.push([q[0],q[1],opts,o.indexOf(q[3]),q[4]])}return out}
+function dqLoad(){try{return JSON.parse(localStorage.getItem("phr_daily")||"{}")}catch(e){return{}}}
+function dqSave(s){try{localStorage.setItem("phr_daily",JSON.stringify(s))}catch(e){}}
+function dqStreak(s){let n=0;const d=new Date();if(!(s[dkey(d)]&&s[dkey(d)].done))d.setDate(d.getDate()-1);while(s[dkey(d)]&&s[dkey(d)].done){n++;d.setDate(d.getDate()-1)}return n}
+let dq={i:0,score:0,qs:[]};
+function openDaily(){closeAllDropMenus();dq={i:0,score:0,qs:dqToday()};window.__dqCur=dq.qs;
+  const s=dqLoad(),t=s[dkey()];
+  sheet("#FF9F43",IC.flame,"Daily Challenge","Three questions. Keep the streak alive.","");
+  if(t&&t.done)dqResult(true);else dqShow()}
+function dqStrip(){return`<div class="dq-strip">${dq.qs.map((_,i)=>`<i class="${i<dq.i?"on":""}"></i>`).join("")}</div>`}
+function dqShow(){const q=dq.qs[dq.i];
+  body(`${dqStrip()}<span class="dq-tag">${q[0]} · ${dq.i+1}/3</span><div class="dq-q">${esc(q[1])}</div>${q[2].map((o,i)=>`<button class="dq-o" onclick="dqPick(${i})">${esc(o)}</button>`).join("")}<div id="dq-fb"></div>`)}
+window.dqPick=function(i){const q=dq.qs[dq.i],ok=i===q[3];const os=[...document.querySelectorAll("#t2 .dq-o")];
+  os.forEach((b,j)=>{b.classList.add("lock");if(j===q[3])b.classList.add("ok");else if(j===i)b.classList.add("no")});
+  if(ok){dq.score++;hap("success");try{playSound("chime")}catch(_){}}else hap("error");
+  $("#dq-fb").innerHTML=`<div class="dq-ex"><b>${ok?"Correct.":"Not quite."}</b> ${esc(q[4])}</div><button class="t2-btn ghost" onclick="t2ask(${dq.i})">Ask Phraortes to go deeper</button><button class="t2-btn" onclick="dqNext()">${dq.i<2?"Next question":"See result"}</button>`;
+  const b=$("#t2 .t2-card");if(b)b.scrollTo({top:b.scrollHeight,behavior:"smooth"})};
+window.dqNext=function(){dq.i++;if(dq.i<3)dqShow();else{const s=dqLoad();s[dkey()]={done:1,score:dq.score};dqSave(s);dqResult(false)}};
+function dqResult(again){const s=dqLoad(),t=s[dkey()]||{score:dq.score},st=dqStreak(s);
+  const wk=[];const d0=new Date();for(let k=6;k>=0;k--){const d=new Date(d0);d.setDate(d0.getDate()-k);const done=s[dkey(d)]&&s[dkey(d)].done;wk.push(`<div class="dq-d ${done?"on":""} ${k===0?"today":""}"><b>✓</b>${"SMTWTFS"[d.getDay()]}</div>`)}
+  const msg=t.score===3?"Perfect. Sharp mind today.":t.score===2?"Solid. One more to master.":"Good start. Learning is the point.";
+  body(`<div class="dq-big"><div class="dq-fire">🔥</div><div class="dq-n">${st} day${st===1?"":"s"}</div><div class="t2-sub" style="margin-top:6px">current streak</div></div><div class="dq-week">${wk.join("")}</div><div class="dq-ex" style="margin-top:14px"><b>${t.score}/3 today.</b> ${msg}${again?" Come back tomorrow for three new questions.":""}</div><button class="t2-btn" onclick="t2close()">Done</button><button class="t2-btn ghost" onclick="askAI2()">Ask Phraortes for extra practice</button>`);
+  if(!again)hap("success")}
+window.askAI2=()=>askAI("Give me 3 extra practice questions like today's daily challenge, one at a time, and wait for my answer before the next.");
+window.openDaily=openDaily;
+/* ---------- LAB REPORT ---------- */
+function num(x){const v=parseFloat(String(x).replace(/,/g,".").replace(/[^\d.eE+\-]/g,""));return isFinite(v)?v:NaN}
+function parseTable(t){const rows=t.split(/\n/).map(l=>l.trim()).filter(Boolean).map(l=>l.split(l.includes("\t")?"\t":l.includes(";")?";":l.includes(",")?",":/\s+/).map(x=>x.trim()).filter(x=>x!==""));
+  if(!rows.length)return null;let head=null;const first=rows[0];if(first.some(c=>isNaN(num(c))||!/\d/.test(c)))head=rows.shift();
+  const w=Math.max(...rows.map(r=>r.length),head?head.length:0);const cols=[];for(let c=0;c<w;c++)cols.push(rows.map(r=>num(r[c])).filter(v=>!isNaN(v)));
+  return{head:head||cols.map((_,i)=>"Col "+(i+1)),rows,cols:cols}}
+function stats(a){const n=a.length;if(!n)return null;const m=a.reduce((x,y)=>x+y,0)/n;const sd=n>1?Math.sqrt(a.reduce((x,y)=>x+(y-m)*(y-m),0)/(n-1)):0;return{n,m,sd,se:n>1?sd/Math.sqrt(n):0,min:Math.min(...a),max:Math.max(...a)}}
+function fit(x,y){const n=Math.min(x.length,y.length);if(n<3)return null;const mx=x.slice(0,n).reduce((a,b)=>a+b,0)/n,my=y.slice(0,n).reduce((a,b)=>a+b,0)/n;let sxy=0,sxx=0,syy=0;for(let i=0;i<n;i++){sxy+=(x[i]-mx)*(y[i]-my);sxx+=(x[i]-mx)**2;syy+=(y[i]-my)**2}if(!sxx||!syy)return null;const b=sxy/sxx,a=my-b*mx;return{slope:b,icpt:a,r2:(sxy*sxy)/(sxx*syy),n}}
+const f=v=>{if(!isFinite(v))return"–";const a=Math.abs(v);return(a!==0&&(a<1e-3||a>=1e5))?v.toExponential(3):String(+v.toPrecision(4))};
+let LAB={};
+function openLab(){closeAllDropMenus();
+  sheet("#4FD1C5",IC.flask,"Lab Report","Paste your data. Get a finished report.",
+  `<label>Experiment title</label><input id="lr-t" placeholder="e.g. Verifying Ohm's law" value="${esc(LAB.t||"")}"><label>Goal (optional)</label><input id="lr-g" placeholder="What were you trying to show?" value="${esc(LAB.g||"")}"><label>Data</label><textarea id="lr-d" placeholder="Voltage (V), Current (A)&#10;1.0, 0.11&#10;2.0, 0.22&#10;3.0, 0.31&#10;4.0, 0.44">${esc(LAB.d||"")}</textarea><label>Apparatus and procedure (optional)</label><textarea id="lr-n" style="min-height:70px;font-family:inherit" placeholder="What you used and what you did">${esc(LAB.n||"")}</textarea><button class="t2-btn ghost" onclick="labAnalyze()">Analyze data</button><div id="lr-out"></div>`)}
+function labRead(){LAB={t:$("#lr-t").value.trim(),g:$("#lr-g").value.trim(),d:$("#lr-d").value.trim(),n:$("#lr-n").value.trim()};return LAB}
+function labCalc(){const L=labRead(),T=parseTable(L.d);if(!T||!T.cols.some(c=>c.length)){toast("Paste some numeric data first","error");return null}return{L,T}}
+window.labAnalyze=function(){const r=labCalc();if(!r)return;const{T}=r;let h=`<label>Statistics</label><div class="lr-tab"><table><tr><th>Column</th><th>n</th><th>Mean</th><th>SD</th><th>SE</th><th>Min</th><th>Max</th></tr>`;
+  T.cols.forEach((c,i)=>{const s=stats(c);if(s)h+=`<tr><td style="text-align:left">${esc(T.head[i]||"Col "+(i+1))}</td><td>${s.n}</td><td>${f(s.m)}</td><td>${f(s.sd)}</td><td>${f(s.se)}</td><td>${f(s.min)}</td><td>${f(s.max)}</td></tr>`});h+=`</table></div>`;
+  const F=T.cols.length>=2?fit(T.cols[0],T.cols[1]):null;
+  if(F)h+=`<label>Linear fit: ${esc(T.head[1]||"y")} vs ${esc(T.head[0]||"x")}</label><div class="lr-grid"><div class="lr-s"><small>Slope</small><b>${f(F.slope)}</b></div><div class="lr-s"><small>Intercept</small><b>${f(F.icpt)}</b></div><div class="lr-s"><small>R²</small><b>${f(F.r2)}</b></div></div>`;
+  h+=`<button class="t2-btn" onclick="labWrite()">Write the full report</button>`;$("#lr-out").innerHTML=h;hap("light")};
+window.labWrite=function(){const r=labCalc();if(!r)return;const{L,T}=r;
+  let p=`Write a complete lab report as a PDF. Experiment: ${L.t||"(untitled)"}.\n`;if(L.g)p+=`Goal: ${L.g}\n`;if(L.n)p+=`Apparatus and procedure notes: ${L.n}\n`;
+  p+=`\nRaw data (first row may be headers):\n${L.d}\n\nStatistics computed locally (use these exact numbers, do not recompute):\n`;
+  T.cols.forEach((c,i)=>{const s=stats(c);if(s)p+=`- ${T.head[i]||"Col "+(i+1)}: n=${s.n}, mean=${f(s.m)}, SD=${f(s.sd)}, SE=${f(s.se)}, min=${f(s.min)}, max=${f(s.max)}\n`});
+  const F=T.cols.length>=2?fit(T.cols[0],T.cols[1]):null;if(F)p+=`- Linear fit of ${T.head[1]} vs ${T.head[0]}: slope=${f(F.slope)}, intercept=${f(F.icpt)}, R²=${f(F.r2)}, n=${F.n}\n`;
+  p+=`\nStructure: Title, Objective, Theory (with the key formulas), Apparatus, Procedure, Data table, Calculations, Error analysis (sources of error, uncertainty), Results, Conclusion. Be honest about limitations and do not invent measurements. Write it in the language of my notes or title. Deliver it inside a \`\`\`pdf-report code block (markdown, starting with a single # title) so I can download the PDF.`;
+  t2close();uiInput.value=p;autoResize(uiInput);try{send()}catch(e){uiInput.focus()}};
+window.openLab=openLab;
+/* ---------- STUDY TOGETHER ---------- */
+const b64u={enc:u=>btoa(String.fromCharCode(...u)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""),dec:s=>{s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";return Uint8Array.from(atob(s),c=>c.charCodeAt(0))}};
+async function pack(obj){const raw=new TextEncoder().encode(JSON.stringify(obj));
+  if(window.CompressionStream){const cs=new CompressionStream("gzip");const w=cs.writable.getWriter();w.write(raw);w.close();const buf=new Uint8Array(await new Response(cs.readable).arrayBuffer());return"z"+b64u.enc(buf)}
+  return"j"+b64u.enc(raw)}
+async function unpack(s){const k=s[0],u=b64u.dec(s.slice(1));
+  if(k==="z"){const ds=new DecompressionStream("gzip");const w=ds.writable.getWriter();w.write(u);w.close();return JSON.parse(new TextDecoder().decode(await new Response(ds.readable).arrayBuffer()))}
+  return JSON.parse(new TextDecoder().decode(u))}
+let ST={n:8};
+function curChat(){return chats.find(c=>c.id==curId)}
+function openTogether(){closeAllDropMenus();const c=curChat(),cnt=c&&c.msgs?c.msgs.length:0;
+  sheet("#7C9CFF",IC.people,"Study Together","Share this session with a friend.",
+  cnt?`<div class="dq-ex" style="border-left-color:var(--c)"><b>${esc(c.name||"Current chat")}</b><br>${cnt} exchange${cnt===1?"":"s"} in this chat. Your friend gets a link, reads it, and continues in their own chat.</div><label>How much to share</label><div class="st-seg" id="st-seg">${[[4,"Last 4"],[8,"Last 8"],[16,"Last 16"]].map(([n,l])=>`<button data-n="${n}" class="${ST.n===n?"on":""}" onclick="stSeg(${n})">${l}</button>`).join("")}</div><button class="t2-btn" id="st-go" onclick="stMake()">Create share link</button><div id="st-out"></div>`
+  :`<div class="dq-ex">This chat is empty. Ask something first, then come back to share it.</div>`)+``;
+}
+window.stSeg=n=>{ST.n=n;document.querySelectorAll("#st-seg button").forEach(b=>b.classList.toggle("on",+b.dataset.n===n))};
+window.stMake=async function(){const c=curChat();if(!c||!c.msgs.length)return;const btn=$("#st-go");btn.disabled=true;
+  let n=ST.n,link="";
+  for(;n>=1;n=Math.floor(n/2)){const m=c.msgs.slice(-n).map(x=>[String(x.uText||"").slice(0,1500),String(x.aRaw||"").slice(0,3500)]);
+    const code=await pack({v:1,t:(c.name||"Shared session").slice(0,80),m});link=location.origin+location.pathname+"#share="+code;if(link.length<45000)break}
+  btn.disabled=false;window.__stLink=link;
+  $("#st-out").innerHTML=`<div class="st-link">${esc(link.slice(0,160))}…</div><div style="display:flex;gap:8px"><button class="t2-btn" onclick="stCopy()">Copy link</button><button class="t2-btn ghost" onclick="stShare()">Share</button></div><div class="t2-sub" style="margin-top:12px">Anyone with the link can read ${Math.min(n,c.msgs.length)} exchange${Math.min(n,c.msgs.length)===1?"":"s"}. Nothing is stored on a server, the conversation lives inside the link itself.</div>`;hap("success")};
+window.stCopy=async function(){try{await navigator.clipboard.writeText(window.__stLink);toast("Link copied","success")}catch(e){const t=document.createElement("textarea");t.value=window.__stLink;document.body.appendChild(t);t.select();try{document.execCommand("copy");toast("Link copied","success")}catch(_){toast("Could not copy","error")}t.remove()}};
+window.stShare=function(){if(navigator.share)navigator.share({title:"Study session on Phraortes",url:window.__stLink}).catch(()=>{});else stCopy()};
+window.openTogether=openTogether;
+async function viewShared(code){let d;try{d=await unpack(code)}catch(e){toast("This share link looks damaged","error");return}
+  if(!d||!Array.isArray(d.m))return;window.__shared=d;
+  const md=t=>{try{return DOMPurify.sanitize(marked.parse(String(t||"")))}catch(e){return esc(t)}};
+  sheet("#7C9CFF",IC.people,esc(d.t||"Shared session"),"A friend shared this study session with you.",
+   d.m.map(p=>`<div class="st-msg u">${esc(p[0])}</div><div class="st-msg">${md(p[1])}</div>`).join("")+`<button class="t2-btn" onclick="stContinue()">Continue in my chat</button><button class="t2-btn ghost" onclick="t2close()">Close</button>`);
+  try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}}
+window.viewShared=viewShared;
+window.stContinue=function(){const d=window.__shared;if(!d)return;const id=Date.now();
+  const md=t=>{try{return DOMPurify.sanitize(marked.parse(String(t||"")))}catch(e){return esc(t)}};
+  chats.unshift({id,name:(d.t||"Shared session").slice(0,60),msgs:d.m.map((p,i)=>({u:esc(p[0]).replace(/\n/g,"<br>"),uText:p[0],a:md(p[1]),aRaw:p[1],ts:id+i})),pinned:false});
+  curId=id;save();loadChat(id);t2close();toast("Session added to your chats","success")};
+function checkShare(){const h=location.hash;if(h.indexOf("#share=")===0)viewShared(h.slice(7))}
+window.addEventListener("hashchange",checkShare);
+/* ---------- init ---------- */
+const boot=()=>{addTiles();setTimeout(checkShare,1800)};
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
+})();
+
+</script>
 </body>
 </html>
