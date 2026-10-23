@@ -1711,6 +1711,37 @@ body.light-theme .act.idle .act-live{color:var(--ink2)}
 .hall-dashboard .hall-wordmark,.hall-dashboard .hall-tagline{display:none}
 .hall-dashboard{padding-top:22px}
 .sph{width:104px;height:104px;margin-bottom:14px}.sph-s .e2{transform:rotateX(90deg) translateZ(27px) scale(.84)}.sph-s .e3{transform:rotateX(90deg) translateZ(-27px) scale(.84)}
+/* ── Tools menu: glass + categories + live previews ── */
+#tools-menu.drop-menu{background:linear-gradient(180deg,rgba(34,25,16,.66),rgba(14,10,7,.78))!important;-webkit-backdrop-filter:blur(30px) saturate(1.7);backdrop-filter:blur(30px) saturate(1.7);border:1px solid rgba(255,255,255,.09)}
+#tools-menu .tool-tile{background:linear-gradient(160deg,color-mix(in srgb,var(--cat,#fff) 10%,rgba(255,255,255,.05)),rgba(255,255,255,.015))!important;border:1px solid rgba(255,255,255,.09);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 10px 24px -14px rgba(0,0,0,.7);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+#tools-menu .tool-tile:active{box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 0 1px var(--tile-color)}
+#tools-menu .tool-group-label{display:flex;align-items:center;gap:8px;color:color-mix(in srgb,var(--cat,#fff) 70%,#fff)!important;opacity:.9}
+#tools-menu .tool-group-label::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--cat);box-shadow:0 0 10px var(--cat)}
+#tools-menu .tool-group-label::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,color-mix(in srgb,var(--cat) 50%,transparent),transparent)}
+body.light-theme #tools-menu.drop-menu{background:linear-gradient(180deg,rgba(255,252,245,.8),rgba(246,240,228,.9))!important;border-color:rgba(43,35,19,.12)}
+body.light-theme #tools-menu .tool-tile{background:linear-gradient(160deg,color-mix(in srgb,var(--cat,#999) 12%,#fff),rgba(255,255,255,.6))!important;border-color:rgba(43,35,19,.1)}
+body.light-theme #tools-menu .tool-group-label{color:color-mix(in srgb,var(--cat) 70%,#2b2313)!important}
+#tools-menu .tt-ic{overflow:hidden}
+#tools-menu .tt-ic svg{transform-origin:50% 50%}
+#tools-menu.show [data-pv=draw] .tt-ic path{stroke-dasharray:60;stroke-dashoffset:60;animation:pvDraw 2.6s ease-in-out infinite}
+#tools-menu.show [data-pv=page] .tt-ic svg{animation:pvBob 2.4s ease-in-out infinite}
+#tools-menu.show [data-pv=folder] .tt-ic svg{animation:pvHop 2.8s cubic-bezier(.3,1.6,.5,1) infinite}
+#tools-menu.show [data-pv=scan] .tt-ic::after{content:"";position:absolute;left:6px;right:6px;height:2px;border-radius:2px;background:var(--tile-color);box-shadow:0 0 8px var(--tile-color);animation:pvScan 2.2s ease-in-out infinite}
+#tools-menu.show [data-pv=clock] .tt-ic svg{animation:pvSwing 2.6s ease-in-out infinite}
+#tools-menu.show [data-pv=flip] .tt-ic svg{animation:pvFlip 4s cubic-bezier(.6,0,.3,1) infinite}
+#tools-menu.show [data-pv=pulse] .tt-ic svg{animation:pvPulse 2s ease-in-out infinite}
+#tools-menu.show [data-pv=orbit] .tt-ic::after{content:"";position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px;border-radius:50%;background:var(--tile-color);box-shadow:0 0 6px var(--tile-color);animation:pvOrbit 2.4s linear infinite}
+@keyframes pvDraw{0%{stroke-dashoffset:60}55%,85%{stroke-dashoffset:0}100%{stroke-dashoffset:-60}}
+@keyframes pvBob{0%,100%{transform:translateY(1.5px)}50%{transform:translateY(-2.5px) rotate(-4deg)}}
+@keyframes pvHop{0%,70%,100%{transform:translateY(0) scale(1)}80%{transform:translateY(-4px) scale(1.08)}}
+@keyframes pvScan{0%,100%{top:7px;opacity:.2}50%{top:calc(100% - 9px);opacity:1}}
+@keyframes pvSwing{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(14deg)}}
+@keyframes pvFlip{0%,60%{transform:rotate(0)}85%,100%{transform:rotate(180deg)}}
+@keyframes pvPulse{0%,100%{transform:scale(.9);filter:drop-shadow(0 0 0 transparent)}50%{transform:scale(1.1);filter:drop-shadow(0 0 6px var(--tile-color))}}
+@keyframes pvOrbit{0%{transform:rotate(0) translateX(15px)}100%{transform:rotate(360deg) translateX(15px)}}
+@media(max-width:1023px){#tools-menu.show{transition:transform .6s cubic-bezier(.18,1.08,.32,1),visibility 0s!important}#tools-menu .sheet-grip i{width:44px;height:5px;transition:width .25s,background .25s}#tools-menu.show .sheet-grip i{animation:gripHint 1.6s ease .5s 1}}
+@keyframes gripHint{0%,100%{transform:translateY(0)}40%{transform:translateY(3px);width:52px}}
+@media(prefers-reduced-motion:reduce){#tools-menu *{animation:none!important}}
 </style>
 <div class="bg-glow"></div><div id="aurora" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
 <div class="bg-lattice"></div>
@@ -5673,15 +5704,28 @@ function closeAllDropMenus(){
   ["core-menu","tools-menu","hdr-menu"].forEach(id=>document.getElementById(id)?.classList.remove("show"));
   document.getElementById("core-pill-btn")?.classList.remove("open");document.getElementById("tools-btn")?.classList.remove("open");
 }
-// ═══ Tools sheet: drag the handle / header down to dismiss ═══
+// ═══ Tools sheet: drag anywhere (when scrolled to top) to dismiss, backdrop follows ═══
 (function(){
-  const m=document.getElementById("tools-menu"),g=document.getElementById("tools-grip");if(!m||!g)return;
-  let y0=null,dy=0,t0=0;
-  const start=e=>{if(!m.classList.contains("show")||window.matchMedia("(min-width:1024px)").matches)return;y0=e.touches[0].clientY;dy=0;t0=performance.now();m.style.transition="none"};
-  const move=e=>{if(y0==null)return;dy=Math.max(0,e.touches[0].clientY-y0);m.style.transform="translateY("+dy+"px)"};
-  const end=()=>{if(y0==null)return;const v=dy/Math.max(1,performance.now()-t0);m.style.transition="";m.style.transform="";if(dy>90||v>.6)closeAllDropMenus();y0=null};
-  [g,m.querySelector(".menu-header-label")].forEach(el=>{if(!el)return;el.addEventListener("touchstart",start,{passive:true});el.addEventListener("touchmove",move,{passive:true});el.addEventListener("touchend",end);el.addEventListener("touchcancel",end)});
-  m.addEventListener("click",e=>{if(e.target.closest(".tool-tile"))setTimeout(closeAllDropMenus,30)});
+  const m=document.getElementById("tools-menu");if(!m)return;
+  const back=()=>document.getElementById("sheet-back");
+  // per-tile live previews + category colours
+  const PV={"canvas":"draw","templates":"page","workspace":"folder","photo solve":"scan","exam mode":"clock","focus timer":"flip","memory":"pulse","my assistants":"orbit"};
+  m.querySelectorAll(".tool-tile").forEach(t=>{const n=(t.querySelector(".tt-n")?.textContent||"").trim().toLowerCase();if(PV[n])t.dataset.pv=PV[n]});
+  const CAT={"workspace":"#5B9BEF","study":"#3DDC97","assistant":"#E8C468"};
+  m.querySelectorAll(".tool-group-label").forEach(l=>{const c=CAT[l.textContent.trim().toLowerCase()]||"#D4A24C";l.style.setProperty("--cat",c);const g=l.nextElementSibling;if(g&&g.classList.contains("tools-grid"))g.style.setProperty("--cat",c)});
+  let y0=null,dy=0,t0=0,H=1,armed=false;
+  const mobile=()=>!window.matchMedia("(min-width:1024px)").matches;
+  const start=e=>{if(!m.classList.contains("show")||!mobile())return;y0=e.touches[0].clientY;dy=0;t0=performance.now();H=m.offsetHeight||1;armed=m.scrollTop<=0};
+  const move=e=>{if(y0==null)return;const d=e.touches[0].clientY-y0;
+    if(!armed){if(m.scrollTop<=0&&d>0){armed=true;y0=e.touches[0].clientY;t0=performance.now()}return}
+    if(d<=0){dy=0;m.style.transform="";return}
+    m.style.transition="none";dy=d<H?d:H;m.style.transform="translateY("+dy+"px)";
+    const bk=back();if(bk){bk.style.transition="none";bk.style.opacity=String(Math.max(0,1-dy/H))}};
+  const end=()=>{if(y0==null)return;const v=dy/Math.max(1,performance.now()-t0);const close=dy>H*.28||v>.55;
+    m.style.transition="";const bk=back();if(bk){bk.style.transition="";bk.style.opacity=""}
+    m.style.transform="";if(close&&dy>0){closeAllDropMenus();try{haptic("light")}catch(_){}}y0=null;dy=0;armed=false};
+  m.addEventListener("touchstart",start,{passive:true});m.addEventListener("touchmove",move,{passive:true});m.addEventListener("touchend",end);m.addEventListener("touchcancel",end);
+  m.addEventListener("click",e=>{if(e.target.closest(".tool-tile")){try{haptic("light")}catch(_){}setTimeout(closeAllDropMenus,30)}});
 })();
 function toggleDropMenu(e,menuId,anchor){
   e.stopPropagation();
