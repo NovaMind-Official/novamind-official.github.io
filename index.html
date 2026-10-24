@@ -3094,7 +3094,9 @@ async function execTool(name,argsStr){
         if(typeof x==="string")return{url:(x.match(/https?:\/\/\S+/)||[""])[0],title:x.slice(0,90)};
         return Object.assign({},x,{url:x.url||x.link||x.href||x.source_url||"",title:x.title||x.name||x.headline||"",snippet:x.snippet||x.content||x.description||x.text||""});
       });
-      if(!results.length){try{showToast("No results for “"+String(args.query||"").slice(0,40)+"”")}catch(_){}}
+      if(!results.length&&d&&typeof d.answer==="string"&&d.answer.trim())results.push({title:"Answer",url:"",snippet:d.answer.slice(0,400)});
+      window.__lastSearchDiag={status:r.status,keys:Object.keys(d||{}).slice(0,8),n:results.length,q:args.query};
+      if(!results.length){try{console.warn("search empty",window.__lastSearchDiag);showToast("Search returned nothing (HTTP "+r.status+")")}catch(_){}}
       results.forEach((res,ri)=>{
         if(!res.url||turnRealSources.some(x=>x.url===res.url))return;
         try{const domain=new URL(res.url).hostname.replace(/^www\./,"");turnRealSources.push({domain,title:res.title||domain,url:res.url,snippet:String(res.snippet||"").slice(0,180),q:String(args.query||"").slice(0,90),k:"s",r:ri+1})}catch(e){}
@@ -4524,6 +4526,30 @@ function phrNeedsLive(t){
   if(/(calculate|solve|derive|prove|integral|equation|explain how|write (a|an|the) (code|function|poem|story)|translate|summari[sz]e)/i.test(t)&&!/(price|news|today|latest)/i.test(t))return false;
   return en.test(t)||fa.test(t);
 }
+
+/* Keyless, CORS-enabled fallbacks used only when the Worker search returns nothing */
+async function phrDirectFallback(q){
+  const out=[];const L=String(q||"").toLowerCase();const now=new Date().toISOString().replace("T"," ").slice(0,16)+" UTC";
+  const fj=async(u,ms=7000)=>{const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);try{const r=await fetch(u,{signal:c.signal});if(!r.ok)throw new Error("HTTP "+r.status);return await r.json()}finally{clearTimeout(t)}};
+  const push=(title,url,snippet)=>{out.push({title,url,snippet});try{const domain=new URL(url).hostname.replace(/^www\./,"");if(!turnRealSources.some(x=>x.url===url))turnRealSources.push({domain,title,url,snippet:snippet.slice(0,180),q:String(q).slice(0,90),k:"r"})}catch(_){}};
+  const coins={bitcoin:"bitcoin",btc:"bitcoin","بیت کوین":"bitcoin","بیتکوین":"bitcoin","بیت‌کوین":"bitcoin",ethereum:"ethereum",eth:"ethereum","اتریوم":"ethereum",solana:"solana",sol:"solana",bnb:"binancecoin",xrp:"ripple",ripple:"ripple",doge:"dogecoin",dogecoin:"dogecoin",usdt:"tether",tether:"tether","تتر":"tether",ton:"the-open-network",toncoin:"the-open-network",cardano:"cardano",ada:"cardano",litecoin:"litecoin",ltc:"litecoin"};
+  const hit=Object.keys(coins).filter(k=>new RegExp("(^|[^a-z])"+k.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"($|[^a-z])","i").test(L));
+  const ids=[...new Set(hit.map(k=>coins[k]))].slice(0,3);
+  if(ids.length){try{
+    const d=await fj("https://api.coingecko.com/api/v3/simple/price?ids="+ids.join(",")+"&vs_currencies=usd&include_24hr_change=true&include_last_updated_at=true");
+    ids.forEach(id=>{const v=d[id];if(v&&v.usd!=null)push(id+" price (CoinGecko)","https://www.coingecko.com/en/coins/"+id,`${id}: $${v.usd.toLocaleString("en-US")} USD, 24h change ${(v.usd_24h_change||0).toFixed(2)}%. Fetched ${now}.`)});
+  }catch(e){}}
+  if(/(gold|xau|silver|طلا|سکه|دلار|یورو|دلار|usd|eur|euro|gbp|pound|exchange rate|currency|ارز|نرخ)/i.test(q)){try{
+    const d=await fj("https://open.er-api.com/v6/latest/USD");const R=d&&d.rates;
+    if(R){const bits=[];if(R.EUR)bits.push("1 USD = "+R.EUR.toFixed(4)+" EUR");if(R.GBP)bits.push("1 USD = "+R.GBP.toFixed(4)+" GBP");if(R.XAU)bits.push("gold ≈ $"+(1/R.XAU).toFixed(0)+" per troy ounce");if(R.IRR)bits.push("official IRR reference ≈ "+Math.round(R.IRR).toLocaleString("en-US")+" rial per USD (NOT the free-market rate in Iran)");
+      if(bits.length)push("Exchange rates (open.er-api.com)","https://open.er-api.com/v6/latest/USD",bits.join("; ")+". Updated "+(d.time_last_update_utc||now)+".")}
+  }catch(e){}}
+  if(!out.length){try{
+    const d=await fj("https://en.wikipedia.org/w/api.php?action=query&list=search&srlimit=4&format=json&origin=*&srsearch="+encodeURIComponent(String(q).replace(/\b(today|now|current|latest|price)\b/ig,"").slice(0,120)));
+    (d.query&&d.query.search||[]).forEach(x=>push(x.title+" — Wikipedia","https://en.wikipedia.org/wiki/"+encodeURIComponent(x.title.replace(/ /g,"_")),String(x.snippet).replace(/<[^>]+>/g,"")+" (encyclopedia - may not be current)"));
+  }catch(e){}}
+  return out;
+}
 async function phrPreSearch(txt,elId){
   const deep=txt.startsWith("🔭"),research=deep||txt.startsWith("🔬");
   let q=txt.replace(/^(🔬|🔭)\s+/,"").replace(/\s+/g," ").trim().slice(0,160);
@@ -4535,9 +4561,10 @@ async function phrPreSearch(txt,elId){
   try{if(elId)announceTool(elId,calls)}catch(_){}
   const raw=await Promise.all(calls.map(c=>execTool("web_search",c.function.arguments)));
   const items=[];const seen=new Set();
-  raw.forEach(r=>{let a=[];try{a=JSON.parse(r)}catch(_){return}if(!Array.isArray(a))return;a.forEach(x=>{if(x&&x.url&&!seen.has(x.url)){seen.add(x.url);items.push(x)}})});
+  raw.forEach(r=>{let a=[];try{a=JSON.parse(r)}catch(_){return}if(!Array.isArray(a))return;a.forEach(x=>{if(x&&(x.url||x.snippet)&&!seen.has(x.url||x.snippet)){seen.add(x.url||x.snippet);items.push(x)}})});
+  if(!items.length){try{const fbk=await phrDirectFallback(q);fbk.forEach(x=>{if(!seen.has(x.url)){seen.add(x.url);items.push(x)}})}catch(_){}}
   if(!items.length){try{if(elId)actToolsDone(elId)}catch(_){}return "LIVE SEARCH NOTE: a web search was attempted just now for this question but returned no usable results. Say so plainly, do NOT invent prices, dates or figures, and suggest where the user can check."}
-  const top=items.slice(0,nRead);
+  const top=items.filter(x=>x.url&&!/coingecko|open\.er-api|wikipedia/.test(x.url)).slice(0,nRead);
   const rcalls=top.map(x=>mkTc("read_url",{url:x.url}));
   try{if(elId)announceTool(elId,rcalls)}catch(_){}
   const pages=await Promise.all(rcalls.map(c=>execTool("read_url",c.function.arguments).catch(()=>"")));
