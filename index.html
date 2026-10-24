@@ -4513,6 +4513,42 @@ function stemGuide(chat,txt){
 }
 function renderMDLive(t){window.PHR_STREAMING=true;try{return renderMD(t)}finally{window.PHR_STREAMING=false}}
 
+
+/* ═══ LIVE SEARCH ROUTER ═══ */
+function phrNeedsLive(t){
+  t=String(t||"").trim();if(t.length<3||t.length>400)return false;
+  if(/^\/(imagine|clear)/i.test(t))return false;
+  if(/^(🔬|🔭) /.test(t))return true;
+  const en=/\b(price|prices|cost of|how much (is|does|are)|worth|rate|exchange rate|stock|share price|market cap|latest|newest|current(ly)?|today|tonight|right now|this (week|month|year)|news|headline|score|results? of|who won|release date|released|when (is|does|did)|open now|forecast|trending|search|look up|look it up|find (me )?(the |a )?|google|buy|best .{2,30} (in|of) 202\d|202[5-9])\b/i;
+  const fa=/(قیمت|نرخ|چنده|چقدر(ه| است)|چند (شده|هست|تومان|دلار)|امروز|الان|اکنون|فعلا|فعلاً|آخرین|جدیدترین|تازه|اخبار|خبر|نتیجه|پیدا کن|پیداکن|جست.?و.?جو|سرچ|جستجو|بگرد|دلار|یورو|طلا|سکه|بیت.?کوین|ارز|تتر|بورس|سهام|هفته|ماه (آینده|گذشته)|امسال|۱۴۰[0-9۰-۹]|۲۰۲[۵-۹])/;
+  if(/(calculate|solve|derive|prove|integral|equation|explain how|write (a|an|the) (code|function|poem|story)|translate|summari[sz]e)/i.test(t)&&!/(price|news|today|latest)/i.test(t))return false;
+  return en.test(t)||fa.test(t);
+}
+async function phrPreSearch(txt,elId){
+  const deep=txt.startsWith("🔭"),research=deep||txt.startsWith("🔬");
+  let q=txt.replace(/^(🔬|🔭)\s+/,"").replace(/\s+/g," ").trim().slice(0,160);
+  const yr=new Date().getFullYear();
+  const queries=research?(deep?[q,q+" latest "+yr,q+" statistics data",q+" analysis expert",q+" comparison review"]:[q,q+" latest "+yr,q+" analysis"]):[q];
+  const nRead=research?(deep?4:2):2;
+  const mkTc=(name,args)=>({id:"pre_"+Math.random().toString(36).slice(2,8),type:"function",function:{name,arguments:JSON.stringify(args)}});
+  const calls=queries.map(x=>mkTc("web_search",{query:x}));
+  try{if(elId)announceTool(elId,calls)}catch(_){}
+  const raw=await Promise.all(calls.map(c=>execTool("web_search",c.function.arguments)));
+  const items=[];const seen=new Set();
+  raw.forEach(r=>{let a=[];try{a=JSON.parse(r)}catch(_){return}if(!Array.isArray(a))return;a.forEach(x=>{if(x&&x.url&&!seen.has(x.url)){seen.add(x.url);items.push(x)}})});
+  if(!items.length){try{if(elId)actToolsDone(elId)}catch(_){}return "LIVE SEARCH NOTE: a web search was attempted just now for this question but returned no usable results. Say so plainly, do NOT invent prices, dates or figures, and suggest where the user can check."}
+  const top=items.slice(0,nRead);
+  const rcalls=top.map(x=>mkTc("read_url",{url:x.url}));
+  try{if(elId)announceTool(elId,rcalls)}catch(_){}
+  const pages=await Promise.all(rcalls.map(c=>execTool("read_url",c.function.arguments).catch(()=>"")));
+  try{if(elId)actToolsDone(elId)}catch(_){}
+  const d=new Date().toISOString().slice(0,10);
+  let out=`LIVE WEB RESULTS (fetched just now, ${d}) for the user's question. These are REAL search results and page texts. Rules: answer the user's actual question directly using them; give the concrete figure/fact first (with its date or time if the source shows one), then name the source site(s) in plain words; if sources disagree, show the range; if the results do not actually contain the answer, say that honestly and do not guess a number. Never claim you cannot search - you already did. Reply in the user's language.\n\nSEARCH RESULTS:\n`;
+  items.slice(0,8).forEach((x,i)=>{out+=`${i+1}. ${x.title||""} — ${x.url}\n   ${String(x.snippet||"").slice(0,240)}\n`});
+  out+="\nPAGE TEXTS:\n";
+  pages.forEach((p,i)=>{let t="";try{const j=JSON.parse(p);t=(j.title?j.title+"\n":"")+(j.text||"")}catch(_){t=String(p||"")}if(t)out+=`--- [${i+1}] ${top[i].url}\n${t.slice(0,3200)}\n`});
+  return out;
+}
 async function send(){
   const raw=uiInput.value;const txt=raw.trim().replace(/\n{3,}/g,"\n\n");
   if(editMsgId){
@@ -4573,6 +4609,16 @@ async function send(){
   if(canvasText&&canvasText.trim().length>0){
     sys+=`\n\nThe user has a Canvas open (a side document/code file they're editing alongside this chat) with this current content:\n---\n${canvasText.substring(0,4000)}\n---\nIf — and only if — the user asks you to edit, rewrite, continue, or fix this content, reply with the COMPLETE updated version inside a single fenced block tagged \`\`\`canvas (put ONLY the raw updated content inside it, nothing else in that block). You may still add a brief note outside the block. If the user is just chatting normally and not referring to the Canvas, ignore it and respond normally.`;
   }
+  // ── Guaranteed live search ─────────────────────────────────────────────
+  // Free models often ignore tool_choice:"auto" and answer prices/news from memory. When the question clearly needs
+  // fresh facts, we search BEFORE the model speaks and hand it the results, so a real search always happens.
+  let liveCtx="";
+  try{
+    if(!imgData&&!useVision&&typeof phrNeedsLive==="function"&&phrNeedsLive(txt)){
+      liveCtx=await phrPreSearch(txt,"a-"+idx);
+    }
+  }catch(e){console.warn("pre-search skipped",e)}
+  if(liveCtx)sys+="\n\n"+liveCtx;
   const apiMsgs=[{role:"system",content:sys}];
   if(chat.ctxSummary)apiMsgs.push({role:"system",content:"Summary of earlier parts of this conversation (older turns were condensed to save space — treat as ground truth):\n"+chat.ctxSummary});
   const ctxStart=chat.ctxSummarizedCount||0;
