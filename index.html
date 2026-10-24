@@ -4618,12 +4618,12 @@ async function send(){
       liveCtx=await phrPreSearch(txt,"a-"+idx);
     }
   }catch(e){console.warn("pre-search skipped",e)}
-  if(liveCtx)sys+="\n\n"+liveCtx;
+  if(liveCtx)sys+="\n\nLive web data for this question is attached to the user's message. Use it. Never answer with a search query."
   const apiMsgs=[{role:"system",content:sys}];
   if(chat.ctxSummary)apiMsgs.push({role:"system",content:"Summary of earlier parts of this conversation (older turns were condensed to save space — treat as ground truth):\n"+chat.ctxSummary});
   const ctxStart=chat.ctxSummarizedCount||0;
   chat.msgs.slice(ctxStart).forEach(m=>{apiMsgs.push({role:"user",content:m.uText||m.u});apiMsgs.push({role:"assistant",content:m.aRaw||m.a})});
-  const finalUserText=(txt||(docContext?"Please analyze the attached document.":""))+docContext;
+  const finalUserText=(txt||(docContext?"Please analyze the attached document.":""))+docContext+(liveCtx?"\n\n=====\n"+liveCtx+"\n=====\nNow write the final answer to my question using the data above: lead with the concrete number or fact, then the time/date and the source site names. Do not output a search query.":"");
   if(imgData)apiMsgs.push({role:"user",content:[{type:"text",text:finalUserText||"Analyze this image."},{type:"image_url",image_url:{url:imgData}}]});
   else apiMsgs.push({role:"user",content:finalUserText});
   if(activePlan==="starter"&&reconcileLimits())initPlanUI();
@@ -4632,7 +4632,7 @@ async function send(){
   const onDelta=text=>{sState.partial=text;if(!sState.started){sState.started=true;beginStreamUI("a-"+idx)}scheduleStreamPaint("a-"+idx,()=>sState.partial);actStream("a-"+idx,text)};
   try{
     const t0=performance.now();
-    let full=await fetchAI(apiMsgs,useVision,isCodeQuery,{enableTools:true,elId:"a-"+idx,onDelta,onReason:t=>actReason("a-"+idx,t)});
+    let full=await fetchAI(apiMsgs,useVision,isCodeQuery,{enableTools:!liveCtx||/^(🔬|🔭) /.test(txt),elId:"a-"+idx,onDelta,onReason:t=>actReason("a-"+idx,t)});
     let corrected=false;
     if(isCodeQuery&&!useVision){
       const jsMatch=full.match(/```(?:javascript|js)\n([\s\S]*?)```/);
