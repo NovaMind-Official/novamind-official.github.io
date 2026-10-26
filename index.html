@@ -4644,6 +4644,7 @@ async function send(){
   const toneHint=detectToneHint(txt);if(toneHint)sys+=" "+toneHint;
   const tonePref=localStorage.getItem("phraortes_tone_pref");if(tonePref)sys+=` The user has indicated they generally prefer a ${tonePref.toLowerCase()} tone.`;
   sys+=getLongMemoryPrompt();
+  try{if(window.phrProjectPrompt)sys+=phrProjectPrompt(chat,txt)}catch(_){}
   sys+=stemGuide(chat,txt);
   const canvasText=getCurrentCanvasText();
   if(canvasText&&canvasText.trim().length>0){
@@ -7436,6 +7437,424 @@ const t2=setInterval(()=>{const co=$("#account-companion");if(!co)return;clearIn
   setInterval(()=>{const pg=$("#account-page");if(!pg||!pg.classList.contains("show")||pg.dataset.view!=="hub"||co.classList.contains("sleepy"))return;if(Math.random()<.6)A[Math.floor(Math.random()*A.length)]()},3600);
   co.addEventListener("click",()=>{if(co.classList.contains("sleepy")&&!night()){co.classList.remove("sleepy")}},true);
 },400);setTimeout(()=>clearInterval(t2),20000);
+})();
+</script>
+
+<style id="phr-v5css">
+#v5{position:fixed;inset:0;z-index:10060;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0);pointer-events:none;transition:background .35s;font-family:'Space Grotesk','Vazirmatn',system-ui,sans-serif}
+#v5.show{background:rgba(4,3,2,.72);pointer-events:auto;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+#v5 .v5-c{--c:#E8C468;position:relative;width:100%;max-width:560px;height:min(94vh,860px);display:flex;flex-direction:column;background:radial-gradient(90% 38% at 50% 0%,color-mix(in srgb,var(--c) 22%,transparent),transparent 70%),linear-gradient(180deg,#17120c,#0b0806);border:1px solid rgba(255,255,255,.1);border-bottom:0;border-radius:30px 30px 0 0;color:#f4ecdc;transform:translateY(105%);transition:transform .5s var(--spring,cubic-bezier(.2,1.25,.35,1));overflow:hidden}
+#v5.show .v5-c{transform:none}
+#v5 .v5-g{width:42px;height:5px;border-radius:9px;background:rgba(255,255,255,.2);margin:9px auto 0;flex:none}
+#v5 .v5-h{display:flex;align-items:center;gap:10px;padding:12px 20px 6px;flex:none}
+#v5 .v5-h h2{flex:1;margin:0;font:400 27px/1.1 'Instrument Serif','Fraunces',Georgia,serif;letter-spacing:.2px}
+#v5 .v5-h h2 em{color:var(--c);font-style:italic}
+#v5 .v5-x{width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:inherit;display:grid;place-items:center;cursor:pointer;font-size:16px}
+#v5 .v5-b{flex:1;overflow:auto;padding:8px 20px 18px;-webkit-overflow-scrolling:touch}
+#v5 .v5-t{flex:none;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:8px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid rgba(255,255,255,.08);background:rgba(10,8,6,.85)}
+#v5 .v5-t button{position:relative;border:0;background:transparent;color:rgba(255,255,255,.45);padding:7px 0 5px;border-radius:14px;font:600 10.5px 'Space Grotesk','Vazirmatn',sans-serif;letter-spacing:.3px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;transition:.25s}
+#v5 .v5-t button svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+#v5 .v5-t button.on{color:#E8C468;background:rgba(232,196,104,.1)}
+#v5 .v5-t b{position:absolute;top:2px;right:calc(50% - 22px);min-width:17px;height:17px;border-radius:9px;background:#ff5a5f;color:#fff;font-size:10px;display:grid;place-items:center;padding:0 4px}
+#v5 .v5-sub{font-size:12.5px;color:rgba(255,255,255,.55);margin:2px 0 14px;line-height:1.6}
+#v5 .v5-sec{font:700 10.5px 'Space Mono',monospace;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,.4);margin:18px 0 8px}
+#v5 .v5-card{--c:#E8C468;position:relative;display:flex;gap:13px;align-items:center;padding:14px;margin-bottom:9px;border-radius:20px;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 15%,transparent),rgba(255,255,255,.03));border:1px solid color-mix(in srgb,var(--c) 28%,transparent);cursor:pointer;transition:transform .25s var(--spring,ease),border-color .25s;animation:v5in .5s both;animation-delay:calc(var(--i,0)*45ms)}
+#v5 .v5-card:active{transform:scale(.975)}
+#v5 .v5-ic{flex:none;width:46px;height:46px;border-radius:15px;display:grid;place-items:center;font-size:23px;background:color-mix(in srgb,var(--c) 22%,rgba(0,0,0,.3));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 40%,transparent)}
+#v5 .v5-ct{flex:1;min-width:0}
+#v5 .v5-ct b{display:block;font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#v5 .v5-ct small{display:block;font-size:11.5px;color:rgba(255,255,255,.5);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#v5 .v5-ch{opacity:.4;font-size:18px}
+#v5 .v5-btn{border:0;cursor:pointer;font:700 13.5px 'Space Grotesk','Vazirmatn',sans-serif;border-radius:16px;padding:13px 16px;color:#1a1206;background:linear-gradient(135deg,#F3D78A,#D4A24C);box-shadow:0 8px 22px -8px rgba(232,196,104,.6);transition:transform .2s var(--spring,ease)}
+#v5 .v5-btn:active{transform:scale(.96)}
+#v5 .v5-btn.full{width:100%}
+#v5 .v5-btn.ghost{background:rgba(255,255,255,.07);color:#f4ecdc;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+#v5 .v5-btn.red{background:rgba(255,90,95,.14);color:#ff8b8f;box-shadow:inset 0 0 0 1px rgba(255,90,95,.3)}
+#v5 .v5-btn:disabled{opacity:.45}
+#v5 .v5-row{display:flex;gap:9px;margin:10px 0}
+#v5 .v5-row>*{flex:1}
+#v5 input[type=text],#v5 textarea{width:100%;box-sizing:border-box;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:15px;color:inherit;padding:12px 14px;font:14px/1.6 'Space Grotesk','Vazirmatn',sans-serif;outline:none;transition:border-color .25s,box-shadow .25s;resize:vertical}
+#v5 input[type=text]:focus,#v5 textarea:focus{border-color:#E8C468;box-shadow:0 0 0 3px rgba(232,196,104,.15)}
+#v5 .v5-emo{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}
+#v5 .v5-emo i{font-style:normal;width:40px;height:40px;border-radius:13px;display:grid;place-items:center;font-size:20px;background:rgba(255,255,255,.06);border:1px solid transparent;cursor:pointer}
+#v5 .v5-emo i.on{border-color:var(--c);background:color-mix(in srgb,var(--c) 22%,transparent)}
+#v5 .v5-sw{display:flex;gap:9px;margin:10px 0}
+#v5 .v5-sw i{width:30px;height:30px;border-radius:50%;cursor:pointer;border:2px solid transparent;box-shadow:inset 0 0 0 2px rgba(0,0,0,.35)}
+#v5 .v5-sw i.on{border-color:#fff}
+#v5 .v5-back{background:none;border:0;color:var(--c);font:700 13px 'Space Grotesk',sans-serif;cursor:pointer;padding:6px 0;margin-bottom:6px}
+#v5 .v5-note{padding:12px 14px;margin-bottom:8px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);font-size:13px;line-height:1.6}
+#v5 .v5-note b{display:block;font-size:13.5px;margin-bottom:2px}
+#v5 .v5-note p{margin:0;color:rgba(255,255,255,.58);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+#v5 .v5-note .v5-na{display:flex;gap:14px;margin-top:8px;font-size:11.5px}
+#v5 .v5-note .v5-na span{color:var(--c);cursor:pointer;font-weight:700}
+#v5 .v5-note .v5-na span.d{color:#ff8b8f}
+#v5 .v5-meter{height:5px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden;margin:6px 0}
+#v5 .v5-meter i{display:block;height:100%;background:linear-gradient(90deg,#F3D78A,#D4A24C);border-radius:5px;transition:width .5s}
+#v5 .v5-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}
+#v5 .v5-st{padding:14px 8px;border-radius:18px;text-align:center;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)}
+#v5 .v5-st b{display:block;font:400 30px/1 'Instrument Serif',Georgia,serif;color:#F3D78A}
+#v5 .v5-st small{display:block;margin-top:5px;font:600 10px 'Space Mono',monospace;letter-spacing:1px;color:rgba(255,255,255,.45);text-transform:uppercase}
+#v5 .v5-chips{display:flex;gap:7px;flex-wrap:wrap}
+#v5 .v5-chip{padding:7px 12px;border-radius:99px;font-size:12px;font-weight:600;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);cursor:pointer}
+#v5 .v5-chip.warn{border-color:rgba(255,120,90,.45);color:#ffb09a}
+#v5 .v5-chip.on{background:rgba(232,196,104,.18);border-color:#E8C468;color:#F3D78A}
+#v5 .v5-rv{display:flex;flex-direction:column;height:100%}
+#v5 .v5-prog{display:flex;align-items:center;gap:10px;font:11px 'Space Mono',monospace;color:rgba(255,255,255,.5);margin:2px 0 12px}
+#v5 .v5-prog .v5-meter{flex:1;margin:0}
+#v5 .v5-fc{flex:1;min-height:250px;perspective:1100px;cursor:pointer}
+#v5 .v5-fi{position:relative;width:100%;height:100%;min-height:250px;transition:transform .6s var(--spring,cubic-bezier(.2,1.2,.3,1));transform-style:preserve-3d}
+#v5 .v5-fc.flip .v5-fi{transform:rotateY(180deg)}
+#v5 .v5-ff,#v5 .v5-fb{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:26px;padding:24px 22px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;overflow:auto;border:1px solid rgba(232,196,104,.3)}
+#v5 .v5-ff{background:radial-gradient(80% 60% at 50% 0%,rgba(232,196,104,.16),transparent 70%),linear-gradient(160deg,#241b10,#100c07)}
+#v5 .v5-fb{transform:rotateY(180deg);background:radial-gradient(80% 60% at 50% 100%,rgba(94,168,255,.16),transparent 70%),linear-gradient(160deg,#10192a,#0a0d14);border-color:rgba(94,168,255,.35)}
+#v5 .v5-ff .t,#v5 .v5-fb .t{position:absolute;top:14px;left:18px;font:700 10px 'Space Mono',monospace;letter-spacing:1.4px;color:rgba(255,255,255,.4);text-transform:uppercase}
+#v5 .v5-ff p,#v5 .v5-fb p{margin:0;font:400 23px/1.45 'Instrument Serif','Vazirmatn',Georgia,serif}
+#v5 .v5-fb p{font:500 16.5px/1.7 'Space Grotesk','Vazirmatn',sans-serif}
+#v5 .v5-hint{font-size:11.5px;color:rgba(255,255,255,.4);margin-top:16px}
+#v5 .v5-rate{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+#v5 .v5-rate button{border:0;border-radius:16px;padding:11px 2px;color:#fff;font:700 12.5px 'Space Grotesk',sans-serif;cursor:pointer;display:flex;flex-direction:column;gap:3px;align-items:center;transition:transform .2s var(--spring,ease)}
+#v5 .v5-rate button:active{transform:scale(.93)}
+#v5 .v5-rate small{font:500 10px 'Space Mono',monospace;opacity:.75}
+#v5 .v5-r0{background:#7a2b30}#v5 .v5-r1{background:#7a5a22}#v5 .v5-r2{background:#1f6b48}#v5 .v5-r3{background:#1d4f9a}
+#v5 .v5-done{text-align:center;padding:40px 10px}
+#v5 .v5-done .big{font:400 54px/1 'Instrument Serif',Georgia,serif;color:#F3D78A;margin:10px 0}
+#v5 .v5-sr{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:0 14px;margin-bottom:6px}
+#v5 .v5-sr svg{width:18px;height:18px;stroke:#E8C468;fill:none;stroke-width:2;flex:none}
+#v5 .v5-sr input{border:0!important;background:transparent!important;box-shadow:none!important;padding:15px 0!important;font-size:15px!important}
+#v5 .v5-hit{display:flex;gap:11px;align-items:center;padding:11px 8px;border-radius:14px;cursor:pointer}
+#v5 .v5-hit:active,#v5 .v5-hit:hover{background:rgba(255,255,255,.06)}
+#v5 .v5-hit .v5-ic{width:36px;height:36px;font-size:17px;border-radius:12px}
+#v5 .v5-hit mark{background:rgba(232,196,104,.3);color:#fff;border-radius:3px;padding:0 1px}
+#v5 .v5-kb{font:600 10px 'Space Mono',monospace;color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.18);border-radius:6px;padding:2px 6px}
+#v5 .v5-empty{text-align:center;padding:34px 12px;color:rgba(255,255,255,.5);font-size:13px;line-height:1.7}
+#v5 .v5-empty b{display:block;font:400 22px 'Instrument Serif',Georgia,serif;color:#f4ecdc;margin-bottom:6px}
+#v5 .v5-gen{display:flex;align-items:center;gap:10px;padding:14px;border-radius:16px;background:rgba(232,196,104,.1);font-size:13px}
+#v5 .v5-gen::before{content:"";width:16px;height:16px;border-radius:50%;border:2px solid #E8C468;border-top-color:transparent;animation:v5sp .8s linear infinite}
+@keyframes v5sp{to{transform:rotate(360deg)}}
+@keyframes v5in{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+.v5-side{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:0 0 10px}
+.v5-side button{position:relative;border:1px solid rgba(232,196,104,.2);background:linear-gradient(160deg,rgba(232,196,104,.1),rgba(255,255,255,.02));color:#F3D78A;border-radius:14px;padding:9px 2px;font:700 11px 'Space Grotesk',sans-serif;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer}
+.v5-side button svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.v5-side b,.v5-strip b.due{background:#ff5a5f;color:#fff;border-radius:9px;min-width:16px;height:16px;font-size:10px;display:inline-grid;place-items:center;padding:0 4px}
+.v5-side b{position:absolute;top:3px;right:8px}
+.v5-strip{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:16px 0 18px}
+.v5-strip button{display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:99px;border:1px solid rgba(232,196,104,.28);background:rgba(232,196,104,.08);color:#F3D78A;font:700 12px 'Space Grotesk',sans-serif;cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.v5-strip button svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#v5-chip{position:fixed;top:calc(env(safe-area-inset-top) + 64px);left:50%;transform:translateX(-50%) translateY(-6px);z-index:60;display:none;align-items:center;gap:7px;padding:6px 13px;border-radius:99px;font:700 11.5px 'Space Grotesk','Vazirmatn',sans-serif;color:var(--c,#E8C468);background:color-mix(in srgb,var(--c,#E8C468) 14%,rgba(10,8,6,.85));border:1px solid color-mix(in srgb,var(--c,#E8C468) 40%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);cursor:pointer;opacity:0;transition:.4s var(--spring,ease);max-width:70vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#v5-chip.show{display:flex;opacity:1;transform:translateX(-50%)}
+body.light-theme #v5 .v5-c{background:linear-gradient(180deg,#fffaf0,#f3ead7);color:#2B2313;border-color:rgba(43,35,19,.12)}
+body.light-theme #v5 .v5-h h2 em,body.light-theme #v5 .v5-st b{color:#9a6a12}
+body.light-theme #v5 .v5-sub,body.light-theme #v5 .v5-ct small,body.light-theme #v5 .v5-note p,body.light-theme #v5 .v5-st small,body.light-theme #v5 .v5-sec{color:rgba(43,35,19,.55)}
+body.light-theme #v5 input[type=text],body.light-theme #v5 textarea,body.light-theme #v5 .v5-note,body.light-theme #v5 .v5-st,body.light-theme #v5 .v5-sr{background:rgba(43,35,19,.05);border-color:rgba(43,35,19,.14);color:#2B2313}
+body.light-theme #v5 .v5-t{background:rgba(255,250,240,.92);border-color:rgba(43,35,19,.1)}
+body.light-theme #v5 .v5-t button{color:rgba(43,35,19,.5)}
+body.light-theme #v5 .v5-btn.ghost,body.light-theme #v5 .v5-chip{color:#2B2313;background:rgba(43,35,19,.06)}
+@media(prefers-reduced-motion:reduce){#v5 *{animation:none!important;transition:none!important}}
+</style>
+<script id="phr-v5">
+(function(){
+const $=s=>document.querySelector(s),esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const when=(f,cb)=>{const t=setInterval(()=>{try{if(f()){clearInterval(t);cb()}}catch(_){}},150);setTimeout(()=>clearInterval(t),20000)};
+const hap=k=>{try{haptic(k)}catch(_){}};
+const toast=(m,t)=>{try{showToast(m,t)}catch(_){}};
+const ld=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(_){return d}};
+const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){toast("Storage is full — export a backup and clear old chats","error")}};
+let P=ld("phraortes_projects",[]),C=ld("phraortes_cards",[]),R=ld("phraortes_rev",{days:{}});
+const saveP=()=>sv("phraortes_projects",P),saveC=()=>sv("phraortes_cards",C),saveR=()=>sv("phraortes_rev",R);
+const nz=s=>String(s||"").toLowerCase().replace(/ي/g,"ی").replace(/ك/g,"ک").replace(/[\u064B-\u0652\u0640]/g,"");
+const day=(d)=>{d=d||new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const COLORS=["#E8C468","#5EA8FF","#C792EA","#4ADE9A","#FF8A65","#FF6B9A"],EMOJIS=["📚","🧪","💻","📐","🧠","🎨","📈","🌍","⚖️","🎯"];
+const BUDGET=9000;
+const ico={proj:'<svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',rev:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M8 12h8M12 9v6"/></svg>',se:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',db:'<svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.700 3.600 3 8 3s8-1.300 8-3V6M4 12v6c0 1.700 3.600 3 8 3s8-1.300 8-3v-6"/></svg>'};
+const fid=p=>"pj"+p.id;
+function syncFolder(p){let f=folders.find(x=>x.id===fid(p));if(!f){f={id:fid(p)};folders.push(f)}f.name=p.name;f.icon=p.icon;f.color=p.color;try{localStorage.setItem("phraortes_folders",JSON.stringify(folders))}catch(_){}}
+const proj=id=>P.find(p=>p.id===id);
+const chatsOf=p=>chats.filter(c=>c.projectId===p.id).sort((a,b)=>b.id-a.id);
+const due=()=>C.filter(c=>c.due<=Date.now());
+function streak(){let n=0;const d=new Date();if(!(R.days[day(d)]>0))d.setDate(d.getDate()-1);while(R.days[day(d)]>0){n++;d.setDate(d.getDate()-1)}return n}
+function fmt(t){let h=esc(t);if(window.katex){h=h.replace(/\$\$([\s\S]+?)\$\$/g,(m,x)=>{try{return katex.renderToString(x.replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">"),{displayMode:true,throwOnError:false})}catch(_){return m}}).replace(/\$([^$\n]+?)\$/g,(m,x)=>{try{return katex.renderToString(x.replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">"),{throwOnError:false})}catch(_){return m}})}return h.replace(/\n/g,"<br>")}
+/* ================= AI CONTEXT ================= */
+window.phrProjectPrompt=function(chat,txt){
+  try{const p=chat&&chat.projectId&&proj(chat.projectId);if(!p)return"";
+    let s="\n\nPROJECT: the user is working inside their project \""+p.name+"\". Everything below is the user's own project context — follow the instructions and ground your answers in the notes whenever they are relevant.";
+    if(p.inst&&p.inst.trim())s+="\nPROJECT INSTRUCTIONS:\n"+p.inst.trim().slice(0,3000);
+    const notes=(p.notes||[]);
+    if(notes.length){
+      const q=nz(txt||"").split(/[^\p{L}\p{N}]+/u).filter(w=>w.length>2);
+      const sc=n=>{const t=nz(n.t+" "+n.x);let s=0;q.forEach(w=>{if(t.includes(w))s++});return s+(n.pin?3:0)};
+      const ord=notes.slice().sort((a,b)=>sc(b)-sc(a)||b.ts-a.ts);let left=BUDGET,out=[];
+      for(const n of ord){if(left<200)break;const body=n.x.length>left?n.x.slice(0,left)+" …":n.x;out.push("### "+n.t+"\n"+body);left-=body.length+n.t.length+8}
+      s+="\nPROJECT NOTES ("+out.length+" of "+notes.length+" shown):\n"+out.join("\n\n");
+    }
+    return s}catch(e){return""}
+};
+async function ai(sys,user){
+  const raw=await fetchAI([{role:"system",content:sys},{role:"user",content:user}],false,false);
+  return typeof raw==="string"?raw:(raw&&(raw.content||raw.text))||String(raw||"");
+}
+async function genCards(text,src,n){
+  n=n||8;
+  const sys="You turn study material into flashcards. Reply with ONLY valid JSON, no markdown fences: {\"cards\":[{\"q\":\"question\",\"a\":\"answer\",\"topic\":\"2-3 word topic\"}]}. Rules: exactly up to "+n+" cards; each tests ONE important idea (definitions, formulas, why/how, common mistakes) — never trivia; question under 20 words; answer under 35 words, self-contained; math in LaTeX with $...$; write in the same language as the material; reuse the same short topic label for related cards.";
+  const raw=await ai(sys,text.slice(0,9000));
+  const a=raw.indexOf("{"),b=raw.lastIndexOf("}");const j=JSON.parse(raw.slice(a,b+1));
+  const have=new Set(C.map(c=>nz(c.q)));let k=0;
+  (j.cards||[]).forEach(c=>{if(!c||!c.q||!c.a||have.has(nz(c.q)))return;have.add(nz(c.q));
+    C.push({id:Date.now()+"_"+k++,q:String(c.q),a:String(c.a),topic:String(c.topic||"General").slice(0,30),src:src||"",due:Date.now(),iv:0,ease:2.5,reps:0,lapses:0,ts:Date.now()})});
+  saveC();return k;
+}
+/* ================= SHELL ================= */
+let ov=null,tab="projects",view=null,rv=null,filt=null,qry="";
+function open(t,v){
+  try{closeAllDropMenus()}catch(_){}
+  if(!ov){ov=document.createElement("div");ov.id="v5";ov.onclick=e=>{if(e.target===ov)close()};document.body.appendChild(ov);
+    ov.innerHTML=`<div class="v5-c"><div class="v5-g"></div><div class="v5-h"><h2 id="v5-ti"></h2><button class="v5-x" onclick="phrHub.close()" aria-label="Close">✕</button></div><div class="v5-b" id="v5-b"></div><div class="v5-t" id="v5-t"></div></div>`;
+    document.addEventListener("keydown",e=>{if(e.key==="Escape"&&ov.classList.contains("show"))close()})}
+  tab=t||tab;view=v||null;rv=null;render();
+  requestAnimationFrame(()=>requestAnimationFrame(()=>ov.classList.add("show")));hap("light");
+  if(tab==="search")setTimeout(()=>{const i=$("#v5-q");i&&i.focus()},500);
+}
+function close(){ov&&ov.classList.remove("show");try{document.activeElement&&document.activeElement.blur()}catch(_){}refreshBadges()}
+function tabs(){
+  const d=due().length;
+  const T=[["projects","Projects",ico.proj],["review","Review",ico.rev],["search","Search",ico.se],["data","Backup",ico.db]];
+  $("#v5-t").innerHTML=T.map(([k,n,i])=>`<button class="${tab===k?"on":""}" onclick="phrHub.go('${k}')">${i}<span>${n}</span>${k==="review"&&d?`<b>${d>99?"99+":d}</b>`:""}</button>`).join("");
+}
+function go(t){hap("light");tab=t;view=null;rv=null;render();if(t==="search")setTimeout(()=>{const i=$("#v5-q");i&&i.focus()},100)}
+function render(){
+  tabs();const b=$("#v5-b"),ti=$("#v5-ti"),c=ov.querySelector(".v5-c");c.style.setProperty("--c","#E8C468");
+  ({projects:rProjects,review:rReview,search:rSearch,data:rData})[tab](b,ti,c);
+  b.scrollTop=0;
+}
+/* ================= PROJECTS ================= */
+function rProjects(b,ti,c){
+  if(view==="new"||view&&view.edit)return rForm(b,ti,c);
+  if(view&&proj(view))return rProject(b,ti,c,proj(view));
+  ti.innerHTML="Your <em>projects</em>";
+  b.innerHTML=`<div class="v5-sub">A project is a workspace: its own instructions and notes that Phraortes remembers in every chat inside it.</div>`+
+   (P.length?P.map((p,i)=>`<div class="v5-card" style="--c:${p.color};--i:${i}" onclick="phrHub.pj(${p.id})"><div class="v5-ic">${p.icon}</div><div class="v5-ct"><b>${esc(p.name)}</b><small>${chatsOf(p).length} chat${chatsOf(p).length===1?"":"s"} · ${(p.notes||[]).length} note${(p.notes||[]).length===1?"":"s"}</small></div><span class="v5-ch">›</span></div>`).join(""):
+   `<div class="v5-empty"><b>No projects yet</b>Make one for a course, an exam or a build — then give it instructions once and it’s there in every chat.</div>`)+
+   `<button class="v5-btn full" style="margin-top:8px" onclick="phrHub.newP()">＋ New project</button>`;
+}
+let draft=null;
+function rForm(b,ti,c){
+  const ed=view&&view.edit?proj(view.edit):null;
+  if(!draft)draft=ed?{name:ed.name,icon:ed.icon,color:ed.color,inst:ed.inst||""}:{name:"",icon:EMOJIS[0],color:COLORS[0],inst:""};
+  c.style.setProperty("--c",draft.color);ti.innerHTML=ed?"Edit <em>project</em>":"New <em>project</em>";
+  b.innerHTML=`<button class="v5-back" onclick="phrHub.cancelForm()">‹ Back</button><input type="text" id="v5-n" dir="auto" maxlength="40" placeholder="Project name — e.g. Organic Chemistry" value="${esc(draft.name)}">
+  <div class="v5-emo">${EMOJIS.map(e=>`<i class="${e===draft.icon?"on":""}" onclick="phrHub.pick('icon','${e}')">${e}</i>`).join("")}</div>
+  <div class="v5-sw">${COLORS.map(x=>`<i class="${x===draft.color?"on":""}" style="background:${x}" onclick="phrHub.pick('color','${x}')"></i>`).join("")}</div>
+  <div class="v5-sec">Instructions for the AI</div><textarea id="v5-i" dir="auto" rows="5" placeholder="e.g. Explain like a patient tutor. Use examples from my course. Reply in Persian and show formulas in LaTeX.">${esc(draft.inst)}</textarea>
+  <button class="v5-btn full" style="margin-top:14px" onclick="phrHub.saveForm()">${ed?"Save":"Create project"}</button>`;
+}
+function rProject(b,ti,c,p){
+  c.style.setProperty("--c",p.color);ti.innerHTML=`${p.icon} ${esc(p.name)}`;
+  const used=(p.notes||[]).reduce((s,n)=>s+n.x.length,0),pc=Math.min(100,Math.round(used/BUDGET*100));
+  const ch=chatsOf(p);
+  b.innerHTML=`<button class="v5-back" onclick="phrHub.pj(null)">‹ All projects</button>
+  <div class="v5-row"><button class="v5-btn" onclick="phrHub.chat(${p.id})">✦ New chat here</button><button class="v5-btn ghost" onclick="phrHub.addCur(${p.id})">Add current chat</button></div>
+  <div class="v5-sec">Instructions</div><div class="v5-note" style="cursor:pointer" onclick="phrHub.edit(${p.id})"><p style="-webkit-line-clamp:4">${p.inst&&p.inst.trim()?esc(p.inst):"No instructions yet — tap to add"}</p></div>
+  <div class="v5-sec">Knowledge notes · ${(p.notes||[]).length}</div><div class="v5-meter"><i style="width:${pc}%"></i></div><div class="v5-sub" style="margin:0 0 10px">${used.toLocaleString()} characters · the AI reads the most relevant ones for each question (up to ${BUDGET.toLocaleString()}).</div>
+  ${(p.notes||[]).slice().sort((a,b)=>b.ts-a.ts).map(n=>`<div class="v5-note"><b dir="auto">${n.pin?"📌 ":""}${esc(n.t)}</b><p dir="auto">${esc(n.x)}</p><div class="v5-na"><span onclick="phrHub.pin(${p.id},'${n.id}')">${n.pin?"Unpin":"Pin"}</span><span onclick="phrHub.noteCards(${p.id},'${n.id}')">Make flashcards</span><span class="d" onclick="phrHub.delNote(${p.id},'${n.id}')">Delete</span></div></div>`).join("")}
+  <div class="v5-note" style="border-style:dashed"><input type="text" id="v5-nt" dir="auto" placeholder="Note title" style="margin-bottom:8px"><textarea id="v5-nx" dir="auto" rows="3" placeholder="Paste text, a summary, a formula sheet…"></textarea>
+  <div class="v5-row"><button class="v5-btn" onclick="phrHub.addNote(${p.id})">Add note</button><button class="v5-btn ghost" onclick="$('#v5-f').click()" id="v5-fb">Import file</button></div><input type="file" id="v5-f" accept=".txt,.md,.csv,.json,.html,.js,.py,.css,.xml,.tex,text/*" multiple style="display:none" onchange="phrHub.file(${p.id},this)"></div>
+  <div class="v5-sec">Chats · ${ch.length}</div>${ch.length?ch.map(x=>`<div class="v5-hit" onclick="phrHub.openChat(${x.id})"><div class="v5-ic">💬</div><div class="v5-ct"><b dir="auto">${esc(x.name)}</b><small>${(x.msgs||[]).length} messages</small></div></div>`).join(""):`<div class="v5-sub">No chats yet.</div>`}
+  <div class="v5-row" style="margin-top:22px"><button class="v5-btn ghost" onclick="phrHub.edit(${p.id})">Edit</button><button class="v5-btn red" onclick="phrHub.delP(${p.id})">Delete project</button></div>`;
+  window.$=$;
+}
+/* ================= REVIEW ================= */
+function ivText(c,g){const n=nextIv(c,g);return n.iv===0?"now":n.iv<1?"1d":Math.round(n.iv)+"d"}
+function nextIv(c,g){let iv=c.iv,e=c.ease,l=c.lapses;
+  if(g===0){e=Math.max(1.3,e-.2);iv=0;l++}
+  else if(g===1){e=Math.max(1.3,e-.1);iv=iv<1?1:iv*1.2}
+  else if(g===2){iv=iv<1?1:iv*e}
+  else{e+=.1;iv=iv<1?3:iv*e*1.3}
+  return{iv,ease:e,lapses:l}}
+function rReview(b,ti,c){
+  if(rv&&rv.q)return rSession(b,ti,c);
+  ti.innerHTML="Smart <em>review</em>";
+  const d=due(),pool=filt?d.filter(x=>x.topic===filt):d;
+  const topics={};C.forEach(x=>{const t=topics[x.topic]||(topics[x.topic]={n:0,l:0,d:0});t.n++;t.l+=x.lapses;if(x.due<=Date.now())t.d++});
+  const weak=Object.entries(topics).filter(([k,v])=>v.l>0).sort((a,b)=>b[1].l-a[1].l).slice(0,6);
+  const cur=chats.find(x=>x.id==curId),hasCur=cur&&cur.msgs&&cur.msgs.length>1;
+  b.innerHTML=`<div class="v5-sub">Spaced repetition: cards you find hard come back sooner, easy ones fade away. Five minutes a day beats a long night before the exam.</div>
+  <div class="v5-stats"><div class="v5-st"><b>${d.length}</b><small>Due now</small></div><div class="v5-st"><b>${C.length}</b><small>Cards</small></div><div class="v5-st"><b>${streak()}🔥</b><small>Day streak</small></div></div>
+  <button class="v5-btn full" ${pool.length?"":"disabled"} onclick="phrHub.start()">${pool.length?`Start review · ${pool.length} card${pool.length>1?"s":""}${filt?" · "+esc(filt):""}`:C.length?"All caught up ✓":"Create your first cards below"}</button>
+  ${weak.length?`<div class="v5-sec">Weak spots</div><div class="v5-chips">${weak.map(([k,v])=>`<span class="v5-chip warn ${filt===k?"on":""}" onclick="phrHub.filt('${esc(k).replace(/'/g,"")}')">${esc(k)} · ${v.l}✗</span>`).join("")}</div>`:""}
+  <div class="v5-sec">Make cards with AI</div>
+  <div id="v5-gen"></div>
+  <button class="v5-btn ghost full" ${hasCur?"":"disabled"} onclick="phrHub.fromChat()">From the current chat${hasCur?" · "+esc((cur.name||"").slice(0,22)):""}</button>
+  <textarea id="v5-gt" dir="auto" rows="3" style="margin-top:9px" placeholder="…or paste any text, lecture notes, an article"></textarea>
+  <button class="v5-btn ghost full" style="margin-top:9px" onclick="phrHub.fromText()">From this text</button>
+  ${C.length?`<div class="v5-sec">All cards · ${C.length}</div>`+C.slice().sort((a,b)=>b.ts-a.ts).slice(0,40).map(x=>`<div class="v5-note"><b dir="auto">${fmt(x.q)}</b><p dir="auto">${fmt(x.a)}</p><div class="v5-na"><span style="color:rgba(255,255,255,.4)">${esc(x.topic)}</span><span class="d" onclick="phrHub.delCard('${x.id}')">Delete</span></div></div>`).join(""):""}`;
+}
+function rSession(b,ti,c){
+  ti.innerHTML="Review";const s=rv;
+  if(s.i>=s.q.length){
+    b.innerHTML=`<div class="v5-done"><div style="font-size:50px">🏁</div><div class="big">${s.q.length} reviewed</div><div class="v5-sub">${s.ok} remembered · ${s.q.length-s.ok} to see again soon<br>Streak: ${streak()} day${streak()===1?"":"s"} 🔥</div><button class="v5-btn full" onclick="phrHub.endRv()">Done</button></div>`;return}
+  const x=C.find(k=>k.id===s.q[s.i]);if(!x){s.i++;return rSession(b,ti,c)}
+  b.innerHTML=`<div class="v5-rv"><div class="v5-prog"><span>${s.i+1}/${s.q.length}</span><div class="v5-meter"><i style="width:${s.i/s.q.length*100}%"></i></div><span style="cursor:pointer" onclick="phrHub.endRv()">✕</span></div>
+  <div class="v5-fc" id="v5-fc" onclick="phrHub.flip()"><div class="v5-fi"><div class="v5-ff"><span class="t">${esc(x.topic)}</span><p dir="auto">${fmt(x.q)}</p><div class="v5-hint">Tap to reveal</div></div><div class="v5-fb"><span class="t">Answer</span><p dir="auto">${fmt(x.a)}</p></div></div></div>
+  <div class="v5-rate" id="v5-rate" style="visibility:hidden"><button class="v5-r0" onclick="phrHub.rate(0)">Again<small>${ivText(x,0)}</small></button><button class="v5-r1" onclick="phrHub.rate(1)">Hard<small>${ivText(x,1)}</small></button><button class="v5-r2" onclick="phrHub.rate(2)">Good<small>${ivText(x,2)}</small></button><button class="v5-r3" onclick="phrHub.rate(3)">Easy<small>${ivText(x,3)}</small></button></div></div>`;
+}
+/* ================= SEARCH ================= */
+const ACTIONS=[["✦","New chat","newChat()","new chat"],["🗂","Projects","hub:projects","projects پروژه"],["🔁","Review flashcards","hub:review","review flashcards مرور فلش کارت"],["💾","Backup & restore","hub:data","backup export import پشتیبان"],["🔬","Deep Research","openDeep()","research deep تحقیق"],["🔗","Siri & Shortcuts links","openLinks()","siri shortcuts"],["📝","Exam mode","openExam()","exam quiz آزمون"]];
+function snip(t,w){const i=nz(t).indexOf(w);if(i<0)return esc(t.slice(0,90));const a=Math.max(0,i-30);let s=t.slice(a,i+w.length+60).replace(/\s+/g," ");return(a?"…":"")+esc(s)}
+function rSearch(b,ti){
+  ti.innerHTML="Search <em>everything</em>";
+  b.innerHTML=`<div class="v5-sr">${ico.se}<input type="text" id="v5-q" dir="auto" placeholder="Chats, notes, cards, actions…" autocomplete="off" value="${esc(qry)}" oninput="phrHub.q(this.value)"></div><div id="v5-res"></div>`;
+  res();
+}
+function res(){
+  const el=$("#v5-res");if(!el)return;const q=nz(qry).trim(),ws=q.split(/\s+/).filter(Boolean);let h="";
+  const hit=(ic,t,s,fn,c)=>`<div class="v5-hit" onclick="${fn}"><div class="v5-ic" style="${c?"--c:"+c:""}">${ic}</div><div class="v5-ct"><b dir="auto">${t}</b><small dir="auto">${s}</small></div></div>`;
+  const hl=t=>{let r=esc(t);ws.forEach(w=>{try{r=r.replace(new RegExp("("+w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")","ig"),"<mark>$1</mark>")}catch(_){}});return r};
+  if(!ws.length){
+    const rec=chats.filter(c=>c.msgs&&c.msgs.length).sort((a,b)=>b.id-a.id).slice(0,5);
+    h+=`<div class="v5-sec">Quick actions</div>`+ACTIONS.map(a=>hit(a[0],a[1],"",`phrHub.act('${a[2]}')`)).join("");
+    if(rec.length)h+=`<div class="v5-sec">Recent chats</div>`+rec.map(c=>hit("💬",esc(c.name),(c.msgs||[]).length+" messages",`phrHub.openChat(${c.id})`)).join("");
+    el.innerHTML=h;return}
+  const all=a=>ws.every(w=>a.includes(w));
+  const A=ACTIONS.filter(a=>all(nz(a[1]+" "+a[3])));
+  const Pj=P.filter(p=>all(nz(p.name+" "+p.inst)));
+  const Nt=[];P.forEach(p=>(p.notes||[]).forEach(n=>{if(all(nz(n.t+" "+n.x)))Nt.push([p,n])}));
+  const Cs=[];chats.forEach(c=>{const body=(c.msgs||[]).map(m=>(m.uText||"")+" "+(m.aRaw||"")).join(" ");const t=nz(c.name+" "+body);if(all(t)){Cs.push([c,(nz(c.name).includes(ws[0])?3:0)+(t.split(ws[0]).length-1>5?1:0),body])}});
+  Cs.sort((a,b)=>b[1]-a[1]||b[0].id-a[0].id);
+  const Cd=C.filter(x=>all(nz(x.q+" "+x.a+" "+x.topic)));
+  if(A.length)h+=`<div class="v5-sec">Actions</div>`+A.map(a=>hit(a[0],a[1],"",`phrHub.act('${a[2]}')`)).join("");
+  if(Pj.length)h+=`<div class="v5-sec">Projects</div>`+Pj.map(p=>hit(p.icon,hl(p.name),chatsOf(p).length+" chats",`phrHub.pj(${p.id},1)`,p.color)).join("");
+  if(Cs.length)h+=`<div class="v5-sec">Chats · ${Cs.length}</div>`+Cs.slice(0,15).map(([c,,body])=>hit("💬",hl(c.name),hl(snip(body,ws[0]).replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">")),`phrHub.openChat(${c.id})`)).join("");
+  if(Nt.length)h+=`<div class="v5-sec">Notes</div>`+Nt.slice(0,8).map(([p,n])=>hit("📝",hl(n.t),esc(p.name)+" · "+hl(n.x.slice(0,70)),`phrHub.pj(${p.id},1)`,p.color)).join("");
+  if(Cd.length)h+=`<div class="v5-sec">Flashcards</div>`+Cd.slice(0,6).map(x=>hit("🃏",hl(x.q),hl(x.a.slice(0,70)),`phrHub.go('review')`)).join("");
+  el.innerHTML=h||`<div class="v5-empty"><b>Nothing found</b>Try fewer or different words.</div>`;
+}
+/* ================= BACKUP ================= */
+const SKIP=/google|licen|token|pay|tx|secret|key|auth/i;
+function bundle(){
+  const ls={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(/^phraortes_/.test(k)&&!SKIP.test(k)&&k!=="phraortes_chats")ls[k]=localStorage.getItem(k)}
+  return{app:"phraortes",v:5,at:new Date().toISOString(),chats,ls}
+}
+function rData(b,ti){
+  ti.innerHTML="Backup & <em>restore</em>";
+  const sz=JSON.stringify(chats).length;
+  b.innerHTML=`<div class="v5-sub">Your chats, projects, notes, flashcards, memory and settings live on this device. Export a backup before changing domain, browser or phone — then import it anywhere.</div>
+  <div class="v5-stats"><div class="v5-st"><b>${chats.length}</b><small>Chats</small></div><div class="v5-st"><b>${P.length}</b><small>Projects</small></div><div class="v5-st"><b>${(sz/1048576).toFixed(1)}</b><small>MB chats</small></div></div>
+  <button class="v5-btn full" onclick="phrHub.exp()">⬇ Export backup file</button>
+  <div class="v5-row"><button class="v5-btn ghost" onclick="phrHub.copyB()">Copy as text</button><button class="v5-btn ghost" onclick="$('#v5-imp').click()">⬆ Import file</button></div>
+  <input type="file" id="v5-imp" accept=".json,application/json" style="display:none" onchange="phrHub.imp(this)">
+  <textarea id="v5-pt" rows="3" placeholder="…or paste backup text here, then tap Restore" style="margin-top:8px"></textarea><button class="v5-btn ghost full" style="margin-top:8px" onclick="phrHub.impText()">Restore from pasted text</button>
+  <div class="v5-sub" style="margin-top:14px">Importing merges with what you have — nothing is deleted. Sign-in data and payment licences are never included.</div>`;
+  window.$=$;
+}
+function doImport(txt){
+  let j;try{j=JSON.parse(txt)}catch(_){return toast("That isn’t a valid backup","error")}
+  if(!j||j.app!=="phraortes")return toast("That isn’t a Phraortes backup","error");
+  let nc=0;const have=new Set(chats.map(c=>c.id));
+  (j.chats||[]).forEach(c=>{if(c&&c.id&&!have.has(c.id)){chats.push(c);nc++}});
+  const ls=j.ls||{};
+  const mergeArr=(k,key)=>{try{const a=JSON.parse(ls[k]||"[]"),b=JSON.parse(localStorage.getItem(k)||"[]");const s=new Set(b.map(x=>x[key]));a.forEach(x=>{if(x&&!s.has(x[key]))b.push(x)});localStorage.setItem(k,JSON.stringify(b))}catch(_){}};
+  mergeArr("phraortes_projects","id");mergeArr("phraortes_cards","id");mergeArr("phraortes_folders","id");mergeArr("phraortes_personas","id");
+  try{const a=JSON.parse(ls.phraortes_longmemory||"[]"),b=JSON.parse(localStorage.getItem("phraortes_longmemory")||"[]");a.forEach(x=>{if(!b.includes(x))b.push(x)});localStorage.setItem("phraortes_longmemory",JSON.stringify(b.slice(-25)))}catch(_){}
+  try{const a=JSON.parse(ls.phraortes_rev||"{}"),b=JSON.parse(localStorage.getItem("phraortes_rev")||"{}");b.days=Object.assign({},(a.days||{}),(b.days||{}));localStorage.setItem("phraortes_rev",JSON.stringify(b))}catch(_){}
+  ["phraortes_username","phraortes_theme","phraortes_accent","phraortes_tone_pref","phraortes_exams","phraortes_branches"].forEach(k=>{if(ls[k]!=null&&localStorage.getItem(k)==null)localStorage.setItem(k,ls[k])});
+  try{_flushChats()}catch(_){try{save()}catch(__){}}
+  toast("Restored "+nc+" chat"+(nc===1?"":"s")+" ✓","success");setTimeout(()=>location.reload(),1400);
+}
+/* ================= ACTIONS ================= */
+const H=window.phrHub={close,go,
+ pj(id,jump){hap("light");tab="projects";draft=null;view=id||null;render()},
+ newP(){draft=null;view="new";render()},
+ edit(id){draft=null;view={edit:id};render()},
+ cancelForm(){const e=view&&view.edit;draft=null;view=e||null;render()},
+ pick(k,v){draft.name=($("#v5-n")||{}).value||"";draft.inst=($("#v5-i")||{}).value||"";draft[k]=v;hap("light");render()},
+ saveForm(){const n=($("#v5-n").value||"").trim();if(!n){$("#v5-n").focus();return}draft.name=n;draft.inst=$("#v5-i").value;
+  if(view&&view.edit){const p=proj(view.edit);Object.assign(p,draft);syncFolder(p);saveP();view=p.id}
+  else{const p={id:Date.now(),name:draft.name,icon:draft.icon,color:draft.color,inst:draft.inst,notes:[],ts:Date.now()};P.push(p);syncFolder(p);saveP();view=p.id}
+  draft=null;hap("success");try{renderH()}catch(_){}render()},
+ delP(id){const p=proj(id);if(!p||!confirm("Delete “"+p.name+"”? Chats are kept; the project’s notes are removed."))return;
+  chats.forEach(c=>{if(c.projectId===id){delete c.projectId;delete c.folderId}});folders=folders.filter(f=>f.id!==fid(p));try{localStorage.setItem("phraortes_folders",JSON.stringify(folders))}catch(_){}
+  P=P.filter(x=>x.id!==id);saveP();save();try{renderH()}catch(_){}view=null;render();chip()},
+ chat(id){const p=proj(id);close();setTimeout(()=>{newChat();const c=chats[0];c.projectId=id;c.folderId=fid(p);c.name=p.icon+" "+p.name;save();try{renderH()}catch(_){}chip();toast("New chat in “"+esc(p.name)+"”")},350)},
+ addCur(id){const p=proj(id),c=chats.find(x=>x.id==curId);if(!c)return;c.projectId=id;c.folderId=fid(p);save();try{renderH()}catch(_){}chip();toast("Added to “"+esc(p.name)+"” ✓","success");render()},
+ openChat(id){close();setTimeout(()=>{loadChat(id)},300)},
+ addNote(id){const t=($("#v5-nt").value||"").trim(),x=($("#v5-nx").value||"").trim();if(!x){$("#v5-nx").focus();return}
+  const p=proj(id);p.notes.push({id:"n"+Date.now(),t:t||x.slice(0,36),x:x.slice(0,20000),ts:Date.now()});saveP();hap("success");render();toast("Note saved ✓","success")},
+ file(id,inp){const p=proj(id);let n=0;const fs=[...inp.files];if(!fs.length)return;let left=fs.length;
+  fs.forEach(f=>{if(f.size>400000){toast(esc(f.name)+" is too large (max 400 KB)","error");if(!--left)render();return}
+   const r=new FileReader();r.onload=()=>{p.notes.push({id:"n"+Date.now()+n++,t:f.name,x:String(r.result).slice(0,20000),ts:Date.now()});if(!--left){saveP();render();toast("Imported "+n+" file"+(n>1?"s":""),"success")}};r.onerror=()=>{if(!--left)render()};r.readAsText(f)})},
+ pin(id,nid){const n=proj(id).notes.find(x=>x.id===nid);n.pin=!n.pin;saveP();render()},
+ delNote(id,nid){const p=proj(id);p.notes=p.notes.filter(x=>x.id!==nid);saveP();render()},
+ async noteCards(id,nid){const n=proj(id).notes.find(x=>x.id===nid);go("review");await H.gen(n.t+"\n\n"+n.x,proj(id).name)},
+ start(){const d=due().filter(x=>!filt||x.topic===filt).sort(()=>Math.random()-.5);rv={q:d.map(x=>x.id),i:0,ok:0,fl:false};render();hap("light")},
+ flip(){const f=$("#v5-fc");if(!f)return;rv.fl=!rv.fl;f.classList.toggle("flip",rv.fl);$("#v5-rate").style.visibility=rv.fl?"visible":"hidden";hap("light")},
+ rate(g){const x=C.find(k=>k.id===rv.q[rv.i]);if(!x)return;const n=nextIv(x,g);x.iv=n.iv;x.ease=n.ease;x.lapses=n.lapses;x.reps++;
+  x.due=n.iv===0?Date.now()+60000:Date.now()+n.iv*864e5;
+  if(g===0)rv.q.push(x.id);else rv.ok++;
+  const dk=day();R.days[dk]=(R.days[dk]||0)+1;saveC();saveR();rv.i++;rv.fl=false;hap(g?"light":"medium");render()},
+ endRv(){rv=null;render();refreshBadges()},
+ filt(t){filt=filt===t?null:t;render()},
+ delCard(id){C=C.filter(x=>x.id!==id);saveC();render()},
+ async gen(text,src){const g=$("#v5-gen");if(g)g.innerHTML=`<div class="v5-gen">Reading and writing flashcards…</div>`;
+  try{const n=await genCards(text,src);hap("success");toast(n?n+" cards created ✓":"No new cards — already covered","success")}catch(e){toast(e&&e.message==="phraortes_free_limit_reached"?"Free limit reached":"Couldn’t build cards — try again","error")}
+  if(ov.classList.contains("show")&&tab==="review")render()},
+ fromChat(){const c=chats.find(x=>x.id==curId);if(!c)return;const t=(c.msgs||[]).slice(-12).map(m=>"Q: "+(m.uText||"")+"\nA: "+String(m.aRaw||"").slice(0,1200)).join("\n\n");H.gen(t,c.name)},
+ fromText(){const t=($("#v5-gt").value||"").trim();if(t.length<40){toast("Paste a longer text first","error");return}H.gen(t,"Pasted text")},
+ q(v){qry=v;res()},
+ act(a){if(a.indexOf("hub:")===0){go(a.slice(4));return}close();setTimeout(()=>{try{(0,eval)(a)}catch(e){console.warn(e)}},350)},
+ exp(){const s=JSON.stringify(bundle()),blob=new Blob([s],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="phraortes-backup-"+day()+".json";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000);toast("Backup exported ✓","success")},
+ copyB(){try{navigator.clipboard.writeText(JSON.stringify(bundle()));toast("Backup copied — paste it somewhere safe","success")}catch(_){toast("Couldn’t copy — use Export","error")}},
+ imp(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>doImport(String(r.result));r.readAsText(f)},
+ impText(){doImport($("#v5-pt").value||"")}
+};
+window.$=$;
+/* ================= INTEGRATION ================= */
+function chip(){
+  let el=$("#v5-chip");if(!el){el=document.createElement("div");el.id="v5-chip";el.onclick=()=>open("projects",(chats.find(x=>x.id==curId)||{}).projectId);document.body.appendChild(el)}
+  const c=chats.find(x=>x.id==curId),p=c&&c.projectId&&proj(c.projectId);
+  if(p){el.style.setProperty("--c",p.color);el.textContent=p.icon+" "+p.name;el.classList.add("show")}else el.classList.remove("show");
+}
+function refreshBadges(){
+  const d=due().length;
+  document.querySelectorAll(".v5-side .rv").forEach(b=>{let x=b.querySelector("b");if(d){if(!x){x=document.createElement("b");b.appendChild(x)}x.textContent=d>99?"99+":d}else if(x)x.remove()});
+  document.querySelectorAll(".v5-strip .due").forEach(x=>{x.textContent=d;x.style.display=d?"inline-grid":"none"});
+}
+function side(){
+  const nb=$("#sidebar .btn-new-chat");if(!nb||$("#sidebar .v5-side"))return;
+  nb.insertAdjacentHTML("afterend",`<div class="v5-side"><button onclick="toggleS&&toggleS(null);phrHub_o('projects')">${ico.proj}Projects</button><button class="rv" onclick="toggleS&&toggleS(null);phrHub_o('review')">${ico.rev}Review</button><button onclick="toggleS&&toggleS(null);phrHub_o('search')">${ico.se}Search</button></div>`);refreshBadges();
+}
+window.phrHub_o=function(t){setTimeout(()=>open(t),250)};
+function strip(){
+  const d=$("#chat-box .hall-dashboard");if(!d||d.querySelector(".v5-strip"))return;
+  const row=d.querySelector(".hall-status-row")||d.querySelector(".hall-tagline");if(!row)return;
+  row.insertAdjacentHTML("afterend",`<div class="v5-strip"><button onclick="phrHub_o('projects')">${ico.proj}Projects</button><button onclick="phrHub_o('review')">${ico.rev}Review <b class="due" style="display:none"></b></button><button onclick="phrHub_o('search')">${ico.se}Search</button></div>`);refreshBadges();
+}
+function msgMenu(){
+  document.querySelectorAll("#chat-box .msg-menu:not([data-v5])").forEach(m=>{m.dataset.v5=1;
+    const mk=(t,fn)=>{const b=document.createElement("button");b.className="mm-row";b.setAttribute("role","menuitem");b.innerHTML="<span>"+t+"</span>";b.onclick=e=>{e.stopPropagation();try{closeMsgMenu()}catch(_){}fn(m.closest(".msg-wrap"))};m.appendChild(b)};
+    const txt=w=>{const el=w&&w.querySelector(".msg.ai");return el?(el.innerText||"").trim():""};
+    mk("📌 Save to project notes",w=>{const t=txt(w);if(!t)return;const c=chats.find(x=>x.id==curId);let p=c&&c.projectId&&proj(c.projectId);
+      if(!p){if(!P.length){toast("Create a project first","error");open("projects","new");return}p=P[0];if(P.length>1){const nm=prompt("Save to which project?\n"+P.map((x,i)=>(i+1)+". "+x.name).join("\n"),"1");const k=parseInt(nm,10)-1;if(!(k>=0&&k<P.length))return;p=P[k]}}
+      p.notes.push({id:"n"+Date.now(),t:t.replace(/\s+/g," ").slice(0,40),x:t.slice(0,20000),ts:Date.now()});saveP();hap("success");toast("Saved to “"+esc(p.name)+"” ✓","success")});
+    mk("🃏 Make flashcards from this",async w=>{const t=txt(w);if(t.length<40)return;toast("Writing flashcards…");try{const n=await genCards(t,(chats.find(x=>x.id==curId)||{}).name);hap("success");toast(n+" cards added — open Review","success");refreshBadges()}catch(e){toast("Couldn’t build cards","error")}});
+  });
+}
+const _lc=window.loadChat,_nc=window.newChat;
+window.loadChat=function(){const r=_lc.apply(this,arguments);setTimeout(()=>{chip();strip();msgMenu()},60);return r};
+window.newChat=function(){const r=_nc.apply(this,arguments);setTimeout(()=>{chip();strip()},80);return r};
+new MutationObserver(()=>{strip();msgMenu()}).observe(document.getElementById("chat-box"),{childList:true,subtree:true});
+document.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();open("search")}});
+function tiles(){
+  const m=$("#tools-menu");if(!m||m.dataset.v5)return;const l=[...m.querySelectorAll(".tool-group-label")].find(x=>x.textContent.trim().toLowerCase()==="assistant");const g=l&&l.nextElementSibling;if(!g)return;m.dataset.v5=1;
+  const mk=(n,s,c,ic,o)=>{const d=document.createElement("div");d.className="tool-tile";d.style.setProperty("--tile-color",c);d.setAttribute("onclick","phrHub_o('"+o+"')");d.innerHTML=`<i class="tt-ic">${ic}</i><span class="tt-n">${n}</span><small class="tt-s">${s}</small>`;return d};
+  g.insertBefore(mk("Projects","Workspaces & notes","#E8C468",ico.proj,"projects"),g.firstChild);
+  g.insertBefore(mk("Review","Flashcards · SRS","#4ADE9A",ico.rev,"review"),g.children[1]);
+  g.appendChild(mk("Search & Backup","Find · export","#FF8A65",ico.se,"search"));
+}
+when(()=>$("#sidebar .btn-new-chat"),side);
+when(()=>$("#tools-menu .tool-group-label")&&$("#tools-menu").dataset.t2,tiles);
+when(()=>typeof chats!=="undefined"&&typeof curId!=="undefined",()=>{chip();strip();msgMenu();refreshBadges()});
+setInterval(refreshBadges,60000);
+/* keep folder list consistent for projects created before folders were loaded */
+try{P.forEach(syncFolder)}catch(_){}
 })();
 </script>
 
