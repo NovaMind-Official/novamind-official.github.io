@@ -44,6 +44,7 @@
 <script src="mhchem.min.js"></script>
 <script src="security.js"></script>
 <script src="artifacts.js"></script>
+<script src="chartboard.js"></script>
 <script src="payment.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
@@ -2720,6 +2721,7 @@ function smartFollowups(raw,type,hasSrc){
   if(has(/```(?:flashcards?|cards)/)){out.push(T("Quiz me on these","از همین‌ها آزمون بگیر"))}
   if(has(/```(?:molecule|molecules|mol)/)){out.push(T("Show its electron configuration","آرایش الکترونی را نشان بده"))}
   if(has(/```(?:sim|simulation|physics|circuit|schematic)/)){out.push(T("Change the values and run again","مقادیر را عوض کن و دوباره اجرا کن"))}
+  if(has(/```(?:chart|charts|chartboard|dashboard|pie|donut|doughnut|budget|percent)/)){out.push(T("Change a value and compare","یک مقدار را عوض کن و مقایسه کن"))}
   if(has(/```(?:stats|statistics|statslab|histo)/)){out.push(T("Interpret these results","نتایج را تفسیر کن"))}
   if(type==="study"||type==="studyfa"){if(has(/\$\$|\\frac|=/)){out.push(T("Solve it with different numbers","با اعداد دیگر حل کن"),T("Explain each step simply","هر مرحله را ساده توضیح بده"))}}
   if(type==="code"){out.push(T("Explain this code","این کد را توضیح بده"),T("Add error handling","مدیریت خطا اضافه کن"))}
@@ -3657,14 +3659,14 @@ const ACT={};
 const ACT_T={
   en:{read:"Reading your question",plan:"Planning the answer",think:"Thinking it through",write:"Writing the answer",backup:"That core is busy — switching to a backup",
       graph:"Planning an interactive graph",circuit:"Designing a circuit",chem:"Picking the right chemistry tools",solve:"Working out the solution",code:"Thinking through the code",analyze:"Weighing the details",about:"Thinking about",
-      b_graph:"Building a live graph",b_sim:"Building a simulation",b_solution:"Laying out the steps",b_quiz:"Writing a quiz",b_flash:"Making flashcards",b_periodic:"Opening the periodic table",b_molecule:"Building a 3D molecule",b_balance:"Balancing the equation",b_circuit:"Wiring up a circuit",b_play:"Building a live code demo",b_stats:"Crunching the numbers",b_code:"Writing code",
+      b_graph:"Building a live graph",b_sim:"Building a simulation",b_solution:"Laying out the steps",b_quiz:"Writing a quiz",b_flash:"Making flashcards",b_periodic:"Opening the periodic table",b_molecule:"Building a 3D molecule",b_balance:"Balancing the equation",b_circuit:"Wiring up a circuit",b_play:"Building a live code demo",b_stats:"Crunching the numbers",b_chart:"Drawing the chart",b_code:"Writing code",
       thought:"Thought for",step:"step",steps:"steps",thinking:"is thinking",notes:"Thinking notes"},
   fa:{read:"در حال خواندن سؤالت",plan:"برنامه‌ریزی پاسخ",think:"در حال بررسی",write:"در حال نوشتن پاسخ",backup:"این هسته شلوغ است — رفتن به هستهٔ پشتیبان",
       graph:"طراحی یک نمودار تعاملی",circuit:"طراحی مدار",chem:"انتخاب ابزار شیمی مناسب",solve:"در حال حل مسئله",code:"بررسی منطق کد",analyze:"سنجیدن جزئیات",about:"فکر دربارهٔ",
-      b_graph:"ساخت نمودار زنده",b_sim:"ساخت شبیه‌سازی",b_solution:"چیدن گام‌های حل",b_quiz:"نوشتن آزمون",b_flash:"ساخت فلش‌کارت",b_periodic:"باز کردن جدول تناوبی",b_molecule:"ساخت مولکول سه‌بعدی",b_balance:"موازنهٔ معادله",b_circuit:"سیم‌کشی مدار",b_play:"ساخت دمو زندهٔ کد",b_stats:"محاسبهٔ آمار داده‌ها",b_code:"نوشتن کد",
+      b_graph:"ساخت نمودار زنده",b_sim:"ساخت شبیه‌سازی",b_solution:"چیدن گام‌های حل",b_quiz:"نوشتن آزمون",b_flash:"ساخت فلش‌کارت",b_periodic:"باز کردن جدول تناوبی",b_molecule:"ساخت مولکول سه‌بعدی",b_balance:"موازنهٔ معادله",b_circuit:"سیم‌کشی مدار",b_play:"ساخت دمو زندهٔ کد",b_stats:"محاسبهٔ آمار داده‌ها",b_chart:"رسم نمودار",b_code:"نوشتن کد",
       thought:"فکر کرد",step:"گام",steps:"گام",thinking:"در حال فکر کردن است",notes:"یادداشت‌های فکر"}
 };
-const ACT_FENCE={graph:"b_graph",plot:"b_graph","function-plot":"b_graph",sim:"b_sim",simulation:"b_sim",physics:"b_sim",solution:"b_solution",steps:"b_solution",worked:"b_solution",quiz:"b_quiz",practice:"b_quiz",flashcards:"b_flash",flashcard:"b_flash",cards:"b_flash",periodic:"b_periodic",periodictable:"b_periodic",ptable:"b_periodic",molecule:"b_molecule",molecules:"b_molecule",mol:"b_molecule",balance:"b_balance",equation:"b_balance",reaction:"b_balance",circuit:"b_circuit",schematic:"b_circuit",playground:"b_play",codeplayground:"b_play",livecode:"b_play",webdemo:"b_play",stats:"b_stats",statistics:"b_stats",statslab:"b_stats",histogram:"b_stats",regression:"b_stats"};
+const ACT_FENCE={chart:"b_chart",charts:"b_chart",chartboard:"b_chart",dashboard:"b_chart",pie:"b_chart",donut:"b_chart",doughnut:"b_chart",budget:"b_chart",percent:"b_chart",graph:"b_graph",plot:"b_graph","function-plot":"b_graph",sim:"b_sim",simulation:"b_sim",physics:"b_sim",solution:"b_solution",steps:"b_solution",worked:"b_solution",quiz:"b_quiz",practice:"b_quiz",flashcards:"b_flash",flashcard:"b_flash",cards:"b_flash",periodic:"b_periodic",periodictable:"b_periodic",ptable:"b_periodic",molecule:"b_molecule",molecules:"b_molecule",mol:"b_molecule",balance:"b_balance",equation:"b_balance",reaction:"b_balance",circuit:"b_circuit",schematic:"b_circuit",playground:"b_play",codeplayground:"b_play",livecode:"b_play",webdemo:"b_play",stats:"b_stats",statistics:"b_stats",statslab:"b_stats",histogram:"b_stats",regression:"b_stats"};
 function actT(a,k){return (ACT_T[a.lang]||ACT_T.en)[k]||ACT_T.en[k]||k}
 function actTopic(txt,lang){
   const T=ACT_T[lang]||ACT_T.en;
@@ -4494,6 +4496,7 @@ const STEM_TEXT="STUDY MODE (the user is doing maths / physics / science work). 
 "```molecule — rotatable 3D molecule(s):  molecule: water, methane   (available: H2, O2, N2, HCl, water, CO2, ozone, ammonia, methane, BF3, SF6, ethane, ethene, ethyne, benzene, formaldehyde)  optional style: spacefill\n"+
 "```balance — chemical equation balancer:  equation: Fe + O2 -> Fe2O3  (write formulas with plain digits, no coefficients)\n"+
 "```circuit — electric circuit solver with live current animation:  source: 12 V  circuit: R1=100, (R2=220 | R3=330), L1=47   (comma = series, | inside parentheses = parallel, values in ohms with k/M suffix, names starting with L or B draw as lamps, max 14 components). For capacitor charging use  ```sim  with  type: rc  then  V: 12  R: 10 (kΩ)  C: 100 (µF)\n"+
+"```chart — everyday chart board: a donut showing each share as a percent plus a bar / line chart, with total, average, highest, lowest and an optional goal bar. Use it for budgets, expenses, study time, survey results, grades, anything the user wants as percentages or a quick comparison:  title: Monthly budget   unit: $   type: combo | bar | line | donut   goal: 2000   (optional)   then one row per line   Rent: 800   Food: 420   Transport: 150   (or  labels: a, b, c   values: 1, 2, 3 ). Tap a slice or bar to select it; the user can edit the numbers live. Do not recompute percentages by hand — the block does it; comment on what stands out instead.\n"+
 "```stats — data lab, for when the user gives numbers or asks about mean / spread / distribution / correlation:  title: ...  data: 12, 15, 9, 20   (one variable)   OR paired data   x: 1, 2, 3, 4   y: 2.1, 3.9, 6.2, 8.1   (adds a scatter plot, regression line and a predictor). The block itself computes mean, median, quartiles, standard deviation, histogram, box plot and r / R², and the user can edit the numbers live — interpret the results in your text instead of recomputing them by hand.\n"+
 "```probability — probability lab for chance questions (dice, coins, Galton board, Monte-Carlo π):  type: dice | coin | galton | pi   dice: 2   p: 0.5   rows: 10   (the user can roll thousands of trials and compare with theory)\n"+
 "```optics — ray diagram for lenses and mirrors:  type: lens | diverging | concave | convex   f: 10   d: 25   h: 4   (focal length, object distance, object height in cm; the user can drag the object)\n"+
@@ -4604,6 +4607,7 @@ async function send(){
     cancelEdit();
   }
   if(!txt&&!attachedFiles.length)return;
+  try{window.PHR_learn&&PHR_learn.note(txt)}catch(e){}
   if(activePlan==="free"){
     // Check the real wall-clock reset FIRST — otherwise the very first message attempt right
     // after the reset time passes would still see the stale trialCount and get blocked once more.
@@ -4978,7 +4982,7 @@ function finishTurn(aiId,htmlContent,rawContent,chat,userHtml,userTxt,msgIndex,e
   const srcs=turnRealSources.slice(),encSrc=safeEnc(JSON.stringify(srcs)),qc=(userTxt||"").substring(0,14).replace(/['"\\`]/g,"");
   turnRealSources=[];
   const cardsData=turnCards.slice();turnCards=[];
-  const _studyFence=/```(?:graph|plot|function-plot|sim|simulation|physics|solution|steps|worked|quiz|practice|flashcards?|cards|periodic|periodictable|ptable|molecule|molecules|mol|balance|equation|reaction|circuit|schematic|playground|codeplayground|livecode|webdemo|stats|statistics|statslab|histogram|regression|probability|optics|logic|gates|cpu|assembly|breadboard)\b[\s\S]*?```/gi;
+  const _studyFence=/```(?:chart|charts|chartboard|dashboard|pie|donut|doughnut|budget|percent|graph|plot|function-plot|sim|simulation|physics|solution|steps|worked|quiz|practice|flashcards?|cards|periodic|periodictable|ptable|molecule|molecules|mol|balance|equation|reaction|circuit|schematic|playground|codeplayground|livecode|webdemo|stats|statistics|statslab|histogram|regression|probability|optics|logic|gates|cpu|assembly|breadboard)\b[\s\S]*?```/gi;
   const _hasStudy=_studyFence.test(rawContent);
   const _codeOnly=rawContent.replace(_studyFence,"");
   const fuType=/^\[Image rendered/.test(rawContent)?"image":_hasStudy?(/[\u0600-\u06FF]/.test(rawContent)?"studyfa":"study"):/```/.test(_codeOnly)?"code":activeModel==="2.5"?"think":"chat";
@@ -5946,75 +5950,76 @@ function openSourceDrawer(encSrc,query){
 }
 function closeSourceDrawer(){document.getElementById("global-source-drawer").classList.remove("show")}
 function toggleFsCode(btn){const w=btn.closest(".code-block-wrapper");if(w.classList.contains("code-fullscreen")){w.classList.remove("code-fullscreen");document.body.style.overflow=""}else{w.classList.add("code-fullscreen");document.body.style.overflow="hidden"}}
-let auraStream=null,auraAnalyser=null,auraAnimId=null,auraAudioCtx=null;
+let auraRecognition=null,auraFails=0,auraIdle=0;
+let auraLang=localStorage.getItem("phraortes_aura_lang")||((navigator.language||"").toLowerCase().startsWith("fa")?"fa-IR":"en-US");
+(function(){const st=document.createElement("style");st.textContent="#aura-tap{position:absolute;bottom:calc(120px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);display:none;padding:14px 30px;border-radius:99px;border:1px solid rgba(232,196,104,.5);background:rgba(201,162,39,.16);color:#E8C468;font:700 14px 'Space Grotesk','Vazirmatn',sans-serif;letter-spacing:.4px;cursor:pointer;-webkit-tap-highlight-color:transparent}#aura-lang{position:absolute;top:26px;left:26px;height:46px;padding:0 16px;border-radius:99px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff;font:600 13px 'Space Grotesk',sans-serif;cursor:pointer}.aura-pulse-orb.aura-hear{animation:auraThink 1.1s ease-in-out infinite}";document.head.appendChild(st)})();
+function auraSetStatus(t){const s=document.getElementById("vapi-status-text");if(s)s.textContent=t}
+function auraSetCaption(t){const c=document.getElementById("aura-caption");if(c)c.textContent=t||""}
+function auraUI(){
+  const sc=document.getElementById("aura-screen");if(!sc)return;
+  if(!document.getElementById("aura-tap")){const b=document.createElement("button");b.id="aura-tap";b.type="button";b.textContent="Tap to speak";b.onclick=()=>{auraFails=0;auraIdle=0;b.style.display="none";auraStopRec();auraListenTurn()};sc.appendChild(b)}
+  if(!document.getElementById("aura-lang")){const b=document.createElement("button");b.id="aura-lang";b.type="button";b.onclick=()=>{auraLang=auraLang==="fa-IR"?"en-US":"fa-IR";try{localStorage.setItem("phraortes_aura_lang",auraLang)}catch(e){}auraUI();if(window.__auraActive&&!window.__auraWaiting){auraStopRec();auraFails=0;auraListenTurn()}};sc.appendChild(b)}
+  document.getElementById("aura-lang").textContent=auraLang==="fa-IR"?"فارسی · FA":"English · EN";
+}
+function auraStopRec(){window.__auraGen=(window.__auraGen||0)+1;if(auraRecognition){try{auraRecognition.onend=null;auraRecognition.onresult=null;auraRecognition.onerror=null;auraRecognition.abort()}catch(e){}auraRecognition=null}}
+function auraNeedTap(msg){
+  if(!window.__auraActive)return;
+  const orb=document.getElementById("aura-orb");if(orb)orb.classList.remove("aura-speaking","aura-thinking","aura-hear");
+  auraSetStatus("TAP TO SPEAK");auraSetCaption(msg||"");
+  const b=document.getElementById("aura-tap");if(b)b.style.display="block";
+}
 function callAura(){
   if(activePlan!=="ultimate"){openPremium();showToast("Aura Voice requires the Shahanshah plan.","error");return}
-  if(!(("webkitSpeechRecognition" in window)||("SpeechRecognition" in window))){showToast("Voice isn't supported in this browser","error");return}
+  if(!(("webkitSpeechRecognition" in window)||("SpeechRecognition" in window))){showToast("Voice isn't supported in this browser. Open Phraortes in Safari.","error");return}
   closeAllDropMenus();
-  try{const _u=new SpeechSynthesisUtterance(" ");_u.volume=0;speechSynthesis.speak(_u)}catch(e){} // iOS Safari only allows text-to-speech after a direct tap: fire a silent utterance here so the first spoken reply (seconds later) is not blocked
-  window.__auraActive=true;window.__auraTurnGotText=false;window.__auraGen=(window.__auraGen||0)+1;
+  try{const _u=new SpeechSynthesisUtterance(" ");_u.volume=0;speechSynthesis.speak(_u)}catch(e){} // iOS only allows speech after a direct tap
+  window.__auraActive=true;window.__auraWaiting=false;window.__auraTurnGotText=false;window.__auraGen=(window.__auraGen||0)+1;auraFails=0;auraIdle=0;
   document.getElementById("aura-screen").style.display="flex";
   document.getElementById("aura-caption").textContent="";
   document.getElementById("aura-end-btn").style.display="";
   document.body.style.overflow="hidden";
-  const stEl=document.getElementById("vapi-status-text");
-  const stages=["ESTABLISHING SECURE CHANNEL...","AWAKENING SOVEREIGN VOICE...","LIVE — SPEAK NOW"];
-  let si=0;stEl.textContent=stages[0];
-  const stTimer=setInterval(()=>{si++;if(si<stages.length){stEl.textContent=stages[si]}else{clearInterval(stTimer);startAuraMic()}},1100);
+  auraUI();
+  auraListenTurn(); // started synchronously inside the tap: iOS refuses speech recognition that starts later, outside a user gesture. No getUserMedia here: holding the mic open at the same time silences iOS recognition.
 }
-async function startAuraMic(){
-  try{
-    auraStream=await navigator.mediaDevices.getUserMedia({audio:true});
-    auraAudioCtx=new (window.AudioContext||window.webkitAudioContext)();
-    const src=auraAudioCtx.createMediaStreamSource(auraStream);
-    auraAnalyser=auraAudioCtx.createAnalyser();auraAnalyser.fftSize=64;
-    src.connect(auraAnalyser);
-    const data=new Uint8Array(auraAnalyser.frequencyBinCount);
-    const orb=document.getElementById("aura-orb");
-    function draw(){
-      auraAnimId=requestAnimationFrame(draw);
-      auraAnalyser.getByteFrequencyData(data);
-      const avg=data.reduce((a,b)=>a+b,0)/data.length;
-      const scale=1+Math.min(avg/255,1)*0.22;
-      if(orb)orb.style.transform=`scale(${scale})`;
-    }
-    draw();
-  }catch(e){showToast("Couldn't access the microphone","error");closeAura();return}
-  auraListenTurn();
-}
-let auraRecognition=null;
-function auraSetStatus(t){const s=document.getElementById("vapi-status-text");if(s)s.textContent=t}
-function auraSetCaption(t){const c=document.getElementById("aura-caption");if(c)c.textContent=t||""}
 function auraListenTurn(){
-  if(!window.__auraActive)return;
+  if(!window.__auraActive||window.__auraWaiting)return;
   const gen=window.__auraGen;
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  const rec=auraRecognition=new SR();
-  rec.continuous=false;rec.interimResults=true;rec.lang="fa-IR,en-US"; // non-continuous + restart-per-turn: iOS Safari's continuous mode never stops and never returns a result
-  auraSetStatus("LISTENING...");
+  let rec;try{rec=new SR()}catch(e){auraNeedTap("Speech recognition isn't available here.");return}
+  auraRecognition=rec;rec.continuous=false;rec.interimResults=true;rec.maxAlternatives=1;rec.lang=auraLang; // one valid language tag (a list like "fa-IR,en-US" is invalid); non-continuous + restart per turn is what iOS needs
   const orb=document.getElementById("aura-orb");if(orb)orb.classList.remove("aura-speaking","aura-thinking");
-  let finalTxt="";
+  const tap=document.getElementById("aura-tap");if(tap)tap.style.display="none";
+  auraSetStatus("LISTENING...");
+  let finalTxt="",err="";
+  rec.onaudiostart=()=>{if(orb)orb.classList.add("aura-hear")};
   rec.onresult=e=>{
     let interim="";
     for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)finalTxt+=e.results[i][0].transcript+" ";else interim+=e.results[i][0].transcript}
     auraSetCaption((finalTxt+interim).trim());
   };
-  rec.onerror=e=>{if(e.error==="no-speech"||e.error==="aborted")return;if(e.error==="not-allowed"){showToast("Microphone access denied","error");closeAura()}};
+  rec.onerror=e=>{err=(e&&e.error)||"error"};
   rec.onend=()=>{
-    if(gen!==window.__auraGen)return; // this recognizer belongs to a call that already ended or restarted -- ignore
+    if(gen!==window.__auraGen)return;
+    if(orb)orb.classList.remove("aura-hear");
     const said=finalTxt.trim();
-    if(!said){auraListenTurn();return} // silence / no-speech timeout: just keep listening, no need to bother the user
+    if(!said){
+      if(err==="not-allowed"||err==="service-not-allowed"){auraNeedTap("Allow Microphone and Speech Recognition for Safari: Settings > Safari > Microphone, and Settings > General > Keyboard > Enable Dictation.");return}
+      if(err==="language-not-supported"){if(auraLang!=="en-US"){auraLang="en-US";auraUI();showToast("This language isn't available for voice here. Switched to English.","error");auraListenTurn()}else auraNeedTap("Voice recognition isn't available.");return}
+      if(err&&err!=="no-speech"&&err!=="aborted"){auraFails++;if(auraFails>=3){auraNeedTap("Couldn't hear you ("+err+"). Tap to try again.");return}setTimeout(()=>{if(gen===window.__auraGen)auraListenTurn()},500);return}
+      auraIdle++;if(auraIdle>=3){auraNeedTap("Still here. Tap and speak when you're ready.");return}
+      auraListenTurn();return;
+    }
+    auraFails=0;auraIdle=0;
     auraSetCaption(said);
     auraSetStatus("THINKING...");
     if(orb)orb.classList.add("aura-thinking");
     window.__auraTurnGotText=false;window.__auraWaiting=true;
     const turn=window.__auraTurn=(window.__auraTurn||0)+1;
-    // backstop: whatever goes wrong (a hang, an error path nobody hooked), never leave the caller in silence forever
     setTimeout(()=>{if(window.__auraActive&&window.__auraWaiting&&window.__auraTurn===turn)auraSpeak("Sorry, that took too long. Please try again.")},100000);
     uiInput.value=said;
     try{send()}catch(e){auraSpeak("Sorry, something went wrong on my end.")}
   };
-  try{rec.start()}catch(e){setTimeout(()=>{if(window.__auraActive)auraListenTurn()},300)}
+  try{rec.start()}catch(e){auraFails++;if(auraFails>=3)auraNeedTap("Couldn't start the microphone. Tap to try again.");else setTimeout(()=>{if(gen===window.__auraGen)auraListenTurn()},400)}
 }
 function auraStripForSpeech(raw){
   return String(raw||"")
@@ -6032,30 +6037,30 @@ function auraStripForSpeech(raw){
 function auraSpeak(rawText){
   window.__auraWaiting=false;
   const gen=window.__auraGen;
-  const orb=document.getElementById("aura-orb");if(orb){orb.classList.remove("aura-thinking");orb.classList.add("aura-speaking")}
+  const orb=document.getElementById("aura-orb");if(orb){orb.classList.remove("aura-thinking","aura-hear");orb.classList.add("aura-speaking")}
   auraSetStatus("SPEAKING...");
   const spoken=auraStripForSpeech(rawText).slice(0,600)||"I don't have anything to add.";
   auraSetCaption(spoken);
+  let moved=false;
+  const next=()=>{if(moved||gen!==window.__auraGen)return;moved=true;if(orb)orb.classList.remove("aura-speaking");if(window.__auraActive)auraListenTurn()};
   try{
     speechSynthesis.cancel();
     const utt=new SpeechSynthesisUtterance(spoken);
     const lang=detectMsgLang(spoken)==="fa"?"fa-IR":"en-US";utt.lang=lang;utt.rate=1;
     const voices=speechSynthesis.getVoices();const voice=voices.find(v=>v.lang===lang)||voices.find(v=>v.lang.startsWith(lang.split("-")[0]));if(voice)utt.voice=voice;
-    utt.onend=utt.onerror=()=>{if(gen!==window.__auraGen)return;if(orb)orb.classList.remove("aura-speaking");if(window.__auraActive)auraListenTurn()};
+    utt.onend=utt.onerror=next;
     speechSynthesis.speak(utt);
-  }catch(e){if(window.__auraActive)auraListenTurn()}
+    setTimeout(next,Math.min(60000,4000+spoken.length*130)); // some devices have no voice for the language and never fire "end": do not hang
+  }catch(e){next()}
 }
 function closeAura(){
-  window.__auraActive=false;window.__auraGen=(window.__auraGen||0)+1;
-  if(auraRecognition){try{auraRecognition.onend=null;auraRecognition.onresult=null;auraRecognition.abort()}catch(e){}auraRecognition=null}
+  window.__auraActive=false;window.__auraWaiting=false;auraStopRec();
   try{speechSynthesis.cancel()}catch(e){}
   document.getElementById("aura-screen").style.display="none";
   document.getElementById("aura-end-btn").style.display="none";
+  const t=document.getElementById("aura-tap");if(t)t.style.display="none";
   document.body.style.overflow="";
-  if(auraAnimId)cancelAnimationFrame(auraAnimId);
-  if(auraStream){auraStream.getTracks().forEach(t=>t.stop());auraStream=null}
-  if(auraAudioCtx){auraAudioCtx.close();auraAudioCtx=null}
-  const orb=document.getElementById("aura-orb");if(orb){orb.style.transform="scale(1)";orb.classList.remove("aura-thinking","aura-speaking")}
+  const orb=document.getElementById("aura-orb");if(orb){orb.style.transform="scale(1)";orb.classList.remove("aura-thinking","aura-speaking","aura-hear")}
 }
 
 function toggleZen(){}
@@ -7858,5 +7863,6 @@ try{P.forEach(syncFolder)}catch(_){}
 })();
 </script>
 
+<script src="learner.js"></script>
 </body>
 </html>

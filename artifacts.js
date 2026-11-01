@@ -966,7 +966,7 @@
       var done = false;
       body.querySelectorAll(".phr-opt").forEach(function (btn) {
         btn.addEventListener("click", function () {
-          if (done) return; done = true; var i = +btn.getAttribute("data-i"), good = q.opts[i].ok; if (good) score++;
+          if (done) return; done = true; var i = +btn.getAttribute("data-i"), good = q.opts[i].ok; if (good) score++; try { window.PHR_learn && window.PHR_learn.answer((map.title || "") + " " + q.q, !!good); } catch (e) {}
           body.querySelectorAll(".phr-opt").forEach(function (b, j) { b.disabled = true; if (q.opts[j].ok) b.classList.add("ok"); else if (j === i) b.classList.add("bad"); });
           var fb = body.querySelector(".phr-fb"), last = idx === qs.length - 1;
           fb.innerHTML = '<div class="phr-exp"><b style="color:' + (good ? "#3fd07a" : "#ff6b6b") + '">' + esc(good ? T("correct") : T("wrong")) + "</b>" + (q.exp ? "<br>" + window.PHR_inline(q.exp) : "") + '</div><div class="phr-bar" style="padding:0 0 10px"><button class="phr-w-btn gold" data-a="n">' + esc(last ? T("finish") : T("nextQ")) + " →</button></div>";
