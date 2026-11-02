@@ -55,6 +55,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=Playfair+Display:ital,wght@1,700&family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
+.sw-in{animation:swIn .38s cubic-bezier(.2,.7,.3,1) both}@keyframes swIn{from{opacity:0;filter:blur(5px);transform:translateY(3px)}to{opacity:1;filter:none;transform:none}}
+
 @property --grad1{syntax:'<color>';inherits:true;initial-value:#12121a}
 @property --grad2{syntax:'<color>';inherits:true;initial-value:#08080d}
 @property --p{syntax:'<color>';inherits:true;initial-value:#b0b0b0}
@@ -2024,7 +2026,7 @@ body.light-theme #mm-scrim{background:rgba(60,45,10,.14)}
   <div class="au-top">
     <button class="au-ib" id="au-min" onclick="closeAura(true)" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
     <div class="au-who"><b id="au-name">Nova</b><span id="au-timer">00:00</span></div>
-    <button class="au-ib au-lang" id="aura-lang" type="button">EN</button>
+    <span class="au-ib" style="visibility:hidden" aria-hidden="true"></span>
   </div>
   <div class="au-personas" id="au-personas"></div>
   <div class="au-spacer" id="au-stage"></div>
@@ -4483,6 +4485,25 @@ function scheduleStreamPaint(elId,getText){
   _spT=setTimeout(()=>{_spT=null;_spLast=performance.now();paintStream(elId,getText())},Math.max(0,60-(performance.now()-_spLast)));
 }
 function cancelStreamPaint(){if(_spT){clearTimeout(_spT);_spT=null}}
+// Soft reveal: words that arrived since the last paint fade and de-blur in (older text is untouched, so nothing flickers)
+function softReveal(sb){
+  if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches){return}
+  const prev=sb._rv||0;let n=0;
+  const w=document.createTreeWalker(sb,NodeFilter.SHOW_TEXT,{acceptNode(t){return t.parentElement&&t.parentElement.closest("pre,code,.katex,.stream-caret,script,style,.phr-fig,svg,canvas")?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}});
+  const nodes=[];while(w.nextNode())nodes.push(w.currentNode);
+  for(const t of nodes){
+    const len=t.nodeValue.length,start=n;n+=len;
+    if(n<=prev)continue;
+    const cut=Math.max(0,prev-start);
+    const head=t.nodeValue.slice(0,cut),tail=t.nodeValue.slice(cut);
+    if(!tail.trim()){continue}
+    const frag=document.createDocumentFragment();
+    if(head)frag.appendChild(document.createTextNode(head));
+    tail.split(/(\s+)/).forEach((p,i)=>{if(!p)return;if(/^\s+$/.test(p)){frag.appendChild(document.createTextNode(p));return}const sp=document.createElement("span");sp.className="sw-in";sp.style.animationDelay=Math.min(i*8,120)+"ms";sp.textContent=p;frag.appendChild(sp)});
+    t.parentNode.replaceChild(frag,t);
+  }
+  sb._rv=n;
+}
 function paintStream(elId,text){
   const el=document.getElementById(elId);if(!el)return;
   const sb=el.querySelector(".stream-body");if(!sb)return;
@@ -4490,6 +4511,7 @@ function paintStream(elId,text){
     sb.innerHTML=renderMDLive(text.substring(0,420).trim())+`<div class="stream-long-note">✍︎ Writing a long response… ${text.length.toLocaleString()} chars</div>`;
   }else{
     sb.innerHTML=renderMDLive(text)+'<span class="stream-caret"></span>';
+    softReveal(sb);
   }
   if(!isScrolling)chatBox.scrollTo({top:chatBox.scrollHeight});
 }
@@ -6024,10 +6046,10 @@ const AURA_MODES=[
   {id:"interview",en:"Interview",fa:"تمرین مصاحبه",style:"Act as an interviewer: ask one question, listen, give brief feedback, then ask the next."}
 ];
 let auraRecognition=null,auraFails=0,auraIdle=0,auraLog=[],auraT0=0,auraTimer=0,auraTok=0,auraAudio=null;
-let auraLang=localStorage.getItem("phraortes_aura_lang")||((navigator.language||"").toLowerCase().startsWith("fa")?"fa-IR":"en-US");
+let auraLang=navigator.language||"en-US"; // follows the device: no language setting, the AI itself answers in whatever language you speak
 let auraPid=localStorage.getItem("phraortes_aura_persona")||"nova",auraMode=localStorage.getItem("phraortes_aura_mode")||"tutor",auraPtt=localStorage.getItem("phraortes_aura_ptt")==="1";
 const AU={raf:0,state:"idle",lvl:0,kick:0,cv:null,ctx:null,rip:[],dust:[],cur:null,last:0,rt:0};
-const auraFa=()=>auraLang==="fa-IR";
+const auraFa=()=>(auraLang||"").toLowerCase().startsWith("fa");
 const auraP=()=>AURA_PERSONAS.find(p=>p.id===auraPid)||AURA_PERSONAS[0];
 (function(){const st=document.createElement("style");st.id="aura-css";st.textContent=`
 .aura-call-btn{width:36px;height:36px;border:0;background:radial-gradient(circle at 35% 30%,#f6e3a8,#C9A227 45%,#7A2E2E 100%);color:#1a1206;box-shadow:0 0 0 0 rgba(232,196,104,.5),0 6px 18px rgba(201,162,39,.45),inset 0 1px 0 rgba(255,255,255,.4);animation:auBreath 3.2s ease-in-out infinite}
@@ -6077,7 +6099,6 @@ function auraBuildChips(){
   const fa=auraFa(),pe=document.getElementById("au-personas"),mo=document.getElementById("au-modes");if(!pe||!mo)return;
   pe.innerHTML=AURA_PERSONAS.map(p=>`<button class="au-chip${p.id===auraPid?" on":""}" style="--d:${p.c[0]}" data-p="${p.id}"><i></i>${fa?p.fa:p.name}</button>`).join("");
   mo.innerHTML=AURA_MODES.map(m=>`<button class="au-mode${m.id===auraMode?" on":""}" data-m="${m.id}">${fa?m.fa:m.en}</button>`).join("");
-  const l=document.getElementById("aura-lang");if(l)l.textContent=fa?"فارسی":"EN";
   const pt=document.getElementById("au-ptt");if(pt){pt.classList.toggle("au-ptt-on",auraPtt);pt.innerHTML=auraPtt?'<svg viewBox="0 0 24 24"><path d="M9 11V5a3 3 0 0 1 6 0v6M5 11h14v3a7 7 0 0 1-14 0z"/></svg>':'<svg viewBox="0 0 24 24"><path d="M4 12h2M8 8v8M12 4v16M16 8v8M20 12h-2"/></svg>';pt.title=auraPtt?(fa?"فشار برای گفتن":"Push to talk"):(fa?"دست‌آزاد":"Hands-free")}
 }
 function auraHaptic(t){try{haptic(t||"light")}catch(e){}}
@@ -6138,7 +6159,6 @@ document.addEventListener("click",e=>{
   const pc=e.target.closest("[data-p]");if(pc){auraPid=pc.dataset.p;localStorage.setItem("phraortes_aura_persona",auraPid);auraTheme();auraBuildChips();auraHaptic("light");auraSetCaption(auraP().hi[auraFa()?1:0],"hint");return}
   const mc=e.target.closest("[data-m]");if(mc){auraMode=mc.dataset.m;localStorage.setItem("phraortes_aura_mode",auraMode);auraBuildChips();auraHaptic("light");return}
   if(e.target.closest("#au-ptt")){auraPtt=!auraPtt;localStorage.setItem("phraortes_aura_ptt",auraPtt?"1":"0");auraBuildChips();auraHaptic("light");if(!auraPtt&&AU.state==="needtap")auraMain();return}
-  if(e.target.closest("#aura-lang")){auraLang=auraLang==="fa-IR"?"en-US":"fa-IR";try{localStorage.setItem("phraortes_aura_lang",auraLang)}catch(_){}auraBuildChips();auraTheme();auraState(AU.state);if(window.__auraActive&&AU.state==="listening"){auraStopRec();auraFails=0;auraListenTurn(true)}return}
   if(e.target.closest("#aura-tap")||e.target.closest("#au-stage")){auraMain();return}
 });
 function auraMain(){
@@ -6179,7 +6199,7 @@ function auraListenTurn(fromTap){
   const gen=window.__auraGen;
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   let rec;try{rec=new SR()}catch(e){auraNeedTap("Speech recognition isn't available here.");return}
-  auraRecognition=rec;rec.continuous=false;rec.interimResults=true;rec.maxAlternatives=1;rec.lang=auraLang;
+  auraRecognition=rec;rec.continuous=false;rec.interimResults=true;rec.maxAlternatives=1;if(auraLang)rec.lang=auraLang;
   auraState("listening");
   let finalTxt="",err="",heard=false;
   rec.onresult=e=>{
@@ -6194,7 +6214,7 @@ function auraListenTurn(fromTap){
     const said=finalTxt.trim();
     if(!said){
       if(err==="not-allowed"||err==="service-not-allowed"){auraNeedTap(auraFa()?"دسترسی میکروفون و Dictation را در تنظیمات Safari و کیبورد آیفون روشن کن.":"Allow Microphone and Speech Recognition: Settings > Safari > Microphone, and Settings > General > Keyboard > Enable Dictation.");return}
-      if(err==="language-not-supported"){if(auraLang!=="en-US"){auraLang="en-US";auraBuildChips();showToast("This language isn't available for voice here. Switched to English.","error");auraListenTurn(true)}else auraNeedTap("Voice recognition isn't available.");return}
+      if(err==="language-not-supported"){if(auraLang){auraLang="";auraListenTurn(true)}else auraNeedTap("Voice recognition isn't available.");return}
       if(err&&err!=="no-speech"&&err!=="aborted"){auraFails++;if(auraFails>=3){auraNeedTap((auraFa()?"صدایت را نشنیدم. دوباره لمس کن.":"Couldn't hear you. Tap to try again.")+" ("+err+")");return}setTimeout(()=>{if(gen===window.__auraGen)auraListenTurn(true)},500);return}
       auraIdle++;if(auraIdle>=3||auraPtt){auraNeedTap(auraFa()?"من اینجا هستم. هر وقت آماده بودی لمس کن.":"Still here. Tap when you're ready.");return}
       auraListenTurn();return;
@@ -6222,6 +6242,7 @@ function auraStripForSpeech(raw){
     .replace(/\s+/g," ")
     .trim();
 }
+function auraScriptLang(t){const T=[[/[\u0600-\u06FF]/,"fa-IR"],[/[\u0400-\u04FF]/,"ru-RU"],[/[\u3040-\u30FF]/,"ja-JP"],[/[\uAC00-\uD7AF]/,"ko-KR"],[/[\u4E00-\u9FFF]/,"zh-CN"],[/[\u0900-\u097F]/,"hi-IN"],[/[\u0590-\u05FF]/,"he-IL"]];for(const[r,l]of T)if(r.test(t))return l;const d=(auraLang||"en-US");return/^(fa|ru|ja|ko|zh|hi|he)/i.test(d)?"en-US":d}
 function auraPickVoice(lang,p){
   let vs=[];try{vs=speechSynthesis.getVoices()||[]}catch(e){}
   const base=lang.split("-")[0],cand=vs.filter(v=>v.lang&&(v.lang===lang||v.lang.startsWith(base)));
@@ -6245,7 +6266,7 @@ function auraSpeak(rawText){
   const kar=auraKaraoke(spoken);
   let moved=false,fb=0;
   const next=()=>{if(moved||tok!==auraTok||gen!==window.__auraGen)return;moved=true;clearInterval(fb);kar.done();if(window.__auraActive){AU.kick=0;auraListenTurn()}};
-  const lang=detectMsgLang(spoken)==="fa"?"fa-IR":"en-US",rate=p.tts.rate;
+  const lang=auraScriptLang(spoken),rate=p.tts.rate;
   const estMs=Math.min(60000,3000+spoken.length*(95/rate));
   const startFallback=()=>{const t0=Date.now();fb=setInterval(()=>{if(tok!==auraTok){clearInterval(fb);return}kar.hi(Math.min(spoken.length-1,Math.floor((Date.now()-t0)/estMs*spoken.length)))},120)};
   const useSystem=()=>{
@@ -6293,6 +6314,107 @@ function closeAura(quick){
   if(had&&quick!==true){auraShowSummary();return}
   auraHide();
 }
+
+// ═══ GILDED GLASS: chats sidebar + radial tools wheel ═══
+(function(){const st=document.createElement("style");st.id="gg-css";st.textContent=`
+#sidebar{background:radial-gradient(circle at 12% 6%,rgba(201,114,46,.28),transparent 42%),radial-gradient(circle at 95% 92%,rgba(232,196,104,.16),transparent 46%),rgba(11,8,7,.74)!important;-webkit-backdrop-filter:blur(40px) saturate(1.7);backdrop-filter:blur(40px) saturate(1.7);border-right:.5px solid rgba(232,196,104,.28)!important}
+#sidebar .h-item{background:linear-gradient(160deg,rgba(255,255,255,.09),rgba(255,255,255,.03));border:.5px solid rgba(232,196,104,.16);border-radius:20px;padding:14px 16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);transition:transform .35s cubic-bezier(.3,1.35,.5,1),background .25s}
+#sidebar .h-item:active{transform:scale(.97)}
+#sidebar .h-item span{font-family:Georgia,'Vazirmatn',serif;font-size:16px;font-weight:400;letter-spacing:.005em}
+#sidebar .h-item.active-chat{background:linear-gradient(90deg,rgba(232,196,104,.26),rgba(232,196,104,.07));border-color:rgba(232,196,104,.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 6px 20px rgba(201,162,39,.16)}
+body.light-theme #sidebar{background:radial-gradient(circle at 12% 6%,rgba(201,114,46,.16),transparent 45%),rgba(250,246,237,.82)!important}
+body.light-theme #sidebar .h-item{background:rgba(255,255,255,.6);border-color:rgba(138,109,31,.2);box-shadow:inset 0 1px 0 #fff}
+#tools-menu.drop-menu{background:radial-gradient(circle at 15% 6%,rgba(201,114,46,.3),transparent 45%),radial-gradient(circle at 92% 94%,rgba(232,196,104,.16),transparent 48%),rgba(12,9,8,.9);-webkit-backdrop-filter:blur(40px) saturate(1.7);backdrop-filter:blur(40px) saturate(1.7);border:.5px solid rgba(232,196,104,.3)}
+#tools-menu .menu-header-label span{font-family:Georgia,serif;letter-spacing:.24em;color:#E8C468;font-weight:400}
+#tools-menu.tw-on .tool-group-label,#tools-menu.tw-on .tools-grid{display:none!important}
+.tw{position:relative;width:min(100%,330px);aspect-ratio:1;margin:6px auto 2px;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.tw-guide{position:absolute;inset:0;pointer-events:none}
+.tw-ring{position:absolute;inset:0;transition:transform .7s cubic-bezier(.25,1.2,.35,1)}
+.tw-n{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;display:grid;place-items:center;cursor:pointer;border:.5px solid rgba(232,196,104,.3);background:linear-gradient(160deg,rgba(255,255,255,.16),rgba(255,255,255,.05));box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 8px 18px rgba(0,0,0,.4);color:var(--tc);transition:transform .7s cubic-bezier(.25,1.2,.35,1),background .4s,color .4s,box-shadow .4s,width .4s,height .4s,margin .4s;-webkit-tap-highlight-color:transparent}
+.tw-n svg{width:24px;height:24px;stroke-width:1.8;pointer-events:none}
+.tw-n.on{width:72px;height:72px;margin:-36px 0 0 -36px;background:radial-gradient(circle at 35% 28%,#fff6d6,#E8C468 55%,#C9722E);color:#1a1206;box-shadow:0 10px 28px rgba(232,196,104,.5),inset 0 1px 0 rgba(255,255,255,.7)}
+.tw-c{position:absolute;left:50%;top:50%;width:46%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10px;background:linear-gradient(160deg,rgba(255,255,255,.13),rgba(255,255,255,.04));border:.5px solid rgba(232,196,104,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 14px 40px rgba(0,0,0,.45);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.tw-c b{font:400 22px/1.1 Georgia,'Vazirmatn',serif;color:#f6ecd2;transition:opacity .25s}
+.tw-c small{font:500 11.5px/1.3 'Space Grotesk','Vazirmatn',sans-serif;color:rgba(255,255,255,.55);margin-top:5px;transition:opacity .25s}
+.tw-c em{font:700 10.5px 'Space Mono',monospace;font-style:normal;letter-spacing:.16em;color:#E8C468;margin-top:9px;text-transform:uppercase}
+.tw-c.sw b,.tw-c.sw small{opacity:0}
+body.light-theme .tw-c b{color:#2b2313}body.light-theme .tw-c small{color:rgba(36,28,14,.6)}body.light-theme .tw-n{background:rgba(255,255,255,.75)}
+@media(prefers-reduced-motion:reduce){.tw-ring,.tw-n{transition:none}}`;document.head.appendChild(st)})();
+const TW={sel:0,rot:0,items:[],R:0};
+function twBuild(){
+  const menu=document.getElementById("tools-menu");if(!menu||menu.querySelector(".tw"))return;
+  const tiles=[...menu.querySelectorAll(".tool-tile")];if(tiles.length<3)return;
+  TW.items=tiles.map(t=>({el:t,name:t.querySelector(".tt-n").textContent.trim(),sub:(t.querySelector(".tt-s")||{}).textContent||"",svg:t.querySelector(".tt-ic svg").outerHTML,color:getComputedStyle(t).getPropertyValue("--tile-color")||t.style.getPropertyValue("--tile-color")||"#E8C468"}));
+  const n=TW.items.length,w=document.createElement("div");w.className="tw";
+  w.innerHTML=`<svg class="tw-guide" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="rgba(232,196,104,.28)" stroke-width=".35" stroke-dasharray=".6 2.2"/><circle cx="50" cy="50" r="27" fill="none" stroke="rgba(232,196,104,.13)" stroke-width=".3"/></svg><div class="tw-ring"></div><div class="tw-c" id="tw-c"><b></b><small></small><em></em></div>`;
+  const ring=w.querySelector(".tw-ring");
+  TW.items.forEach((it,i)=>{const b=document.createElement("div");b.className="tw-n";b.style.setProperty("--tc",it.color.trim());b.innerHTML=it.svg;b.dataset.i=i;it.node=b;ring.appendChild(b)});
+  const lbl=menu.querySelector(".menu-header-label");lbl.insertAdjacentElement("afterend",w);menu.classList.add("tw-on");
+  w.addEventListener("click",e=>{const nd=e.target.closest(".tw-n");if(nd){const i=+nd.dataset.i;if(i===TW.sel)twOpen();else twSelect(i,true);return}if(e.target.closest(".tw-c"))twOpen()});
+  let x0=null;w.addEventListener("touchstart",e=>{x0=e.touches[0].clientX},{passive:true});
+  w.addEventListener("touchend",e=>{if(x0===null)return;const dx=e.changedTouches[0].clientX-x0;x0=null;if(Math.abs(dx)>40){twSelect((TW.sel+(dx<0?1:-1)+n)%n,true)}},{passive:true});
+  new ResizeObserver(()=>twLayout(false)).observe(w);
+  twSelect(0,false);
+}
+function twLayout(anim){
+  const w=document.querySelector("#tools-menu .tw");if(!w)return;const n=TW.items.length;
+  TW.R=w.clientWidth*0.40;if(!TW.R)return;
+  const ring=w.querySelector(".tw-ring");ring.style.transition=anim?"":"none";
+  ring.style.transform=`rotate(${TW.rot}deg)`;
+  TW.items.forEach((it,i)=>{const a=i*360/n;it.node.style.transition=anim?"":"none";it.node.style.transform=`rotate(${a}deg) translateY(${-TW.R}px) rotate(${-a-TW.rot}deg)`});
+  if(!anim)requestAnimationFrame(()=>{ring.style.transition="";TW.items.forEach(it=>it.node.style.transition="")});
+}
+function twSelect(i,haptic_){
+  const n=TW.items.length;let d=((i-TW.sel)%n+n)%n;if(d>n/2)d-=n; // shortest way round
+  TW.rot-=d*360/n;TW.sel=i;
+  TW.items.forEach((it,k)=>it.node.classList.toggle("on",k===i));
+  twLayout(true);
+  const c=document.getElementById("tw-c"),it=TW.items[i];c.classList.add("sw");
+  setTimeout(()=>{c.querySelector("b").textContent=it.name;c.querySelector("small").textContent=it.sub;c.querySelector("em").textContent="Open";c.classList.remove("sw")},160);
+  if(haptic_){try{haptic("light")}catch(e){}}
+}
+function twOpen(){const it=TW.items[TW.sel];if(!it)return;try{haptic("medium")}catch(e){}try{closeAllDropMenus()}catch(e){}setTimeout(()=>it.el.click(),60)}
+twBuild();
+document.getElementById("tools-menu")&&new MutationObserver(()=>{if(document.getElementById("tools-menu").classList.contains("show"))twLayout(false)}).observe(document.getElementById("tools-menu"),{attributes:true,attributeFilter:["class"]});
+
+// ═══ CORE MENU — floating glass card that grows out of the core pill ═══
+(function(){const st=document.createElement("style");st.id="cmg-css";st.textContent=`
+#core-menu.cm2{--ox:60px;width:min(304px,calc(100vw - 24px));padding:10px 6px 8px;gap:2px;border-radius:28px;overflow:visible;transform-origin:var(--ox) 0;background:radial-gradient(circle at 10% 0,rgba(201,114,46,.34),transparent 55%),radial-gradient(circle at 100% 100%,rgba(232,196,104,.14),transparent 55%),rgba(18,13,11,.92);-webkit-backdrop-filter:blur(34px) saturate(1.7);backdrop-filter:blur(34px) saturate(1.7);border:.5px solid rgba(232,196,104,.45);box-shadow:0 30px 64px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.22)}
+#core-menu.cm2.show{animation:cmMorph .62s cubic-bezier(.2,1.15,.3,1) both}
+@keyframes cmMorph{0%{opacity:0;transform:scale(.2,.12);border-radius:18px}35%{opacity:1}100%{opacity:1;transform:none;border-radius:28px}}
+#core-menu.cm2::before{inset:0;height:auto;border-radius:inherit;background:radial-gradient(70% 60% at 50% 0,var(--cm-glow,rgba(232,196,104,.16)),transparent 70%);overflow:hidden}
+#core-menu.cm2::after{content:"";position:absolute;top:-7px;left:calc(var(--ox) - 7px);width:14px;height:14px;transform:rotate(45deg);background:rgba(34,24,16,.92);border-left:.5px solid rgba(232,196,104,.45);border-top:.5px solid rgba(232,196,104,.45);border-top-left-radius:4px;pointer-events:none}
+#core-menu .cm2-head{padding:6px 16px 6px}
+#core-menu .cm2-head b{font:400 10px Georgia,serif;letter-spacing:.28em;text-transform:uppercase;color:#E8C468}
+#core-menu .cm2-head small{font:500 9.5px 'Space Mono',monospace;color:rgba(255,255,255,.38)}
+#core-menu.cm2 .menu-group-box{gap:2px!important}
+#core-menu.cm2 .cm2c{grid-template-columns:36px 1fr auto;gap:12px;padding:0 12px;height:60px;border-radius:20px;background:none;border:.5px solid transparent;box-shadow:none;margin:0 2px;transition:background .3s,transform .4s cubic-bezier(.3,1.35,.5,1),border-color .3s}
+#core-menu.cm2 .cm2c::after{display:none}
+#core-menu.cm2 .cm2c.active{background:linear-gradient(100deg,color-mix(in srgb,var(--c) 30%,transparent),rgba(232,196,104,.06));border-color:color-mix(in srgb,var(--c) 55%,rgba(232,196,104,.4));box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 6px 22px -8px color-mix(in srgb,var(--c) 60%,transparent)}
+#core-menu.cm2 .cm2-em,#core-menu.cm2 .cm2-em svg{width:36px;height:36px}
+#core-menu.cm2 .cm2-nm{font:400 17px/1.1 Georgia,'Vazirmatn',serif;letter-spacing:.005em}
+#core-menu.cm2 .cm2-nm em{font:500 10px 'Space Mono',monospace;opacity:.7}
+#core-menu.cm2 .cm2-tg{margin:3px 0 0;font:400 11px/1.3 'Space Grotesk','Vazirmatn',sans-serif;color:rgba(255,255,255,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#core-menu.cm2 .cm2-ms,#core-menu.cm2 .cm2-ft{display:none}
+#core-menu.cm2 .cm2-rt{align-self:center;flex-direction:row;gap:0}
+#core-menu.cm2 .cm2-pl{font:700 8.5px 'Space Mono',monospace;letter-spacing:.09em;padding:3px 7px;border-radius:9px;background:rgba(255,255,255,.07);border:0;color:rgba(255,255,255,.55)}
+#core-menu.cm2 .cm2c.active .cm2-pl{display:none}
+#core-menu.cm2 .cm2c.active .cm2-ck{position:static;background:#E8C468;color:#1a1206;box-shadow:0 0 14px rgba(232,196,104,.55)}
+#core-menu.cm2 .cm2c.lock{opacity:.62}
+#core-menu.cm2.show .cm2c{animation:cmRow .55s cubic-bezier(.25,1.25,.4,1) backwards}
+#core-menu.cm2.show .cm2c:nth-child(1){animation-delay:.12s}#core-menu.cm2.show .cm2c:nth-child(2){animation-delay:.18s}#core-menu.cm2.show .cm2c:nth-child(3){animation-delay:.24s}#core-menu.cm2.show .cm2c:nth-child(4){animation-delay:.30s}
+@keyframes cmRow{from{opacity:0;transform:translateY(-12px) scale(.94)}}
+body.light-theme #core-menu.cm2{background:radial-gradient(circle at 10% 0,rgba(201,114,46,.18),transparent 55%),rgba(252,248,240,.88)}
+body.light-theme #core-menu.cm2::after{background:rgba(252,248,240,.95)}
+body.light-theme #core-menu .cm2-head b{color:#8a6d1f}
+body.light-theme #core-menu.cm2 .cm2c.active{background:linear-gradient(100deg,color-mix(in srgb,var(--c) 22%,#fff),rgba(255,255,255,.4))}
+@media(prefers-reduced-motion:reduce){#core-menu.cm2.show,#core-menu.cm2.show .cm2c{animation:none}}`;document.head.appendChild(st)})();
+(function(){const m=document.getElementById("core-menu");if(!m)return;
+  const aim=()=>{const p=document.getElementById("core-pill-btn");if(!p)return;const pr=p.getBoundingClientRect();if(!pr.width)return;const ml=Math.max(8,Math.min(pr.left+pr.width/2-152,innerWidth-304-8));
+    m.style.left=ml+"px";m.style.setProperty("--ox",Math.max(24,Math.min(280,pr.left+pr.width/2-ml))+"px")};
+  new MutationObserver(()=>{if(m.classList.contains("show"))aim()}).observe(m,{attributes:true,attributeFilter:["class"]});
+  addEventListener("resize",()=>{if(m.classList.contains("show"))aim()});
+})();
 
 function toggleZen(){}
 const TOAST_ICONS={success:'<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',error:'<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>',"":'<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>'};
@@ -7360,7 +7482,7 @@ const CORES=[
   em:c=>`<svg viewBox="0 0 50 50"><circle cx="25" cy="25" r="18" fill="none" stroke="${c}" stroke-opacity=".3"/><g class="o1"><circle cx="25" cy="7" r="3" fill="${c}"/></g><g class="o2"><circle cx="25" cy="14" r="2.2" fill="#fff" opacity=".8"/><circle cx="25" cy="36" r="2.2" fill="${c}" opacity=".7"/></g><circle cx="25" cy="25" r="6" fill="${c}"/></svg>`},
  {id:"26",v:"2.6",n:"Apex",c:"#00ff88",tg:"Senior developer matrix",pl:"IMMORTAL+",m:[["Speed",78],["Depth",76],["Craft",94]],
   em:c=>`<svg viewBox="0 0 50 50"><g class="o1"><polygon points="25,5 42.3,15 42.3,35 25,45 7.7,35 7.7,15" fill="none" stroke="${c}" stroke-width="1.5"/></g><g class="o2"><polygon points="25,13 35.4,19 35.4,31 25,37 14.6,31 14.6,19" fill="none" stroke="${c}" stroke-opacity=".6"/></g><path d="M20 22l-4 3 4 3M30 22l4 3-4 3" stroke="${c}" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`},
- {id:"27",v:"2.7",n:"Sovereign",c:"#E8C468",tg:"Frontier-scale, professional builds",pl:"SHAHANSHAH",m:[["Speed",66],["Depth",98],["Craft",98]],
+ {id:"27",v:"2.7",n:"Sovereign",c:"#E8C468",tg:"Frontier-scale, big builds",pl:"SHAHANSHAH",m:[["Speed",66],["Depth",98],["Craft",98]],
   em:c=>{let r="";for(let i=0;i<12;i++){const a=i*30*Math.PI/180;r+=`<line class="ry" x1="${25+14*Math.sin(a)}" y1="${25-14*Math.cos(a)}" x2="${25+(i%2?19:22)*Math.sin(a)}" y2="${25-(i%2?19:22)*Math.cos(a)}" stroke="${c}" stroke-width="1.6" stroke-linecap="round"/>`}
    return `<svg viewBox="0 0 50 50">${r}<circle class="pl" cx="25" cy="25" r="11" fill="none" stroke="${c}" stroke-opacity=".5"/><circle cx="25" cy="25" r="8" fill="${c}"/><path d="M20.5 27.5l1.4-5.3 3.1 3.1 3.1-3.1 1.4 5.3z" fill="#2a1d05"/></svg>`}}
 ];
