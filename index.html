@@ -1651,6 +1651,53 @@ body.light-theme .msg.ai h3{color:#9a6a1a}
 body.light-theme .msg.user{background:rgba(43,35,19,.06)}
 body.light-theme .msg.ai code:not(pre code){background:rgba(43,35,19,.07);color:#7a4f10}
 body.light-theme .msg.ai .katex-display{background:rgba(43,35,19,.03)}
+#premium-immersive-viewport .return-btn,#premium-immersive-viewport .prem-hero,#premium-immersive-viewport .plan-story{display:none!important}
+.pa{position:relative;z-index:10;--g:#E8C468;color:#f3eee4;font-family:'Space Grotesk','Vazirmatn',sans-serif;padding-bottom:80px}
+.pa *{box-sizing:border-box}
+.pa-nav{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:6px;padding:calc(env(safe-area-inset-top) + 10px) 12px 10px;background:rgba(10,8,7,.62);-webkit-backdrop-filter:blur(24px) saturate(1.7);backdrop-filter:blur(24px) saturate(1.7);border-bottom:.5px solid rgba(232,196,104,.2)}
+.pa-x{flex:none;width:36px;height:36px;border-radius:50%;border:.5px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;display:grid;place-items:center;cursor:pointer}
+.pa-links{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1}.pa-links::-webkit-scrollbar{display:none}
+.pa-links a{flex:none;padding:8px 13px;border-radius:18px;font:500 13px 'Space Grotesk',sans-serif;color:rgba(255,255,255,.62);cursor:pointer;transition:.25s;white-space:nowrap}.pa-links a.on{background:rgba(255,255,255,.12);color:#fff}
+.pa-hero{display:block!important;height:auto!important;min-height:0!important;position:relative;text-align:center;padding:84px 22px 70px;overflow:hidden}
+.pa-orb{position:absolute;left:50%;top:-40px;width:min(560px,130vw);aspect-ratio:1;transform:translateX(-50%);pointer-events:none}
+.pa-orb:before{content:"";position:absolute;inset:0;background:radial-gradient(circle,rgba(201,114,46,.5),rgba(122,46,46,.22) 45%,transparent 68%);animation:paBr 6s ease-in-out infinite}
+.pa-orb i{position:absolute;left:30%;top:30%;width:40%;aspect-ratio:1;border-radius:46% 54% 52% 48%/52% 46% 54% 48%;background:radial-gradient(circle at 34% 28%,#fff8dc,#E8C468 38%,#C9722E 72%,transparent 100%);opacity:.5;filter:blur(2px);animation:paMo 9s ease-in-out infinite}
+@keyframes paBr{50%{transform:scale(1.08);opacity:.8}}@keyframes paMo{50%{border-radius:56% 44% 44% 56%/44% 56% 46% 54%;transform:rotate(14deg) scale(1.06)}}
+.pa-eye{font:700 11.5px 'Space Mono',monospace;letter-spacing:.26em;text-transform:uppercase;color:var(--g);margin:0 0 14px}
+.pa h1,.pa h2{font-family:Georgia,'Vazirmatn',serif;font-weight:400;letter-spacing:-.025em;line-height:1.04;margin:0}
+.pa h1{font-size:clamp(42px,11.5vw,84px);position:relative}.pa h2{font-size:clamp(34px,8.6vw,60px)}
+.pa h1 em,.pa h2 em{font-style:italic;color:var(--g)}
+.pa-lead{font-size:clamp(16px,4.2vw,20px);line-height:1.6;color:rgba(243,238,228,.7);max-width:46ch;margin:22px auto 0;position:relative}
+.pa-cta{display:flex;gap:10px;justify-content:center;margin-top:30px;position:relative;flex-wrap:wrap}
+.pa-b{display:inline-flex;align-items:center;height:50px;padding:0 26px;border-radius:25px;font:700 15px 'Space Grotesk',sans-serif;cursor:pointer;border:.5px solid rgba(255,255,255,.25);color:#fff;background:rgba(255,255,255,.08);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}.pa-b.pri{background:linear-gradient(180deg,#f6e3a8,#E8C468 55%,#C9A227);color:#1a1206;border-color:transparent;box-shadow:0 10px 30px rgba(232,196,104,.35)}
+.pa-sec{padding:84px 0 20px;position:relative}.pa-w{max-width:1080px;margin:0 auto;padding:0 22px}
+.pa-three .pa-w{display:grid;gap:14px;grid-template-columns:repeat(3,1fr)}
+.pa-c{padding:26px;border-radius:28px;background:linear-gradient(160deg,rgba(255,255,255,.09),rgba(255,255,255,.025));border:.5px solid rgba(232,196,104,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.15)}.pa-c small{font:700 11px 'Space Mono',monospace;color:var(--g);letter-spacing:.2em}.pa-c h3{font:400 25px/1.15 Georgia,serif;margin:14px 0 10px}.pa-c p{margin:0;color:rgba(243,238,228,.65);line-height:1.6;font-size:14.5px}
+.pa-rail{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding:34px 22px 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch}.pa-rail::-webkit-scrollbar{display:none}
+.pa-core{flex:0 0 min(78vw,310px);scroll-snap-align:center;padding:26px;border-radius:32px;position:relative;overflow:hidden;background:linear-gradient(160deg,color-mix(in srgb,var(--c) 22%,#16100d),#100b09);border:.5px solid color-mix(in srgb,var(--c) 50%,transparent);box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
+.pa-gem{display:block;width:70px;height:70px;border-radius:50%;margin-bottom:30px;background:radial-gradient(circle at 35% 28%,#fff9,var(--c) 45%,#000a);box-shadow:0 0 44px var(--c);animation:paBr 5s ease-in-out infinite}
+.pa-core small{font:700 11px 'Space Mono',monospace;letter-spacing:.16em;color:var(--c);text-transform:uppercase}.pa-core h3{font:400 28px/1.1 Georgia,serif;margin:10px 0}.pa-core p{margin:0 0 20px;color:rgba(243,238,228,.65);line-height:1.6;font-size:14.5px}.pa-core span{display:inline-block;font:700 10.5px 'Space Mono',monospace;letter-spacing:.1em;padding:6px 11px;border-radius:12px;background:rgba(255,255,255,.08)}
+.pa-dark{background:#050407;margin-top:70px;padding:90px 0}.pa-two{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center}
+.pa-dark{--a:#E8C468;--b:#C9722E;--cc:#7A2E2E}
+.pa-aorb{position:relative;aspect-ratio:1;max-width:380px;width:100%;margin:0 auto;display:grid;place-items:center}.pa-aorb:before{content:"";position:absolute;inset:-12%;border-radius:50%;background:radial-gradient(circle closest-side,var(--cc),transparent);opacity:.6;transition:background .6s}
+#pa-ao{width:56%;aspect-ratio:1;border-radius:46% 54% 52% 48%/52% 46% 54% 48%;background:radial-gradient(circle at 34% 28%,#fff8dc,var(--a) 38%,var(--b) 72%,transparent 100%);box-shadow:0 0 90px color-mix(in srgb,var(--a) 50%,transparent);animation:paMo 7s ease-in-out infinite,paPu 3.4s ease-in-out infinite;transition:background .6s,box-shadow .6s}@keyframes paPu{50%{scale:1.07}}
+.pa-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px}.pa-chips button{height:40px;padding:0 16px;border-radius:20px;border:.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff;font:600 14px 'Space Grotesk',sans-serif;display:flex;align-items:center;gap:8px;cursor:pointer;transition:.25s}.pa-chips i{width:9px;height:9px;border-radius:50%}.pa-chips button.on{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.4)}
+.pa-fine{display:block;margin-top:16px;opacity:.5}
+.pa-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:36px}.pa-t{padding:22px;border-radius:26px;background:linear-gradient(160deg,rgba(255,255,255,.08),rgba(255,255,255,.02));border:.5px solid rgba(255,255,255,.12)}.pa-t svg{width:100%;height:84px;margin-bottom:12px}.pa-t h3{font:400 20px Georgia,serif;margin:0 0 6px}.pa-t p{margin:0;font-size:13.5px;color:rgba(243,238,228,.6);line-height:1.5}
+.pa-tb{border-radius:28px;overflow:hidden;border:.5px solid rgba(232,196,104,.25);background:rgba(255,255,255,.04);margin-top:30px}
+.pa-th,.pa-tr{display:grid;grid-template-columns:1.8fr repeat(4,1fr);align-items:center;padding:0 14px;text-align:center}.pa-th{background:rgba(232,196,104,.08);height:50px;font:700 11px 'Space Mono',monospace;letter-spacing:.04em;color:var(--g);z-index:2}.pa-tr{min-height:52px;border-top:.5px solid rgba(255,255,255,.07);font-size:13.5px}.pa-tr span{text-align:left;padding:10px 6px 10px 0;color:rgba(243,238,228,.85);line-height:1.35}.pa-tr i{font-style:normal;color:var(--g);font-size:14px}
+.pa-plans{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:32px}
+.pa-p{position:relative;padding:26px 22px;border-radius:30px;display:flex;flex-direction:column;background:linear-gradient(170deg,color-mix(in srgb,var(--c) 18%,#17110e),#0f0a08);border:.5px solid color-mix(in srgb,var(--c) 45%,transparent);box-shadow:inset 0 1px 0 rgba(255,255,255,.16)}.pa-p.hot{border-color:var(--c);box-shadow:0 0 50px color-mix(in srgb,var(--c) 30%,transparent),inset 0 1px 0 rgba(255,255,255,.25)}
+.pa-p small{font:700 11px 'Space Mono',monospace;letter-spacing:.2em;color:var(--c);text-transform:uppercase}.pa-p h3{font:400 23px/1.2 Georgia,serif;margin:12px 0 16px}.pa-p ul{list-style:none;margin:0 0 22px;padding:0;flex:1}.pa-p li{position:relative;padding:0 0 11px 22px;font-size:13.5px;line-height:1.5;color:rgba(243,238,228,.78)}.pa-p li:before{content:"";position:absolute;left:0;top:6px;width:10px;height:10px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c)}
+.pa-badge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);font:700 10px 'Space Mono',monospace;letter-spacing:.14em;text-transform:uppercase;font-style:normal;padding:5px 12px;border-radius:12px;background:var(--c);color:#06140d}
+.pa-price{margin:0 0 16px!important;padding:0!important;border:0!important}.pa-price b{font:400 40px Georgia,serif}.pa-price span{opacity:.5;margin-left:6px;font-size:13px}
+.pa-p .price-amount{font-family:Georgia,serif}.pa-p .story-cta{width:100%;height:50px;border-radius:25px;border:0;font:700 15px 'Space Grotesk',sans-serif;cursor:pointer;background:var(--c);color:#0c0a06;box-shadow:0 8px 24px color-mix(in srgb,var(--c) 40%,transparent)}.pa-p .story-cta.cta-current{background:rgba(255,255,255,.12);color:#fff;box-shadow:none}.pa-p #cta-free{background:rgba(255,255,255,.12);color:#fff;box-shadow:none}
+.pa .billing-toggle{margin-top:26px;justify-content:flex-start}
+.pa-faq .pa-w{max-width:760px}.pa-faq details{border-top:.5px solid rgba(255,255,255,.12);padding:4px 0}.pa-faq summary{list-style:none;cursor:pointer;padding:18px 0;font:400 20px Georgia,serif;display:flex;justify-content:space-between;gap:12px}.pa-faq summary::-webkit-details-marker{display:none}.pa-faq summary:after{content:"+";color:var(--g);font-size:24px;transition:.3s}.pa-faq details[open] summary:after{transform:rotate(45deg)}.pa-faq details p{margin:0 0 18px;color:rgba(243,238,228,.66);line-height:1.7;font-size:15px}
+.pa-bar{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 16px);transform:translate(-50%,140%);z-index:40;display:flex;align-items:center;gap:14px;padding:8px 8px 8px 22px;border-radius:30px;background:rgba(28,22,18,.72);-webkit-backdrop-filter:blur(26px) saturate(1.7);backdrop-filter:blur(26px) saturate(1.7);border:.5px solid rgba(232,196,104,.4);box-shadow:0 16px 40px rgba(0,0,0,.6);font-size:14px;transition:transform .6s cubic-bezier(.25,1.2,.35,1);white-space:nowrap}.pa-bar.on{transform:translate(-50%,0)}.pa-bar b{color:var(--g)}.pa-bar a{height:42px;padding:0 20px;border-radius:21px;display:grid;place-items:center;background:var(--g);color:#1a1206;font-weight:700;cursor:pointer}
+.pa-r{opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.2,.7,.3,1),transform .8s cubic-bezier(.2,.7,.3,1)}.pa-r.in{opacity:1;transform:none}
+@media(max-width:860px){.pa-three .pa-w{grid-template-columns:1fr}.pa-two{grid-template-columns:1fr}.pa-aorb{order:-1;max-width:290px}.pa-grid{grid-template-columns:1fr 1fr}.pa-plans{grid-template-columns:1fr}.pa-sec{padding-top:64px}.pa-th,.pa-tr{grid-template-columns:1.5fr repeat(4,.62fr);padding:0 10px}.pa-th{font-size:8.5px;letter-spacing:0}.pa-tr{font-size:12.5px}}
+@media(prefers-reduced-motion:reduce){.pa-r{opacity:1;transform:none;transition:none}.pa-orb:before,.pa-orb i,#pa-ao,.pa-gem{animation:none}}
 </style>
 </head>
 <body onclick="closeMenus(event)">
@@ -2196,83 +2243,54 @@ body.light-theme #mm-scrim{background:rgba(60,45,10,.14)}
   <div id="prem-particles"></div>
   <button class="return-btn" onclick="closePremium()">✕ RETURN TO CORE</button>
   <div class="prem-content">
-    <section class="prem-hero">
-      <div class="hero-eyebrow">✦ The Court of Phraortes</div>
-      <h1 class="hero-title"><span class="line-1">Choose your</span><span class="line-2">Rank</span></h1>
-      <p class="hero-sub">From Satrap to Shahanshah — every rank unlocks a deeper layer of the intelligence throne. Ascend as you evolve.</p>
-      <div class="hero-scroll-hint"><span>Scroll to explore</span><div class="scroll-line"></div></div>
-    </section>
-    <section class="plan-story" id="plan-story">
-      <div class="story-intro reveal">
-        <div class="section-label">Access Tiers</div>
-        <h2 class="plans-headline">Ranks of the Realm</h2>
-        <div class="billing-toggle">
-          <span class="toggle-label active" id="label-monthly">Monthly</span>
-          <div class="toggle-track" id="prem-toggle" onclick="toggleBilling()"><div class="toggle-thumb"></div></div>
-          <span class="toggle-label" id="label-annual">Annual</span>
-          <span class="save-badge">Save 30%</span>
-        </div>
-      </div>
-      <div class="story-chapter" data-chapter="starter">
-        <div class="story-chapter-inner">
-          <span class="plan-icon">🛰️</span>
-          <h3>Satrap</h3>
-          <p class="story-lede">For curious minds entering the intelligence grid.</p>
-          <p class="story-desc">A steady hand to govern your daily work — unrestricted conversation, sharp reasoning on demand, and your first two neural cores at the ready.</p>
-          <ul class="story-features">
-            <li style="--d:0">Unlimited Standard requests</li>
-            <li style="--d:1">100 Advanced Reasoning Slots/month — buy more anytime</li>
-            <li style="--d:2">Access to Phraortes' core intelligence engine</li>
-            <li style="--d:3">Real tools: live web search, weather, crypto prices</li>
-            <li style="--d:4">30 HD Image Renders</li>
-          </ul>
-          <div class="price-block"><div class="price-amount"><span class="price-currency">$</span><span class="price-num" id="price-starter" data-monthly="14.99" data-annual="10.49">14.99</span></div><div class="price-period">/ month · billed monthly</div><div class="price-annual" id="annual-starter">≈ $125.88 / year</div></div>
-          <button class="story-cta cta-starter" id="cta-starter" onclick="openPayment('Satrap','14.99')">Pledge as Satrap →</button>
-        </div>
-      </div>
-      <div class="story-chapter" data-chapter="pro">
-        <div class="story-chapter-inner">
-          <div class="popular-ribbon">MOST POPULAR</div>
-          <span class="plan-icon">🧠</span>
-          <h3>Immortal</h3>
-          <p class="story-lede">For builders pushing the limits of AI cognition.</p>
-          <p class="story-desc">Named for the royal guard of ten thousand, always kept at full strength. 350 premium slots, the senior developer-grade engine, and full API access.</p>
-          <ul class="story-features">
-            <li style="--d:0">Everything in Satrap, plus:</li>
-            <li style="--d:1">350 Premium Slots/month — buy more anytime</li>
-            <li style="--d:2">Unlocks the senior developer-grade engine</li>
-            <li style="--d:3">Full Workspace: files, Canvas with real PDF export</li>
-            <li style="--d:4">API access + Webhook integration</li>
-          </ul>
-          <div class="price-block"><div class="price-amount"><span class="price-currency">$</span><span class="price-num" id="price-pro" data-monthly="49.99" data-annual="34.99">49.99</span></div><div class="price-period">/ month · billed monthly</div><div class="price-annual" id="annual-pro">≈ $419.88 / year</div></div>
-          <button class="story-cta cta-pro" id="cta-pro" onclick="openPayment('Immortal','49.99')">Ascend to Immortal →</button>
-        </div>
-      </div>
-      <div class="story-chapter" data-chapter="ultimate">
-        <div class="story-chapter-inner">
-          <span class="plan-icon">👑</span>
-          <h3>Shahanshah</h3>
-          <p class="story-lede">Maximum power. Zero constraints.</p>
-          <p class="story-desc">King of Kings. Truly unlimited access across every core, unlimited commercial renders, and Aura live voice — the full weight of the throne, yours.</p>
-          <ul class="story-features">
-            <li style="--d:0">Everything in Immortal, fully unlimited</li>
-            <li style="--d:1">Exclusive access to our most powerful engine</li>
-            <li style="--d:2">Aura — unlimited live voice conversations</li>
-            <li style="--d:3">Unlimited Custom Assistants — build your own AI personas</li>
-            <li style="--d:4">Unlimited commercial-use image renders</li>
-          </ul>
-          <div class="price-block"><div class="price-amount"><span class="price-currency">$</span><span class="price-num" id="price-ult" data-monthly="119.99" data-annual="83.99">119.99</span></div><div class="price-period">/ month · billed monthly</div><div class="price-annual" id="annual-ult">≈ $1,007.88 / year</div></div>
-          <button class="story-cta cta-ultimate" id="cta-ultimate" onclick="openPayment('Shahanshah','119.99')">Claim Shahanshah →</button>
-        </div>
-      </div>
-    </section>
-    <div class="marquee-section"><div class="marquee-wrap"><div class="marquee-track"><span class="marquee-item">SATRAP</span><span class="marquee-item">IMMORTAL</span><span class="marquee-item">SHAHANSHAH</span><span class="marquee-item">PHRAORTES</span><span class="marquee-item">SATRAP</span><span class="marquee-item">IMMORTAL</span><span class="marquee-item">SHAHANSHAH</span><span class="marquee-item">PHRAORTES</span></div></div></div>
-    <section class="quick-compare">
-      <div class="section-label reveal">Quick Compare</div>
-      <div class="qc-row reveal" onclick="openPayment('Satrap','14.99')"><span class="qc-name">Satrap</span><span class="qc-price">$14.99/mo</span><span class="qc-arrow">→</span></div>
-      <div class="qc-row reveal" onclick="openPayment('Immortal','49.99')"><span class="qc-name">Immortal</span><span class="qc-price">$49.99/mo</span><span class="qc-arrow">→</span></div>
-      <div class="qc-row reveal" onclick="openPayment('Shahanshah','119.99')"><span class="qc-name">Shahanshah</span><span class="qc-price">$119.99/mo</span><span class="qc-arrow">→</span></div>
-    </section>
+    <div class="pa" id="pa">
+<nav class="pa-nav" id="pa-nav"><button class="pa-x" onclick="closePremium()" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="pa-links"><a data-t="pa-ov">Overview</a><a data-t="pa-co">Cores</a><a data-t="pa-au">Aura</a><a data-t="pa-to">Tools</a><a data-t="pa-cm">Compare</a><a data-t="pa-pl">Plans</a><a data-t="pa-fq">FAQ</a></div></nav>
+
+<section class="pa-hero" id="pa-ov"><div class="pa-orb"><i></i></div><p class="pa-eye pa-r">The Court of Phraortes</p><h1 class="pa-r">An agent for<br><em>everything you do.</em></h1><p class="pa-lead pa-r">Research it. Build it. Analyze it. Write it. Decide it. One intelligence that works across your day, from a quick question to a full project.</p><div class="pa-cta pa-r"><a class="pa-b pri" data-t="pa-pl">Choose a plan</a><a class="pa-b" data-t="pa-cm">Compare plans</a></div></section>
+
+<section class="pa-sec pa-three"><div class="pa-w"><div class="pa-c pa-r"><small>01</small><h3>Reasons before it answers.</h3><p>Complex requests are broken into steps, checked, and corrected before you see the result.</p></div><div class="pa-c pa-r"><small>02</small><h3>Works with real tools.</h3><p>It searches the web with sources, reads pages and files, runs code, and builds charts, documents and images.</p></div><div class="pa-c pa-r"><small>03</small><h3>Remembers how you work.</h3><p>Your preferences and context carry across conversations, so you never start from zero.</p></div></div></section>
+
+<section class="pa-sec" id="pa-co"><div class="pa-w"><p class="pa-eye pa-r">Cores</p><h2 class="pa-r">Four engines.<br><em>Choose the depth the task deserves.</em></h2></div>
+<div class="pa-rail pa-r"><article class="pa-core" style="--c:#8FA8FF"><i class="pa-gem"></i><small>Prime 2.4</small><h3>Everyday precision.</h3><p>Fast, accurate answers for the questions that fill a normal day.</p><span>Free</span></article><article class="pa-core" style="--c:#bf5af2"><i class="pa-gem"></i><small>Intellect 2.5</small><h3>Deep reasoning.</h3><p>Careful analysis and sourced research when the answer has to be right.</p><span>Satrap and above</span></article><article class="pa-core" style="--c:#3FE0A0"><i class="pa-gem"></i><small>Apex 2.6</small><h3>Engineering grade.</h3><p>Code, data and multi-step problems worked through to a finished result.</p><span>Immortal and above</span></article><article class="pa-core" style="--c:#E8C468"><i class="pa-gem"></i><small>Sovereign 2.7</small><h3>The most capable.</h3><p>Our strongest engine, for long, demanding projects from start to finish.</p><span>Shahanshah</span></article></div></section>
+
+<section class="pa-sec pa-dark" id="pa-au"><div class="pa-w pa-two"><div><p class="pa-eye pa-r">Aura</p><h2 class="pa-r">Speak.<br><em>It answers in kind.</em></h2><p class="pa-lead pa-r">A live voice conversation with five distinct personalities, real-time captions, and the freedom to interrupt at any moment. When the call ends, you receive a summary you can turn into a study set or a plan.</p><div class="pa-chips pa-r" id="pa-ch"><button class="on" data-c="#E8C468,#C9722E,#7A2E2E"><i style="background:#E8C468"></i>Nova</button><button data-c="#7C9CFF,#3B5BDB,#16306B"><i style="background:#7C9CFF"></i>Atlas</button><button data-c="#3FBF8F,#2C8C6B,#154036"><i style="background:#3FBF8F"></i>Sage</button><button data-c="#E86A9A,#F6AD55,#6B3FD6"><i style="background:#E86A9A"></i>Spark</button><button data-c="#FF6B3D,#F6AD55,#7A2E2E"><i style="background:#FF6B3D"></i>Coach</button></div><small class="pa-fine pa-r">Shahanshah plan</small></div><div class="pa-aorb pa-r"><div id="pa-ao"></div></div></div></section>
+
+<section class="pa-sec" id="pa-to"><div class="pa-w"><p class="pa-eye pa-r">Tools</p><h2 class="pa-r">Answers you can <em>work with.</em></h2><p class="pa-lead pa-r">Results are not pasted text. They are interactive objects that live inside the conversation.</p></div>
+<div class="pa-w pa-grid"><div class="pa-t pa-r"><svg viewBox="0 0 120 70"><path d="M4 56C24 56 30 14 56 14S88 60 116 24" fill="none" stroke="#E8C468" stroke-width="3" stroke-linecap="round"/><circle cx="88" cy="46" r="4" fill="#fff"/></svg><h3>Charts and graphs</h3><p>Plot, pan and read exact values.</p></div><div class="pa-t pa-r"><svg viewBox="0 0 120 70"><g stroke="#3FBF8F" stroke-width="3"><line x1="60" y1="30" x2="36" y2="52"/><line x1="60" y1="30" x2="84" y2="52"/><line x1="60" y1="30" x2="60" y2="8"/></g><circle cx="60" cy="30" r="10" fill="#E86A9A"/><circle cx="36" cy="52" r="7" fill="#fff"/><circle cx="84" cy="52" r="7" fill="#fff"/><circle cx="60" cy="8" r="6" fill="#fff"/></svg><h3>3D models</h3><p>Molecules and structures you can rotate.</p></div><div class="pa-t pa-r"><svg viewBox="0 0 120 70"><g fill="none" stroke="#7C9CFF" stroke-width="3" stroke-linecap="round"><path d="M18 20L6 35l12 15M102 20l12 15-12 15M70 12L50 58"/></g></svg><h3>Code that runs</h3><p>Write, edit and execute in the chat.</p></div><div class="pa-t pa-r"><svg viewBox="0 0 120 70"><rect x="30" y="6" width="60" height="58" rx="8" fill="none" stroke="#bf5af2" stroke-width="3"/><g stroke="#bf5af2" stroke-width="3" stroke-linecap="round"><line x1="42" y1="24" x2="78" y2="24"/><line x1="42" y1="36" x2="78" y2="36"/><line x1="42" y1="48" x2="62" y2="48"/></g></svg><h3>Documents and PDFs</h3><p>Draft, edit and export.</p></div><div class="pa-t pa-r"><svg viewBox="0 0 120 70"><circle cx="60" cy="35" r="22" fill="none" stroke="#fff3" stroke-width="3"/><path d="M60 13a22 22 0 0 1 20 31" fill="none" stroke="#3FE0A0" stroke-width="4" stroke-linecap="round"/><text x="60" y="40" text-anchor="middle" fill="#fff" font-size="14" font-family="Georgia">72%</text></svg><h3>Data and statistics</h3><p>Paste numbers, get the picture.</p></div><div class="pa-t pa-r"><svg viewBox="0 0 120 70"><circle cx="48" cy="32" r="18" fill="none" stroke="#E8C468" stroke-width="3"/><line x1="62" y1="46" x2="86" y2="62" stroke="#E8C468" stroke-width="4" stroke-linecap="round"/></svg><h3>Search with sources</h3><p>Current facts, every claim linked.</p></div></div></section>
+
+<section class="pa-sec" id="pa-cm"><div class="pa-w"><p class="pa-eye pa-r">Compare</p><h2 class="pa-r">Which one is <em>for you?</em></h2></div>
+<div class="pa-w"><div class="pa-tb pa-r"><div class="pa-th"><span></span><b>Free</b><b>Satrap</b><b>Immortal</b><b>Shahanshah</b></div>
+<div class="pa-tr"><span>Everyday reasoning and answers</span><i>●</i><i>●</i><i>●</i><i>●</i></div>
+<div class="pa-tr"><span>Charts, models and documents in chat</span><i>●</i><i>●</i><i>●</i><i>●</i></div>
+<div class="pa-tr"><span>Live web search with cited sources</span><i></i><i>●</i><i>●</i><i>●</i></div>
+<div class="pa-tr"><span>Reads photos, links and files</span><i></i><i>●</i><i>●</i><i>●</i></div>
+<div class="pa-tr"><span>Intellect: deep reasoning</span><i></i><i>●</i><i>●</i><i>●</i></div>
+<div class="pa-tr"><span>Apex: code and complex problems</span><i></i><i></i><i>●</i><i>●</i></div>
+<div class="pa-tr"><span>Workspace, canvas and PDF export</span><i></i><i></i><i>●</i><i>●</i></div>
+<div class="pa-tr"><span>Deep Research with sourced reports</span><i></i><i></i><i>●</i><i>●</i></div>
+<div class="pa-tr"><span>API and Webhook access</span><i></i><i></i><i>●</i><i>●</i></div>
+<div class="pa-tr"><span>Sovereign: our most capable engine</span><i></i><i></i><i></i><i>●</i></div>
+<div class="pa-tr"><span>Aura live voice</span><i></i><i></i><i></i><i>●</i></div>
+<div class="pa-tr"><span>Unlimited custom assistants</span><i></i><i></i><i></i><i>●</i></div>
+<div class="pa-tr"><span>Commercial-use image generation</span><i></i><i></i><i></i><i>●</i></div></div></div></section>
+
+<section class="pa-sec" id="pa-pl"><div class="pa-w"><p class="pa-eye pa-r">Plans</p><h2 class="pa-r">Choose your <em>rank.</em></h2>
+<div class="billing-toggle pa-r"><span class="toggle-label active" id="label-monthly">Monthly</span><div class="toggle-track" id="prem-toggle" onclick="toggleBilling()"><div class="toggle-thumb"></div></div><span class="toggle-label" id="label-annual">Annual</span><span class="save-badge">Save 30%</span></div></div>
+<div class="pa-w pa-plans">
+<article class="pa-p pa-r" style="--c:#9aa0b4"><small>Free</small><h3>Start with a capable assistant.</h3><ul><li>Reasoning and answers for everyday questions</li><li>Charts, documents and 3D models inside the chat</li><li>Conversation memory within each session</li></ul><div class="pa-price"><b>$0</b><span>forever</span></div><button class="story-cta" id="cta-free" onclick="closePremium()">Start free</button></article>
+<article class="pa-p pa-r" data-chapter="starter" style="--c:#3FD0C9"><small>Satrap</small><h3>For daily work, researched properly.</h3><ul><li>Live web search with cited sources</li><li>Reads photos, links and documents you share</li><li>Intellect: deep reasoning for research and analysis</li><li>Real-time information: weather, prices, current events</li></ul><div class="price-block pa-price"><div class="price-amount"><span class="price-currency">$</span><span class="price-num" id="price-starter" data-monthly="14.99" data-annual="10.49">14.99</span></div><div class="price-period">/ month · billed monthly</div><div class="price-annual" id="annual-starter">≈ $125.88 / year</div></div><button class="story-cta cta-starter" id="cta-starter" onclick="openPayment('Satrap','14.99')">Choose Satrap</button></article>
+<article class="pa-p pa-r hot" data-chapter="pro" style="--c:#3FE0A0"><em class="pa-badge">Most chosen</em><small>Immortal</small><h3>For professional and technical work.</h3><ul><li>Apex: engineering-grade reasoning for code and complex problems</li><li>A full workspace: files, a document canvas, PDF export</li><li>Deep Research: parallel searches compiled into a sourced report</li><li>API and Webhook access to connect your own systems</li></ul><div class="price-block pa-price"><div class="price-amount"><span class="price-currency">$</span><span class="price-num" id="price-pro" data-monthly="49.99" data-annual="34.99">49.99</span></div><div class="price-period">/ month · billed monthly</div><div class="price-annual" id="annual-pro">≈ $419.88 / year</div></div><button class="story-cta cta-pro" id="cta-pro" onclick="openPayment('Immortal','49.99')">Choose Immortal</button></article>
+<article class="pa-p pa-r" data-chapter="ultimate" style="--c:#E8C468"><small>Shahanshah</small><h3>The complete system, with a voice.</h3><ul><li>Sovereign: our most capable engine, with the highest limits</li><li>Aura live voice: five personalities, real-time captions, call summaries</li><li>Unlimited custom assistants, each with its own role and style</li><li>Commercial-use image generation without caps</li></ul><div class="price-block pa-price"><div class="price-amount"><span class="price-currency">$</span><span class="price-num" id="price-ult" data-monthly="119.99" data-annual="83.99">119.99</span></div><div class="price-period">/ month · billed monthly</div><div class="price-annual" id="annual-ult">≈ $1,007.88 / year</div></div><button class="story-cta cta-ultimate" id="cta-ultimate" onclick="openPayment('Shahanshah','119.99')">Claim Shahanshah</button></article></div></section>
+
+<section class="pa-sec pa-faq" id="pa-fq"><div class="pa-w"><p class="pa-eye pa-r">FAQ</p><h2 class="pa-r">Questions, <em>answered.</em></h2>
+<details class="pa-r"><summary>What is a core?</summary><p>A core is the engine behind a conversation. Prime is quick and everyday, Intellect reasons more deeply, Apex is built for code and complex problems, and Sovereign is our most capable. You can switch cores at any time from the pill at the top of the chat.</p></details>
+<details class="pa-r"><summary>What happens when I use my premium requests?</summary><p>Advanced cores draw on a monthly allowance. If you run out before it resets, you can top up instantly from Buy Extra Usage below, without changing plan.</p></details>
+<details class="pa-r"><summary>Can I change plan later?</summary><p>Yes. You can move to a higher plan whenever you need more, and your current plan is always marked on this page.</p></details>
+<details class="pa-r"><summary>Where are my conversations stored?</summary><p>Your chats are stored in your own browser on your device.</p></details>
+<details class="pa-r"><summary>Is Aura available on every plan?</summary><p>Aura live voice is part of Shahanshah. It needs a browser with speech recognition, such as Safari on iPhone.</p></details></div></section>
+<div class="pa-bar" id="pa-bar"><span>Plans from <b>$14.99</b>/mo</span><a data-t="pa-pl">Choose a plan</a></div>
+</div>
+
     <section class="addons-section">
       <div class="section-label reveal">Need More, Right Now?</div>
       <h2 class="plans-headline reveal reveal-delay-1" style="text-align:center">Buy Extra Usage</h2>
@@ -4264,7 +4282,7 @@ function initPlanUI(){
   updatePlanCTAs();updateAcPlanBadge();updateCorePillVisibility();
 }
 function updateProGauge(){const total=effectiveAdvSlots("pro"),left=total-proSlotsUsed,pct=Math.max(0,(left/total)*100);const f=document.getElementById("pro-gauge-fill"),c=document.getElementById("pro-slots-count");if(f)f.style.width=pct+"%";if(c)c.textContent=left+"/"+total}
-function updatePlanCTAs(){["starter","pro","ultimate"].forEach(p=>{const btn=document.getElementById("cta-"+p);if(!btn)return;const labels={starter:"Pledge as Satrap →",pro:"Ascend to Immortal →",ultimate:"Claim Shahanshah →"};if(activePlan===p){btn.textContent="✓ Current Plan";btn.classList.add("cta-current")}else{btn.textContent=labels[p];btn.classList.remove("cta-current")}})}
+function updatePlanCTAs(){["starter","pro","ultimate"].forEach(p=>{const btn=document.getElementById("cta-"+p);if(!btn)return;const labels={starter:"Choose Satrap",pro:"Choose Immortal",ultimate:"Claim Shahanshah"};if(activePlan===p){btn.textContent="✓ Current Plan";btn.classList.add("cta-current")}else{btn.textContent=labels[p];btn.classList.remove("cta-current")}})}
 function fmtTime(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;return`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(sc).padStart(2,"0")}`}
 
 // ═══ PAYMENT ═══
@@ -5783,7 +5801,18 @@ function initPlanStory(){
   chapters.forEach(c=>io.observe(c));
 }
 
-function openPremium(){closeMenus(null);document.getElementById("premium-immersive-viewport").classList.add("show");initGalaxyCanvas();updatePlanCTAs();initPlanStory()}
+function initPa(){
+  const vp=document.getElementById("premium-immersive-viewport"),pa=document.getElementById("pa");if(!vp||!pa||pa.dataset.i)return;pa.dataset.i=1;
+  const go=id=>{const el=document.getElementById(id);if(!el)return;const nav=document.getElementById("pa-nav");vp.scrollTo({top:el.offsetTop-(nav?nav.offsetHeight:0)+(id==="pa-ov"?0:8),behavior:"smooth"})};
+  pa.addEventListener("click",e=>{const a=e.target.closest("[data-t]");if(a){try{haptic("light")}catch(_){}go(a.dataset.t)}});
+  const io=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add("in");io.unobserve(x.target)}}),{root:vp,threshold:.12,rootMargin:"0px 0px -6% 0px"});
+  pa.querySelectorAll(".pa-r").forEach(e=>io.observe(e));
+  const secs=["pa-ov","pa-co","pa-au","pa-to","pa-cm","pa-pl","pa-fq"],links=[...pa.querySelectorAll(".pa-links a")],bar=document.getElementById("pa-bar");
+  let tk=false;vp.addEventListener("scroll",()=>{if(tk)return;tk=true;requestAnimationFrame(()=>{tk=false;const y=vp.scrollTop+vp.clientHeight*.35;let cur=secs[0];secs.forEach(id=>{const el=document.getElementById(id);if(el&&el.offsetTop<=y)cur=id});links.forEach(l=>{const on=l.dataset.t===cur;l.classList.toggle("on",on);if(on&&!l._s){l._s=1;l.scrollIntoView({inline:"center",block:"nearest",behavior:"smooth"});setTimeout(()=>l._s=0,300)}});
+    const pl=document.getElementById("pa-pl"),fq=document.getElementById("pa-fq");bar.classList.toggle("on",vp.scrollTop>vp.clientHeight*.8&&!(pl&&vp.scrollTop+vp.clientHeight>pl.offsetTop+200&&fq&&vp.scrollTop<fq.offsetTop))})},{passive:true});
+  const ch=pa.querySelectorAll("#pa-ch button"),au=document.getElementById("pa-au");ch.forEach(b=>b.onclick=()=>{ch.forEach(x=>x.classList.remove("on"));b.classList.add("on");const c=b.dataset.c.split(",");au.style.setProperty("--a",c[0]);au.style.setProperty("--b",c[1]);au.style.setProperty("--cc",c[2]);try{haptic("light")}catch(_){}});
+}
+function openPremium(){closeMenus(null);const v=document.getElementById("premium-immersive-viewport");v.classList.add("show");v.scrollTop=0;initGalaxyCanvas();updatePlanCTAs();initPa()}
 function closePremium(){document.getElementById("premium-immersive-viewport").classList.remove("show");if(animFId)cancelAnimationFrame(animFId)}
 function initGalaxyCanvas(){
   const canvas=document.getElementById("galaxy-canvas");if(!canvas)return;
