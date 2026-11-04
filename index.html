@@ -46,6 +46,7 @@
 <script src="artifacts.js"></script>
 <script src="chartboard.js"></script>
 <script src="payment.js"></script>
+<script src="plans.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -1490,7 +1491,7 @@ footer{padding-bottom:max(22px,calc(env(safe-area-inset-bottom,0px) + 8px))}
 .qm-cta button{width:calc(100% - 8px);border:none;border-radius:12px;padding:10px 0;font:700 12px 'Space Grotesk',sans-serif;color:#1a1005;background:linear-gradient(135deg,#F6E3A6,#D4A24C);cursor:pointer}
 .qm-cta button:active{transform:scale(.95)}
 
-/* Satrap's lapis-blue button was ~3:1 on the dark card — brighten the lapis so it reads */
+/* Plus's lapis-blue button was ~3:1 on the dark card — brighten the lapis so it reads */
 .cta-starter{color:#8DB4F0;background:rgba(44,90,160,0.16);border-color:rgba(96,140,210,0.55)}
 .cta-starter:hover{background:rgba(44,90,160,0.26)}
 
@@ -1844,9 +1845,9 @@ body.light-theme #mm-scrim{background:rgba(60,45,10,.14)}
     <div class="onboard-card">
       <div class="onboard-q" style="margin-bottom:16px">Three Ranks of the Realm</div>
       <div class="onboard-feature-list">
-        <div>🛰️ <b>Satrap</b> — everyday intelligence</div>
-        <div>🧠 <b>Immortal</b> — deep reasoning &amp; code</div>
-        <div>👑 <b>Shahanshah</b> — frontier-scale power</div>
+        <div>🛰️ <b>Plus</b> — everyday intelligence</div>
+        <div>🧠 <b>Pro</b> — deep reasoning &amp; code</div>
+        <div>👑 <b>Max</b> — frontier-scale power</div>
       </div>
       <button class="onboard-next-btn" onclick="onboardGoTo(4)">Continue →</button>
     </div>
@@ -2090,40 +2091,8 @@ body.light-theme #mm-scrim{background:rgba(60,45,10,.14)}
   <div class="au-sum" id="au-sum"></div>
 </div>
 
-<!-- PAYMENT MODAL -->
-<div id="payment-overlay" onclick="event.target===this&&closePayment()">
-  <div id="payment-modal" onclick="event.stopPropagation()">
-    <div id="pay-loading">
-      <div class="pay-shield">🛡️</div>
-      <div><div class="pay-load-title">Initializing Secure Gateway</div><div class="pay-load-sub" id="pay-load-sub-text">Establishing encrypted connection...</div></div>
-      <div class="pay-progress-track"><div class="pay-progress-fill" id="pay-progress"></div></div>
-      <div class="pay-security-tags"><span class="pay-tag">256-BIT SSL</span><span class="pay-tag">E2E ENCRYPTED</span><span class="pay-tag">ZERO LOGS</span></div>
-    </div>
-    <div id="pay-form">
-      <div class="pay-header">
-        <button class="pay-back-btn" onclick="closePayment()">←</button>
-        <div class="pay-header-info"><div class="pay-header-plan" id="pay-plan-name"></div><div class="pay-header-price" id="pay-plan-price"></div></div>
-        <div class="pay-lock-badge">🔒</div>
-      </div>
-      <div class="pay-body">
-        <div><div class="pay-label">SELECT NETWORK</div><select class="pay-select" id="pay-net" onchange="updatePayNet()"><option value="bep20">USDT — BEP20 (BNB Smart Chain)</option></select></div>
-        <div class="pay-qr-section"><div class="pay-qr-box"><canvas id="qr-canvas" width="130" height="130"></canvas></div></div>
-        <div><div class="pay-label">WALLET ADDRESS</div><div class="pay-address-row"><input class="pay-address-input" id="pay-address" readonly onclick="copyAddress()"><button class="pay-copy-btn" onclick="copyAddress()">COPY</button></div></div>
-        <div class="pay-info-row"><span>ℹ️</span><span>Send exactly the plan amount. After sending, paste your Transaction ID below.</span></div>
-        <div><div class="pay-label">TRANSACTION ID (TXID)</div><input class="pay-input" id="pay-txid" placeholder="Paste your transaction hash here..."></div>
-        <button class="pay-verify-btn" id="pay-verify-btn" onclick="verifyPayment()">✦ VERIFY PAYMENT & ACTIVATE PLAN</button>
-      </div>
-    </div>
-    <div id="pay-success">
-      <div class="pay-success-icon">🎉</div>
-      <div class="pay-success-title" id="pay-success-title"></div>
-      <div class="pay-success-sub" id="pay-success-sub"></div>
-      <div class="pay-success-plan-badge" id="pay-success-badge"></div>
-      <ul class="pay-success-features" id="pay-success-features"></ul>
-      <button class="pay-close-btn" onclick="closePayment()">START USING YOUR PLAN →</button>
-    </div>
-  </div>
-</div>
+<!-- checkout sheet is built by payment.js -->
+<div id="payment-overlay"></div>
 
 <!-- ACCOUNT PAGE (bottom sheet) -->
 <div id="account-page-backdrop" onclick="closeAccountPage()"></div>
@@ -2236,78 +2205,8 @@ body.light-theme #mm-scrim{background:rgba(60,45,10,.14)}
   </div>
 </div>
 
-<!-- PREMIUM GALAXY VIEWPORT -->
-<div id="premium-immersive-viewport">
-  <canvas id="galaxy-canvas"></canvas>
-  <div class="nebula-bg"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
-  <div id="prem-particles"></div>
-  <button class="return-btn" onclick="closePremium()">✕ RETURN TO CORE</button>
-  <div class="prem-content">
-    <div class="pa" id="pa">
-<nav class="pa-nav" id="pa-nav"><button class="pa-x" onclick="closePremium()" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="pa-links"><a data-t="pa-ov">Overview</a><a data-t="pa-co">Cores</a><a data-t="pa-au">Aura</a><a data-t="pa-to">Tools</a><a data-t="pa-cm">Compare</a><a data-t="pa-pl">Plans</a><a data-t="pa-fq">FAQ</a></div></nav>
-
-<section class="pa-hero" id="pa-ov"><div class="pa-orb"><i></i></div><p class="pa-eye pa-r">The Court of Phraortes</p><h1 class="pa-r">An agent for<br><em>everything you do.</em></h1><p class="pa-lead pa-r">Research it. Build it. Analyze it. Write it. Decide it. One intelligence that works across your day, from a quick question to a full project.</p><div class="pa-cta pa-r"><a class="pa-b pri" data-t="pa-pl">Choose a plan</a><a class="pa-b" data-t="pa-cm">Compare plans</a></div></section>
-
-<section class="pa-sec pa-three"><div class="pa-w"><div class="pa-c pa-r"><small>01</small><h3>Reasons before it answers.</h3><p>Complex requests are broken into steps, checked, and corrected before you see the result.</p></div><div class="pa-c pa-r"><small>02</small><h3>Works with real tools.</h3><p>It searches the web with sources, reads pages and files, runs code, and builds charts, documents and images.</p></div><div class="pa-c pa-r"><small>03</small><h3>Remembers how you work.</h3><p>Your preferences and context carry across conversations, so you never start from zero.</p></div></div></section>
-
-<section class="pa-sec" id="pa-co"><div class="pa-w"><p class="pa-eye pa-r">Cores</p><h2 class="pa-r">Four engines.<br><em>Choose the depth the task deserves.</em></h2></div>
-<div class="pa-rail pa-r"><article class="pa-core" style="--c:#8FA8FF"><i class="pa-gem"></i><small>Prime 2.4</small><h3>Everyday precision.</h3><p>Fast, accurate answers for the questions that fill a normal day.</p><span>Free</span></article><article class="pa-core" style="--c:#bf5af2"><i class="pa-gem"></i><small>Intellect 2.5</small><h3>Deep reasoning.</h3><p>Careful analysis and sourced research when the answer has to be right.</p><span>Satrap and above</span></article><article class="pa-core" style="--c:#3FE0A0"><i class="pa-gem"></i><small>Apex 2.6</small><h3>Engineering grade.</h3><p>Code, data and multi-step problems worked through to a finished result.</p><span>Immortal and above</span></article><article class="pa-core" style="--c:#E8C468"><i class="pa-gem"></i><small>Sovereign 2.7</small><h3>The most capable.</h3><p>Our strongest engine, for long, demanding projects from start to finish.</p><span>Shahanshah</span></article></div></section>
-
-<section class="pa-sec pa-dark" id="pa-au"><div class="pa-w pa-two"><div><p class="pa-eye pa-r">Aura</p><h2 class="pa-r">Speak.<br><em>It answers in kind.</em></h2><p class="pa-lead pa-r">A live voice conversation with five distinct personalities, real-time captions, and the freedom to interrupt at any moment. When the call ends, you receive a summary you can turn into a study set or a plan.</p><div class="pa-chips pa-r" id="pa-ch"><button class="on" data-c="#E8C468,#C9722E,#7A2E2E"><i style="background:#E8C468"></i>Nova</button><button data-c="#7C9CFF,#3B5BDB,#16306B"><i style="background:#7C9CFF"></i>Atlas</button><button data-c="#3FBF8F,#2C8C6B,#154036"><i style="background:#3FBF8F"></i>Sage</button><button data-c="#E86A9A,#F6AD55,#6B3FD6"><i style="background:#E86A9A"></i>Spark</button><button data-c="#FF6B3D,#F6AD55,#7A2E2E"><i style="background:#FF6B3D"></i>Coach</button></div><small class="pa-fine pa-r">Shahanshah plan</small></div><div class="pa-aorb pa-r"><div id="pa-ao"></div></div></div></section>
-
-<section class="pa-sec" id="pa-to"><div class="pa-w"><p class="pa-eye pa-r">Tools</p><h2 class="pa-r">Answers you can <em>work with.</em></h2><p class="pa-lead pa-r">Results are not pasted text. They are interactive objects that live inside the conversation.</p></div>
-<div class="pa-w pa-grid"><div class="pa-t pa-r"><svg viewBox="0 0 120 70"><path d="M4 56C24 56 30 14 56 14S88 60 116 24" fill="none" stroke="#E8C468" stroke-width="3" stroke-linecap="round"/><circle cx="88" cy="46" r="4" fill="#fff"/></svg><h3>Charts and graphs</h3><p>Plot, pan and read exact values.</p></div><div class="pa-t pa-r"><svg viewBox="0 0 120 70"><g stroke="#3FBF8F" stroke-width="3"><line x1="60" y1="30" x2="36" y2="52"/><line x1="60" y1="30" x2="84" y2="52"/><line x1="60" y1="30" x2="60" y2="8"/></g><circle cx="60" cy="30" r="10" fill="#E86A9A"/><circle cx="36" cy="52" r="7" fill="#fff"/><circle cx="84" cy="52" r="7" fill="#fff"/><circle cx="60" cy="8" r="6" fill="#fff"/></svg><h3>3D models</h3><p>Molecules and structures you can rotate.</p></div><div class="pa-t pa-r"><svg viewBox="0 0 120 70"><g fill="none" stroke="#7C9CFF" stroke-width="3" stroke-linecap="round"><path d="M18 20L6 35l12 15M102 20l12 15-12 15M70 12L50 58"/></g></svg><h3>Code that runs</h3><p>Write, edit and execute in the chat.</p></div><div class="pa-t pa-r"><svg viewBox="0 0 120 70"><rect x="30" y="6" width="60" height="58" rx="8" fill="none" stroke="#bf5af2" stroke-width="3"/><g stroke="#bf5af2" stroke-width="3" stroke-linecap="round"><line x1="42" y1="24" x2="78" y2="24"/><line x1="42" y1="36" x2="78" y2="36"/><line x1="42" y1="48" x2="62" y2="48"/></g></svg><h3>Documents and PDFs</h3><p>Draft, edit and export.</p></div><div class="pa-t pa-r"><svg viewBox="0 0 120 70"><circle cx="60" cy="35" r="22" fill="none" stroke="#fff3" stroke-width="3"/><path d="M60 13a22 22 0 0 1 20 31" fill="none" stroke="#3FE0A0" stroke-width="4" stroke-linecap="round"/><text x="60" y="40" text-anchor="middle" fill="#fff" font-size="14" font-family="Georgia">72%</text></svg><h3>Data and statistics</h3><p>Paste numbers, get the picture.</p></div><div class="pa-t pa-r"><svg viewBox="0 0 120 70"><circle cx="48" cy="32" r="18" fill="none" stroke="#E8C468" stroke-width="3"/><line x1="62" y1="46" x2="86" y2="62" stroke="#E8C468" stroke-width="4" stroke-linecap="round"/></svg><h3>Search with sources</h3><p>Current facts, every claim linked.</p></div></div></section>
-
-<section class="pa-sec" id="pa-cm"><div class="pa-w"><p class="pa-eye pa-r">Compare</p><h2 class="pa-r">Which one is <em>for you?</em></h2></div>
-<div class="pa-w"><div class="pa-tb pa-r"><div class="pa-th"><span></span><b>Free</b><b>Satrap</b><b>Immortal</b><b>Shahanshah</b></div>
-<div class="pa-tr"><span>Everyday reasoning and answers</span><i>●</i><i>●</i><i>●</i><i>●</i></div>
-<div class="pa-tr"><span>Charts, models and documents in chat</span><i>●</i><i>●</i><i>●</i><i>●</i></div>
-<div class="pa-tr"><span>Live web search with cited sources</span><i></i><i>●</i><i>●</i><i>●</i></div>
-<div class="pa-tr"><span>Reads photos, links and files</span><i></i><i>●</i><i>●</i><i>●</i></div>
-<div class="pa-tr"><span>Intellect: deep reasoning</span><i></i><i>●</i><i>●</i><i>●</i></div>
-<div class="pa-tr"><span>Apex: code and complex problems</span><i></i><i></i><i>●</i><i>●</i></div>
-<div class="pa-tr"><span>Workspace, canvas and PDF export</span><i></i><i></i><i>●</i><i>●</i></div>
-<div class="pa-tr"><span>Deep Research with sourced reports</span><i></i><i></i><i>●</i><i>●</i></div>
-<div class="pa-tr"><span>API and Webhook access</span><i></i><i></i><i>●</i><i>●</i></div>
-<div class="pa-tr"><span>Sovereign: our most capable engine</span><i></i><i></i><i></i><i>●</i></div>
-<div class="pa-tr"><span>Aura live voice</span><i></i><i></i><i></i><i>●</i></div>
-<div class="pa-tr"><span>Unlimited custom assistants</span><i></i><i></i><i></i><i>●</i></div>
-<div class="pa-tr"><span>Commercial-use image generation</span><i></i><i></i><i></i><i>●</i></div></div></div></section>
-
-<section class="pa-sec" id="pa-pl"><div class="pa-w"><p class="pa-eye pa-r">Plans</p><h2 class="pa-r">Choose your <em>rank.</em></h2>
-<div class="billing-toggle pa-r"><span class="toggle-label active" id="label-monthly">Monthly</span><div class="toggle-track" id="prem-toggle" onclick="toggleBilling()"><div class="toggle-thumb"></div></div><span class="toggle-label" id="label-annual">Annual</span><span class="save-badge">Save 30%</span></div></div>
-<div class="pa-w pa-plans">
-<article class="pa-p pa-r" style="--c:#9aa0b4"><small>Free</small><h3>Start with a capable assistant.</h3><ul><li>Reasoning and answers for everyday questions</li><li>Charts, documents and 3D models inside the chat</li><li>Conversation memory within each session</li></ul><div class="pa-price"><b>$0</b><span>forever</span></div><button class="story-cta" id="cta-free" onclick="closePremium()">Start free</button></article>
-<article class="pa-p pa-r" data-chapter="starter" style="--c:#3FD0C9"><small>Satrap</small><h3>For daily work, researched properly.</h3><ul><li>Live web search with cited sources</li><li>Reads photos, links and documents you share</li><li>Intellect: deep reasoning for research and analysis</li><li>Real-time information: weather, prices, current events</li></ul><div class="price-block pa-price"><div class="price-amount"><span class="price-currency">$</span><span class="price-num" id="price-starter" data-monthly="14.99" data-annual="10.49">14.99</span></div><div class="price-period">/ month · billed monthly</div><div class="price-annual" id="annual-starter">≈ $125.88 / year</div></div><button class="story-cta cta-starter" id="cta-starter" onclick="openPayment('Satrap','14.99')">Choose Satrap</button></article>
-<article class="pa-p pa-r hot" data-chapter="pro" style="--c:#3FE0A0"><em class="pa-badge">Most chosen</em><small>Immortal</small><h3>For professional and technical work.</h3><ul><li>Apex: engineering-grade reasoning for code and complex problems</li><li>A full workspace: files, a document canvas, PDF export</li><li>Deep Research: parallel searches compiled into a sourced report</li><li>API and Webhook access to connect your own systems</li></ul><div class="price-block pa-price"><div class="price-amount"><span class="price-currency">$</span><span class="price-num" id="price-pro" data-monthly="49.99" data-annual="34.99">49.99</span></div><div class="price-period">/ month · billed monthly</div><div class="price-annual" id="annual-pro">≈ $419.88 / year</div></div><button class="story-cta cta-pro" id="cta-pro" onclick="openPayment('Immortal','49.99')">Choose Immortal</button></article>
-<article class="pa-p pa-r" data-chapter="ultimate" style="--c:#E8C468"><small>Shahanshah</small><h3>The complete system, with a voice.</h3><ul><li>Sovereign: our most capable engine, with the highest limits</li><li>Aura live voice: five personalities, real-time captions, call summaries</li><li>Unlimited custom assistants, each with its own role and style</li><li>Commercial-use image generation without caps</li></ul><div class="price-block pa-price"><div class="price-amount"><span class="price-currency">$</span><span class="price-num" id="price-ult" data-monthly="119.99" data-annual="83.99">119.99</span></div><div class="price-period">/ month · billed monthly</div><div class="price-annual" id="annual-ult">≈ $1,007.88 / year</div></div><button class="story-cta cta-ultimate" id="cta-ultimate" onclick="openPayment('Shahanshah','119.99')">Claim Shahanshah</button></article></div></section>
-
-<section class="pa-sec pa-faq" id="pa-fq"><div class="pa-w"><p class="pa-eye pa-r">FAQ</p><h2 class="pa-r">Questions, <em>answered.</em></h2>
-<details class="pa-r"><summary>What is a core?</summary><p>A core is the engine behind a conversation. Prime is quick and everyday, Intellect reasons more deeply, Apex is built for code and complex problems, and Sovereign is our most capable. You can switch cores at any time from the pill at the top of the chat.</p></details>
-<details class="pa-r"><summary>What happens when I use my premium requests?</summary><p>Advanced cores draw on a monthly allowance. If you run out before it resets, you can top up instantly from Buy Extra Usage below, without changing plan.</p></details>
-<details class="pa-r"><summary>Can I change plan later?</summary><p>Yes. You can move to a higher plan whenever you need more, and your current plan is always marked on this page.</p></details>
-<details class="pa-r"><summary>Where are my conversations stored?</summary><p>Your chats are stored in your own browser on your device.</p></details>
-<details class="pa-r"><summary>Is Aura available on every plan?</summary><p>Aura live voice is part of Shahanshah. It needs a browser with speech recognition, such as Safari on iPhone.</p></details></div></section>
-<div class="pa-bar" id="pa-bar"><span>Plans from <b>$14.99</b>/mo</span><a data-t="pa-pl">Choose a plan</a></div>
-</div>
-
-    <section class="addons-section">
-      <div class="section-label reveal">Need More, Right Now?</div>
-      <h2 class="plans-headline reveal reveal-delay-1" style="text-align:center">Buy Extra Usage</h2>
-      <p class="reveal reveal-delay-1" style="text-align:center;color:var(--text-secondary);font-size:13px;max-width:420px;margin:0 auto 26px">Ran out of Advanced Reasoning Slots before your reset? Top up instantly — no plan change, no waiting.</p>
-      <div class="addons-grid">
-        <div class="addon-card reveal reveal-delay-1" onclick="openTopupPayment('slots50')"><div class="addon-icon">⚡</div><div class="addon-info"><div class="addon-name">+50 Extra Slots</div><div class="addon-desc">Instant top-up, added the moment you pay</div></div><div class="addon-price">$2.99</div></div>
-        <div class="addon-card reveal reveal-delay-2" onclick="openTopupPayment('slots200')"><div class="addon-icon">⚡</div><div class="addon-info"><div class="addon-name">+200 Extra Slots</div><div class="addon-desc">Best value — for heavy usage days</div></div><div class="addon-price">$8.99</div></div>
-      </div>
-    </section>
-    <section class="prem-footer-cta">
-      <div class="footer-cta-glow"></div>
-      <h2 class="footer-cta-title reveal">Ready to enter<br><span style="background:linear-gradient(135deg,var(--pulse-bright),var(--cyan-star));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">the matrix?</span></h2>
-      <p class="footer-cta-sub reveal">Pick your plan and activate in seconds.</p>
-      <button class="btn-primary reveal" onclick="document.getElementById('plan-story').scrollIntoView({behavior:'smooth'})">See all plans →</button>
-    </section>
-  </div>
-</div>
+<!-- plans sheet is built by plans.js -->
+<div id="premium-immersive-viewport" aria-hidden="true"></div>
 
 <!-- SIDEBAR -->
 <div id="sidebar" onclick="event.stopPropagation()">
@@ -2405,15 +2304,15 @@ body.light-theme #mm-scrim{background:rgba(60,45,10,.14)}
         <div class="mi-sub"><span>Fast everyday tasks</span><div class="mi-power" style="color:#8888BB"><i class="on"></i><i></i><i></i><i></i></div></div>
       </div>
       <div class="model-item" id="m-25" onclick="selectModel('2.5')">
-        <div class="mi-top"><span class="mi-name"><span class="mi-dot" style="background:#bf5af2"></span>Intellect <span style="opacity:0.5;font-weight:500">2.5</span></span><span class="model-tag">SATRAP+</span></div>
+        <div class="mi-top"><span class="mi-name"><span class="mi-dot" style="background:#bf5af2"></span>Intellect <span style="opacity:0.5;font-weight:500">2.5</span></span><span class="model-tag">PLUS+</span></div>
         <div class="mi-sub"><span>Deep reasoning &amp; research</span><div class="mi-power" style="color:#bf5af2"><i class="on"></i><i class="on"></i><i></i><i></i></div></div>
       </div>
       <div class="model-item" id="m-26" onclick="selectModel('2.6')">
-        <div class="mi-top"><span class="mi-name"><span class="mi-dot" style="background:#00ff88"></span>Apex <span style="opacity:0.5;font-weight:500">2.6</span></span><span class="model-tag">IMMORTAL+</span></div>
+        <div class="mi-top"><span class="mi-name"><span class="mi-dot" style="background:#00ff88"></span>Apex <span style="opacity:0.5;font-weight:500">2.6</span></span><span class="model-tag">PRO+</span></div>
         <div class="mi-sub"><span>Senior developer matrix</span><div class="mi-power" style="color:#00ff88"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div>
       </div>
       <div class="model-item" id="m-27" onclick="selectModel('2.7')">
-        <div class="mi-top"><span class="mi-name"><span class="mi-dot" style="background:#E8C468"></span>Sovereign <span style="opacity:0.5;font-weight:500">2.7</span></span><span class="model-tag tag-top">SHAHANSHAH</span></div>
+        <div class="mi-top"><span class="mi-name"><span class="mi-dot" style="background:#E8C468"></span>Sovereign <span style="opacity:0.5;font-weight:500">2.7</span></span><span class="model-tag tag-top">MAX</span></div>
         <div class="mi-sub"><span>Frontier-scale, professional builds</span><div class="mi-power" style="color:#E8C468"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div></div>
       </div>
     </div>
@@ -2612,7 +2511,7 @@ function licenseAuthHeader(){
 }
 const GOOGLE_CLIENT_ID="961077952714-d1ba3ls025vrqou4hfr3jgvtdltsqh55.apps.googleusercontent.com";
 const REDIRECT_URI="https://novamind-official.github.io/";
-const PLAN_CFG={free:{name:"Free",msgLimit:10,advSlots:0,images:0,models:["2.4"]},starter:{name:"Satrap",msgLimit:null,advSlots:100,images:30,models:["2.4","2.5"]},pro:{name:"Immortal",msgLimit:null,advSlots:350,images:120,models:["2.4","2.5","2.6"]},ultimate:{name:"Shahanshah",msgLimit:null,advSlots:null,images:null,models:["2.4","2.5","2.6","2.7"]}};
+const PLAN_CFG={free:{name:"Free",msgLimit:10,advSlots:0,images:0,models:["2.4"]},starter:{name:"Plus",msgLimit:null,advSlots:100,images:30,models:["2.4","2.5"]},pro:{name:"Pro",msgLimit:null,advSlots:350,images:120,models:["2.4","2.5","2.6"]},ultimate:{name:"Max",msgLimit:null,advSlots:null,images:null,models:["2.4","2.5","2.6","2.7"]}};
 function effectiveAdvSlots(plan){const base=PLAN_CFG[plan]?.advSlots;return base===null||base===undefined?base:base+extraSlots}
 // PLAN_FEATURES moved to payment.js
 const WALLETS={bep20:"0xdd96c438bdf70ec037b6a51a34348eb85051a6eb"};
@@ -3888,7 +3787,7 @@ PHR_onLoad(()=>{
   initCompareGesture();
   initSelectionTranslate();
   initAccountParallax();
-  initOnboarding();
+  initOnboarding();try{PHR_PAY.resume()}catch(e){}
   {
     const blobEls=[[document.querySelector(".blob-1"),[0.03,0.05]],[document.querySelector(".blob-2"),[-0.04,0.03]],[document.querySelector(".blob-3"),[0.02,-0.04]]].filter(([el])=>el);
     document.getElementById("premium-immersive-viewport").addEventListener("scroll",e=>{
@@ -4054,7 +3953,7 @@ function renderUsageTab(){
     const used=proSlotsUsed,total=effectiveAdvSlots("pro"),pct=used/total*100;
     html=circularRing(pct,"var(--p)",`${used}/${total}`,"Premium Slots")+`<div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.35);margin-top:6px">Standard requests: unlimited</div>`;
   }else{
-    html=`<div style="text-align:center;padding:16px 0;color:#F5D78A;font-family:'Space Mono',monospace;font-size:13px">✦ Shahanshah — truly unlimited</div>`;
+    html=`<div style="text-align:center;padding:16px 0;color:#F5D78A;font-family:'Space Mono',monospace;font-size:13px">✦ Max — truly unlimited</div>`;
   }
   qEl.innerHTML=html;
 }
@@ -4206,7 +4105,7 @@ function triggerGlitch(){document.body.classList.add("glitch-active");setTimeout
 // ==== Radar chart: core comparison ====
 function updateAcPlanBadge(){
   const badge=document.getElementById("ac-plan-badge");
-  const names={free:"Free Tier",starter:"Satrap",pro:"Immortal",ultimate:"Shahanshah"};
+  const names={free:"Free Tier",starter:"Plus",pro:"Pro",ultimate:"Max"};
   if(badge){badge.textContent=names[activePlan]||"Free Tier";badge.className="plan-badge "+activePlan}
   const hero=document.getElementById("ac-hero-plan-badge");
   if(hero){hero.textContent=names[activePlan]||"Free Tier";hero.className="ac-hero-plan-badge "+(activePlan!=="free"?"tier-"+activePlan:"")}
@@ -4225,7 +4124,7 @@ function updateCorePillVisibility(){
 // ═══ LIMIT WINDOWS ═══
 // One rule, derived purely from wall-clock timestamps (so it is identical whether the page stayed open,
 // was closed, or the phone slept): the window OPENS the moment the quota hits its limit and lasts N hours
-// (Free 5 h, Satrap 3 h). When it ends the quota resets and NO timer runs until the limit is hit again.
+// (Free 5 h, Plus 3 h). When it ends the quota resets and NO timer runs until the limit is hit again.
 // The old code re-created the window whenever it found an expired one on page load — so coming back after
 // the 5 hours restarted a fresh 5 hours instead of resetting the count.
 function reconcileLimits(){
@@ -4282,7 +4181,7 @@ function initPlanUI(){
   updatePlanCTAs();updateAcPlanBadge();updateCorePillVisibility();
 }
 function updateProGauge(){const total=effectiveAdvSlots("pro"),left=total-proSlotsUsed,pct=Math.max(0,(left/total)*100);const f=document.getElementById("pro-gauge-fill"),c=document.getElementById("pro-slots-count");if(f)f.style.width=pct+"%";if(c)c.textContent=left+"/"+total}
-function updatePlanCTAs(){["starter","pro","ultimate"].forEach(p=>{const btn=document.getElementById("cta-"+p);if(!btn)return;const labels={starter:"Choose Satrap",pro:"Choose Immortal",ultimate:"Claim Shahanshah"};if(activePlan===p){btn.textContent="✓ Current Plan";btn.classList.add("cta-current")}else{btn.textContent=labels[p];btn.classList.remove("cta-current")}})}
+function updatePlanCTAs(){try{PHR_PLANS.refresh()}catch(e){}}
 function fmtTime(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;return`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(sc).padStart(2,"0")}`}
 
 // ═══ PAYMENT ═══
@@ -4860,9 +4759,9 @@ async function readSSE(resp,onDelta,onProgress,onReason){
 async function fetchAI(messages,useVision,isCodeQuery,opts){
   opts=opts||{};
   const enableTools=!!opts.enableTools,elId=opts.elId||null,toolRound=opts.toolRound||0;
-  if(activeModel==="2.5"&&activePlan==="free")throw new Error("Intellect 2.5 requires the Satrap plan or above.");
-  if(activeModel==="2.6"&&activePlan!=="pro"&&activePlan!=="ultimate")throw new Error("Apex 2.6 requires the Immortal plan or above.");
-  if(activeModel==="2.7"&&activePlan!=="ultimate")throw new Error("Sovereign 2.7 requires the Shahanshah plan.");
+  if(activeModel==="2.5"&&activePlan==="free")throw new Error("Intellect 2.5 requires the Plus plan or above.");
+  if(activeModel==="2.6"&&activePlan!=="pro"&&activePlan!=="ultimate")throw new Error("Apex 2.6 requires the Pro plan or above.");
+  if(activeModel==="2.7"&&activePlan!=="ultimate")throw new Error("Sovereign 2.7 requires the Max plan.");
   // Model routing — OpenRouter FREE models (":free"), newest first, checked 2026-10. Each core has a priority chain: if the
   // first model is busy, rate-limited or does not support tools, the loop below silently moves to the next one.
   // The last entry of every chain is OpenRouter's own free router, so a turn never dies because one model is down.
@@ -5667,7 +5566,7 @@ try{speechSynthesis.addEventListener("voiceschanged",()=>{if(SP.active)spUpdate(
 function handleFiles(e){
   Array.from(e.target.files).forEach(file=>{
     const id=Date.now()+Math.random().toString(36).substr(2,6),sz=(file.size/1024).toFixed(1)+" KB";
-    if((activePlan==="free"||activePlan==="starter")&&file.size>5*1024*1024){showToast("Files > 5MB require the Immortal plan or above","error");return}
+    if((activePlan==="free"||activePlan==="starter")&&file.size>5*1024*1024){showToast("Files > 5MB require the Pro plan or above","error");return}
     if(file.type.startsWith("image/")){
       const reader=new FileReader();
       reader.onload=ev=>{attachedFiles.push({id,file,type:"image",name:file.name,size:sz,dataURL:ev.target.result});renderPreviews()};
@@ -5812,8 +5711,8 @@ function initPa(){
     const pl=document.getElementById("pa-pl"),fq=document.getElementById("pa-fq");bar.classList.toggle("on",vp.scrollTop>vp.clientHeight*.8&&!(pl&&vp.scrollTop+vp.clientHeight>pl.offsetTop+200&&fq&&vp.scrollTop<fq.offsetTop))})},{passive:true});
   const ch=pa.querySelectorAll("#pa-ch button"),au=document.getElementById("pa-au");ch.forEach(b=>b.onclick=()=>{ch.forEach(x=>x.classList.remove("on"));b.classList.add("on");const c=b.dataset.c.split(",");au.style.setProperty("--a",c[0]);au.style.setProperty("--b",c[1]);au.style.setProperty("--cc",c[2]);try{haptic("light")}catch(_){}});
 }
-function openPremium(){closeMenus(null);const v=document.getElementById("premium-immersive-viewport");v.classList.add("show");v.scrollTop=0;initGalaxyCanvas();updatePlanCTAs();initPa()}
-function closePremium(){document.getElementById("premium-immersive-viewport").classList.remove("show");if(animFId)cancelAnimationFrame(animFId)}
+function openPremium(p){closeMenus(null);PHR_PLANS.open(typeof p==="string"?p:undefined)}
+function closePremium(){PHR_PLANS.close()}
 function initGalaxyCanvas(){
   const canvas=document.getElementById("galaxy-canvas");if(!canvas)return;
   const ctx=canvas.getContext("2d");canvas.width=window.innerWidth;canvas.height=window.innerHeight;
@@ -5839,14 +5738,14 @@ function initGalaxyCanvas(){
 }
 window.addEventListener("resize",()=>{if(document.getElementById("premium-immersive-viewport").classList.contains("show")){if(animFId)cancelAnimationFrame(animFId);initGalaxyCanvas()}});
 function spawnParticle(){if(!document.getElementById("premium-immersive-viewport").classList.contains("show"))return;const c=document.getElementById("prem-particles");if(!c)return;const p=document.createElement("div");p.className="particle";p.style.left=Math.random()*100+"vw";p.style.bottom="-4px";const sz=Math.random()*2+1;p.style.width=sz+"px";p.style.height=sz+"px";const dur=Math.random()*14+10;p.style.animationDuration=dur+"s";p.style.animationDelay=Math.random()*3+"s";const cols=["rgba(201,162,39,0.55)","rgba(232,196,104,0.45)","rgba(122,46,46,0.35)"];p.style.background=cols[Math.floor(Math.random()*cols.length)];c.appendChild(p);setTimeout(()=>p.remove(),(dur+4)*1000)}
-function toggleBilling(){isAnnual=!isAnnual;const track=document.getElementById("prem-toggle");if(track)track.classList.toggle("on",isAnnual);document.getElementById("label-monthly")?.classList.toggle("active",!isAnnual);document.getElementById("label-annual")?.classList.toggle("active",isAnnual);document.querySelectorAll(".price-num").forEach(el=>{const from=parseFloat(el.textContent),to=isAnnual?parseFloat(el.dataset.annual):parseFloat(el.dataset.monthly);animatePrice(el,from,to)});document.querySelectorAll(".price-annual").forEach(el=>el.classList.toggle("show",isAnnual));document.querySelectorAll(".price-period").forEach(el=>{el.textContent=isAnnual?"/ month · billed annually":"/ month · billed monthly"})}
+function toggleBilling(){try{isAnnual=!isAnnual}catch(e){}try{PHR_PLANS.refresh()}catch(e){}}
 function animatePrice(el,from,to){const start=performance.now(),dur=500;const step=now=>{const t=Math.min((now-start)/dur,1),e=1-Math.pow(1-t,3);el.textContent=(from+(to-from)*e).toFixed(2);if(t<1)requestAnimationFrame(step)};requestAnimationFrame(step)}
 
 // ═══ MODEL / THEME / UI ═══
 function selectModel(m){
-  if(m==="2.5"&&activePlan==="free"){showToast("Intellect 2.5 requires the Satrap plan or above.","error");openPremium();return}
-  if(m==="2.6"&&activePlan!=="pro"&&activePlan!=="ultimate"){showToast("Apex 2.6 requires the Immortal plan or above.","error");openPremium();return}
-  if(m==="2.7"&&activePlan!=="ultimate"){showToast("Sovereign 2.7 requires the Shahanshah plan.","error");openPremium();return}
+  if(m==="2.5"&&activePlan==="free"){showToast("Intellect 2.5 requires the Plus plan or above.","error");openPremium();return}
+  if(m==="2.6"&&activePlan!=="pro"&&activePlan!=="ultimate"){showToast("Apex 2.6 requires the Pro plan or above.","error");openPremium();return}
+  if(m==="2.7"&&activePlan!=="ultimate"){showToast("Sovereign 2.7 requires the Max plan.","error");openPremium();return}
   activeModel=m;localStorage.setItem("phraortes_model",m);
   const fl=document.getElementById("core-flash");fl.classList.add("flash");setTimeout(()=>fl.classList.remove("flash"),200);
   updateModelUI(m);closeAllDropMenus();haptic("double");
@@ -6209,7 +6108,7 @@ function auraStyleHint(){
   return "\n\nLIVE VOICE CALL: your reply will be spoken aloud. Persona "+p.name+": "+p.style+" Mode: "+m.style+" Speak in the same language the user speaks. Keep it to 1-3 short spoken sentences unless the user asks for more. No markdown, lists, tables or code in the reply; refer to the screen for formulas or code.";
 }
 function callAura(){
-  if(activePlan!=="ultimate"){openPremium();showToast("Aura Voice requires the Shahanshah plan.","error");return}
+  if(activePlan!=="ultimate"){openPremium();showToast("Aura Voice requires the Max plan.","error");return}
   if(!(("webkitSpeechRecognition" in window)||("SpeechRecognition" in window))){showToast("Voice isn't supported in this browser. Open Phraortes in Safari.","error");return}
   closeAllDropMenus();
   try{const _u=new SpeechSynthesisUtterance(" ");_u.volume=0;speechSynthesis.speak(_u)}catch(e){} // iOS only allows speech after a direct tap
@@ -7298,7 +7197,7 @@ body.light-theme #account-page[data-view]:not([data-view=hub]) .ac-section,body.
   const $=s=>document.querySelector(s);
   const TITLES={profile:"Profile",usage:"Usage",settings:"Appearance",billing:"Billing",notifications:"Notifications"};
   const METAL={free:["#e4e7ec","#8d939e","#23262c"],starter:["#f0b987","#8e5b2c","#2a1708"],pro:["#cdbdff","#5a49b0","#150f33"],ultimate:["#f8e6a8","#b88a2b","#2a1c04"]};
-  const NAMES={free:"Free",starter:"Satrap",pro:"Immortal",ultimate:"Shahanshah"};
+  const NAMES={free:"Free",starter:"Plus",pro:"Pro",ultimate:"Max"};
   function dayKey(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
   function daily(){try{return JSON.parse(localStorage.getItem("phr_daily")||"{}")}catch(e){return{}}}
   function streakInfo(){const s=daily();let n=0;const d=new Date();if(!(s[dayKey(d)]&&s[dayKey(d)].done))d.setDate(d.getDate()-1);while(s[dayKey(d)]&&s[dayKey(d)].done){n++;d.setDate(d.getDate()-1)}
@@ -7507,16 +7406,16 @@ const hap=k=>{try{haptic(k)}catch(_){}};
 const CORES=[
  {id:"24",v:"2.4",n:"Prime",c:"#8888BB",tg:"Fast, precise everyday help",pl:"FREE",m:[["Speed",96],["Depth",38],["Craft",42]],
   em:c=>`<svg viewBox="0 0 50 50"><circle class="pl" cx="25" cy="25" r="17" fill="none" stroke="${c}" stroke-width="1.2"/><circle cx="25" cy="25" r="9" fill="${c}" opacity=".9"/><circle cx="25" cy="25" r="3.6" fill="#fff" opacity=".85"/></svg>`},
- {id:"25",v:"2.5",n:"Intellect",c:"#bf5af2",tg:"Deep reasoning & research",pl:"SATRAP+",m:[["Speed",70],["Depth",84],["Craft",60]],
+ {id:"25",v:"2.5",n:"Intellect",c:"#bf5af2",tg:"Deep reasoning & research",pl:"PLUS+",m:[["Speed",70],["Depth",84],["Craft",60]],
   em:c=>`<svg viewBox="0 0 50 50"><circle cx="25" cy="25" r="18" fill="none" stroke="${c}" stroke-opacity=".3"/><g class="o1"><circle cx="25" cy="7" r="3" fill="${c}"/></g><g class="o2"><circle cx="25" cy="14" r="2.2" fill="#fff" opacity=".8"/><circle cx="25" cy="36" r="2.2" fill="${c}" opacity=".7"/></g><circle cx="25" cy="25" r="6" fill="${c}"/></svg>`},
- {id:"26",v:"2.6",n:"Apex",c:"#00ff88",tg:"Senior developer matrix",pl:"IMMORTAL+",m:[["Speed",78],["Depth",76],["Craft",94]],
+ {id:"26",v:"2.6",n:"Apex",c:"#00ff88",tg:"Senior developer matrix",pl:"PRO+",m:[["Speed",78],["Depth",76],["Craft",94]],
   em:c=>`<svg viewBox="0 0 50 50"><g class="o1"><polygon points="25,5 42.3,15 42.3,35 25,45 7.7,35 7.7,15" fill="none" stroke="${c}" stroke-width="1.5"/></g><g class="o2"><polygon points="25,13 35.4,19 35.4,31 25,37 14.6,31 14.6,19" fill="none" stroke="${c}" stroke-opacity=".6"/></g><path d="M20 22l-4 3 4 3M30 22l4 3-4 3" stroke="${c}" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`},
- {id:"27",v:"2.7",n:"Sovereign",c:"#E8C468",tg:"Frontier-scale, big builds",pl:"SHAHANSHAH",m:[["Speed",66],["Depth",98],["Craft",98]],
+ {id:"27",v:"2.7",n:"Sovereign",c:"#E8C468",tg:"Frontier-scale, big builds",pl:"MAX",m:[["Speed",66],["Depth",98],["Craft",98]],
   em:c=>{let r="";for(let i=0;i<12;i++){const a=i*30*Math.PI/180;r+=`<line class="ry" x1="${25+14*Math.sin(a)}" y1="${25-14*Math.cos(a)}" x2="${25+(i%2?19:22)*Math.sin(a)}" y2="${25-(i%2?19:22)*Math.cos(a)}" stroke="${c}" stroke-width="1.6" stroke-linecap="round"/>`}
    return `<svg viewBox="0 0 50 50">${r}<circle class="pl" cx="25" cy="25" r="11" fill="none" stroke="${c}" stroke-opacity=".5"/><circle cx="25" cy="25" r="8" fill="${c}"/><path d="M20.5 27.5l1.4-5.3 3.1 3.1 3.1-3.1 1.4 5.3z" fill="#2a1d05"/></svg>`}}
 ];
 const LOCK={"2.5":p=>p==="free","2.6":p=>p!=="pro"&&p!=="ultimate","2.7":p=>p!=="ultimate"};
-const PLN={free:"Free",starter:"Starter",satrap:"Satrap",pro:"Immortal",ultimate:"Shahanshah"};
+const PLN={free:"Free",starter:"Plus",satrap:"Plus",pro:"Pro",ultimate:"Max"};
 function buildCore(){
   const m=$("#core-menu");if(!m||m.dataset.v4)return;m.dataset.v4=1;m.classList.add("cm2");
   const box=m.querySelector(".menu-group-box");
@@ -7785,7 +7684,7 @@ body:not(.pet-ok) #phr-pet{display:none}
 (function(){
 const $=s=>document.querySelector(s);
 /* ---- 1. recede ---- */
-const OV=["#account-page.show:not(.closing)","#global-source-drawer.show","#files-panel.show","#memory-panel.show","#templates-panel.show","#persona-manager.show","#workspace-panel.show","#t2.show","#dr.show","#compare-modal.show","#premium-immersive-viewport.show","#payment-overlay.show","#whats-new-overlay.show","#pinned-msgs-overlay.show"].join(",");
+const OV=["#plans-sheet.in","#account-page.show:not(.closing)","#global-source-drawer.show","#files-panel.show","#memory-panel.show","#templates-panel.show","#persona-manager.show","#workspace-panel.show","#t2.show","#dr.show","#compare-modal.show","#premium-immersive-viewport.show","#payment-overlay.show","#whats-new-overlay.show","#pinned-msgs-overlay.show"].join(",");
 let raf=0;const chk=()=>{raf=0;const on=!!document.querySelector(OV)||[...document.querySelectorAll("#compare-modal,#workspace-panel,#premium-immersive-viewport,#payment-overlay,#persona-manager")].some(e=>{const s=getComputedStyle(e);return s.display!=="none"&&s.visibility!=="hidden"&&+s.opacity>.5&&e.getBoundingClientRect().height>200&&e.getBoundingClientRect().top<innerHeight*.6});document.body.classList.toggle("phr-recede",on)};
 new MutationObserver(()=>{if(!raf)raf=requestAnimationFrame(chk)}).observe(document.body,{subtree:true,attributes:true,attributeFilter:["class","style"]});
 /* ---- 2. pet ---- */
