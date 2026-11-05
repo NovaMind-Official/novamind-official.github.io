@@ -1,0 +1,13 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://cdn.tailwindcss.com; style-src 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src data: blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; media-src data: blob:; connect-src https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; worker-src blob:">
+<!-- Sandbox host for Studio previews. Loaded only inside <iframe sandbox="allow-scripts"> (no cookies, no storage,
+     no access to the app). It receives one document from its parent and renders it under this page's own policy. -->
+<script>
+window.addEventListener("message",function h(e){
+  if(e.source!==parent||!e.data||typeof e.data.phrst_doc!=="string")return;
+  window.removeEventListener("message",h);
+  document.open();document.write(e.data.phrst_doc);document.close();
+});
+try{parent.postMessage({phrst_frame:true},"*")}catch(e){}
+</script></head><body></body></html>

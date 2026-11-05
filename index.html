@@ -47,6 +47,10 @@
 <script src="chartboard.js"></script>
 <script src="payment.js"></script>
 <script src="plans.js"></script>
+<script src="life.js"></script>
+<script src="databoard.js"></script>
+<script src="studio.js"></script>
+<script src="tasks.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -2365,6 +2369,18 @@ body.light-theme #mm-scrim{background:rgba(60,45,10,.14)}
         <i class="tt-ic"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg></i>
         <span class="tt-n">My Assistants</span><small class="tt-s">Custom personas</small>
       </div>
+      <div class="tool-tile" style="--tile-color:#3FD0C9" onclick="closeAllDropMenus();PHR_TASKS.open()">
+        <i class="tt-ic"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></i>
+        <span class="tt-n">Tasks</span><small class="tt-s">Hand off big jobs</small>
+      </div>
+      <div class="tool-tile" style="--tile-color:#5AA9E6" onclick="closeAllDropMenus();document.getElementById('file-upload').click();showToast('Pick a CSV or Excel file','success')">
+        <i class="tt-ic"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></i>
+        <span class="tt-n">Analyze Data</span><small class="tt-s">CSV or Excel</small>
+      </div>
+      <div class="tool-tile" style="--tile-color:#E86A9A" onclick="closeAllDropMenus();phrBuildPrompt()">
+        <i class="tt-ic"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6M14 4l-4 16"/></svg></i>
+        <span class="tt-n">Build</span><small class="tt-s">App from a sentence</small>
+      </div>
     </div>
   </div>
   <div id="sheet-back" onclick="closeAllDropMenus()"></div>
@@ -2491,8 +2507,9 @@ const AI_TOOLS=[
   {type:"function",function:{name:"list_files",description:"List the files currently saved in this chat's Workspace (name, type, size). Call this before reading or writing a file to see what already exists.",parameters:{type:"object",properties:{}}}},
   {type:"function",function:{name:"read_file",description:"Read the full content of a file from this chat's Workspace by its exact name.",parameters:{type:"object",properties:{name:{type:"string",description:"Exact file name as returned by list_files"}},required:["name"]}}},
   {type:"function",function:{name:"write_file",description:"Create a new file or overwrite an existing one in this chat's Workspace, visible to the user in the Files panel — use this to save code, drafts, research notes, or any deliverable, instead of only putting it in your reply text.",parameters:{type:"object",properties:{name:{type:"string",description:"File name, including extension (e.g. notes.md, script.py)"},content:{type:"string",description:"Full file content"}},required:["name","content"]}}},
-  {type:"function",function:{name:"remember_fact",description:"Save a specific fact about the user for future conversations — a name, preference, job, recurring project, or anything worth remembering long-term. Use this proactively when the user shares something meaningful; don't wait to be asked.",parameters:{type:"object",properties:{fact:{type:"string",description:"A short, specific fact stated in third person, e.g. 'Prefers concise answers' or 'Works as a backend developer in Tehran'"}},required:["fact"]}}},
-  {type:"function",function:{name:"recall_memory",description:"Search everything remembered about this user across all past conversations. Use when the user asks what you remember about them, or to check a specific detail before answering.",parameters:{type:"object",properties:{query:{type:"string",description:"What to search for, e.g. 'name' or 'job'. Use 'everything' to get the full list."}},required:["query"]}}}
+  {type:"function",function:{name:"remember_fact",description:"Save something about the user to their Life Memory so it is available in future conversations. Use proactively whenever the user shares something durable or time-bound: a fact or preference (kind=fact), a plan or goal (plan), a person in their life (person), a budget/price/amount (money), or ANYTHING they want to be reminded about (reminder — ALWAYS pass `due` for reminders, computed from the real current date/time given in the system prompt). Write it as a short third-person sentence. Do not ask permission first.",parameters:{type:"object",properties:{fact:{type:"string",description:"Short, specific, third person. e.g. 'Prefers concise answers', 'Has a dentist appointment', 'Trip budget is $800'"},kind:{type:"string",enum:["fact","plan","reminder","money","person","note"]},due:{type:"string",description:"Local date-time for reminders/plans in the form YYYY-MM-DDTHH:MM (e.g. 2026-11-06T09:00). Omit when there is no time."}},required:["fact"]}}},
+  {type:"function",function:{name:"recall_memory",description:"Search the user's Life Memory (dated facts, plans, reminders, money, people). Use when they ask what you remember, 'what did we/I say about…', 'what's coming up', or to check a detail before answering. Understands time words like 'yesterday', 'last week'. Use query 'everything' for the full list.",parameters:{type:"object",properties:{query:{type:"string",description:"Keywords or a time phrase, e.g. 'trip budget', 'last week', 'reminders'"}},required:["query"]}}},
+  {type:"function",function:{name:"forget_memory",description:"Delete memories that match a phrase, when the user asks you to forget something.",parameters:{type:"object",properties:{query:{type:"string",description:"Words identifying the memory to delete"}},required:["query"]}}}
 ];
 // Every tool call gets a hard client-side timeout too — belt-and-suspenders alongside the
 // Worker's own timeouts, so a stuck network request can never freeze the whole conversation.
@@ -3076,14 +3093,17 @@ async function execTool(name,argsStr){
     if(name==="remember_fact"){
       const fact=(args.fact||"").trim();
       if(!fact)return "No fact provided.";
-      if(!longMemory.includes(fact)){longMemory.push(fact);if(longMemory.length>25)longMemory=longMemory.slice(-25);localStorage.setItem("phraortes_longmemory",JSON.stringify(longMemory))}
-      return "Remembered: "+fact;
+      const e=LIFE.add({text:fact,kind:args.kind,due:args.due,src:"ai"});
+      if(e&&e.due){try{LIFE.askPermission&&LIFE.askPermission()}catch(_){}}
+      return e?("Remembered ("+e.k+"): "+fact+(e.due?" — reminder set for "+new Date(e.due).toLocaleString():"")):"Could not save.";
     }
     if(name==="recall_memory"){
-      if(!longMemory.length)return "Nothing remembered about this user yet.";
-      const q=(args.query||"").toLowerCase().trim();
-      const matches=(q&&q!=="everything")?longMemory.filter(f=>f.toLowerCase().includes(q)):longMemory;
-      return matches.length?JSON.stringify(matches):"No match for that query. Full memory: "+JSON.stringify(longMemory);
+      const m=LIFE.search(args.query||"everything",14);
+      if(!m.length)return "No matching memory. Total items stored: "+LIFE.all().length;
+      return JSON.stringify(m.map(LIFE.brief));
+    }
+    if(name==="forget_memory"){
+      const n=LIFE.forget(args.query||"");return n?("Forgot "+n+" item(s)."):"Nothing matched.";
     }
     return "Unknown tool: "+name;
   }catch(e){return "Tool error: "+e.message}
@@ -3107,6 +3127,7 @@ function announceTool(elId,toolCalls){
       else if(tc.function.name==="write_file")label=`Writing file: ${args.name||""}`;
       else if(tc.function.name==="remember_fact")label="Remembering that...";
       else if(tc.function.name==="recall_memory")label="Checking memory...";
+      else if(tc.function.name==="forget_memory")label="Updating memory...";
     }catch(e){}
     actStep(elId,label);
     if(stepsEl){
@@ -3251,8 +3272,7 @@ function openFileInWorkspace(id,type){
 // ═══ MEMORY MANAGER ═══
 function openMemoryManager(){
   closeAllDropMenus();
-  renderMemoryPanel();
-  document.getElementById("memory-panel").classList.add("show");
+  LIFE.open();
   haptic("light");
 }
 function closeMemoryManager(){document.getElementById("memory-panel").classList.remove("show")}
@@ -3595,7 +3615,7 @@ const ACT_T={
       b_graph:"ساخت نمودار زنده",b_sim:"ساخت شبیه‌سازی",b_solution:"چیدن گام‌های حل",b_quiz:"نوشتن آزمون",b_flash:"ساخت فلش‌کارت",b_periodic:"باز کردن جدول تناوبی",b_molecule:"ساخت مولکول سه‌بعدی",b_balance:"موازنهٔ معادله",b_circuit:"سیم‌کشی مدار",b_play:"ساخت دمو زندهٔ کد",b_stats:"محاسبهٔ آمار داده‌ها",b_chart:"رسم نمودار",b_code:"نوشتن کد",
       thought:"فکر کرد",step:"گام",steps:"گام",thinking:"در حال فکر کردن است",notes:"یادداشت‌های فکر"}
 };
-const ACT_FENCE={chart:"b_chart",charts:"b_chart",chartboard:"b_chart",dashboard:"b_chart",pie:"b_chart",donut:"b_chart",doughnut:"b_chart",budget:"b_chart",percent:"b_chart",graph:"b_graph",plot:"b_graph","function-plot":"b_graph",sim:"b_sim",simulation:"b_sim",physics:"b_sim",solution:"b_solution",steps:"b_solution",worked:"b_solution",quiz:"b_quiz",practice:"b_quiz",flashcards:"b_flash",flashcard:"b_flash",cards:"b_flash",periodic:"b_periodic",periodictable:"b_periodic",ptable:"b_periodic",molecule:"b_molecule",molecules:"b_molecule",mol:"b_molecule",balance:"b_balance",equation:"b_balance",reaction:"b_balance",circuit:"b_circuit",schematic:"b_circuit",playground:"b_play",codeplayground:"b_play",livecode:"b_play",webdemo:"b_play",stats:"b_stats",statistics:"b_stats",statslab:"b_stats",histogram:"b_stats",regression:"b_stats"};
+const ACT_FENCE={chart:"b_chart",charts:"b_chart",chartboard:"b_chart",dashboard:"b_chart",pie:"b_chart",donut:"b_chart",doughnut:"b_chart",budget:"b_chart",percent:"b_chart",graph:"b_graph",plot:"b_graph","function-plot":"b_graph",sim:"b_sim",simulation:"b_sim",physics:"b_sim",solution:"b_solution",steps:"b_solution",worked:"b_solution",quiz:"b_quiz",practice:"b_quiz",flashcards:"b_flash",flashcard:"b_flash",cards:"b_flash",periodic:"b_periodic",periodictable:"b_periodic",ptable:"b_periodic",molecule:"b_molecule",molecules:"b_molecule",mol:"b_molecule",balance:"b_balance",equation:"b_balance",reaction:"b_balance",circuit:"b_circuit",schematic:"b_circuit",playground:"b_play",databoard:"b_chart",studio:"b_play",webapp:"b_play",codestudio:"b_play",project:"b_play",app:"b_play",codeplayground:"b_play",livecode:"b_play",webdemo:"b_play",stats:"b_stats",statistics:"b_stats",statslab:"b_stats",histogram:"b_stats",regression:"b_stats"};
 function actT(a,k){return (ACT_T[a.lang]||ACT_T.en)[k]||ACT_T.en[k]||k}
 function actTopic(txt,lang){
   const T=ACT_T[lang]||ACT_T.en;
@@ -3709,13 +3729,11 @@ function extractFactsFromText(text){
 function updateLongMemory(userText){
   const facts=extractFactsFromText(userText);
   let changed=false;
-  facts.forEach(f=>{if(!longMemory.includes(f)){longMemory.push(f);changed=true}});
-  if(longMemory.length>25)longMemory=longMemory.slice(-25);
-  if(changed)localStorage.setItem("phraortes_longmemory",JSON.stringify(longMemory));
+  facts.forEach(f=>{try{LIFE.add({text:f,kind:"fact",src:"auto"})}catch(e){}});
 }
-function getLongMemoryPrompt(){
-  if(!longMemory.length)return(window.__auraActive&&typeof auraStyleHint==="function")?auraStyleHint():"";
-  return"\n\nKnown context about this user from previous sessions (use naturally, don't repeat verbatim): "+longMemory.join("; ")+(window.__auraActive&&typeof auraStyleHint==="function"?auraStyleHint():"");
+function getLongMemoryPrompt(userText){
+  const aura=(window.__auraActive&&typeof auraStyleHint==="function")?auraStyleHint():"";
+  try{return LIFE.promptFor(userText||window.__lastUserText||"")+aura}catch(e){return aura}
 }
 
 // ═══ ROLLING IN-CHAT MEMORY: keeps token cost bounded on long conversations ═══
@@ -4030,7 +4048,7 @@ function closeOnboarding(){
   const name=nameInput?nameInput.value.trim():"";
   if(name){
     localStorage.setItem("phraortes_username",name);
-    if(!longMemory.some(f=>/name/i.test(f))){longMemory.push("User's name is "+name);localStorage.setItem("phraortes_longmemory",JSON.stringify(longMemory))}
+    if(!LIFE.all().some(f=>/name/i.test(f.t))){LIFE.add({text:"User's name is "+name,kind:"fact",src:"onboarding"})}
   }
   localStorage.setItem("phraortes_onboarded","1");
   const el=document.getElementById("onboard-screen");if(!el)return;
@@ -4453,8 +4471,8 @@ const STEM_TEXT="STUDY MODE (the user is doing maths / physics / science work). 
 "```cpu — tiny 8-bit CPU simulator for assembly / computer-architecture questions (step through the program, watch registers, flags and memory):  title: ...  then the program, one instruction per line. Registers A B C D. Instructions: MOV ADD SUB AND OR XOR CMP INC DEC SHL SHR JMP JZ JNZ JC JNC OUT HLT; operands: register, number (decimal / 0x1F / 0b101), [address] 0-15 or [reg]; labels like  loop:  ; comments after ;  Optional  data: 3, 1, 4  (initial memory)\n"+
 "```breadboard — LED + resistor on a breadboard (Ohm's law, current limiting, resistor colour bands, burn-out warning):  led: red | yellow | green | blue | white   source: 5   resistor: 220   leds: 1   (1-3 LEDs in series; the user can drag the supply and resistor)\n"+
 "Add the line  lang: fa  inside a block when the user writes Persian. Give numeric results in your normal text too; blocks are for visual understanding. Never use these blocks for non-study topics.";
-const CODE_RE=/(\b(html|css|javascript|canvas|animation|animated|webpage|web page|website|landing page|game|calculator|widget|demo|prototype|snake|todo|to-do|clock|timer|artifact|app|dashboard|simulation|simulator|visuali[sz]ation|interactive|mini ?game|ui|page)\b|انیمیشن|بازی|ماشین حساب|صفحه وب|صفحهٔ وب|صفحه|وب‌?سایت|سایت|اپ|اپلیکیشن|برنامه|دمو|نمونه کد|تایمر|ساعت|ارتیفکت|آرتیفکت|داشبورد|شبیه‌?ساز|تعاملی|بساز|طراحی کن|لندینگ)/i;
-const CODE_TEXT="LIVE CODE (only when the user asks you to BUILD something that runs in a browser — a small page, animation, game, calculator, visual demo): put the complete working demo in ONE fenced block whose language is  playground  so the user can run and edit it right in the chat. Format — optional first line  title: ...  then sections introduced by lines  --- html  ,  --- css  ,  --- js  (any may be omitted; or write one complete HTML document with no markers). Rules: vanilla HTML/CSS/JS only; NO external libraries, fonts, images, fetch or network calls (the sandbox blocks all of them); draw with canvas or DOM; keep it under ~120 lines and mobile-friendly (width 100%, touch-friendly); use console.log for debugging output. For code that is NOT a runnable browser demo (Python, backend, snippets to copy) use ordinary fenced code blocks as usual.";
+const CODE_RE=/(\b(python|pandas|numpy|matplotlib|react|html|css|javascript|tool|script|chart|plot|canvas|animation|animated|webpage|web page|website|landing page|game|calculator|widget|demo|prototype|snake|todo|to-do|clock|timer|artifact|app|dashboard|simulation|simulator|visuali[sz]ation|interactive|mini ?game|ui|page)\b|انیمیشن|بازی|ماشین حساب|ابزار|پایتون|تحلیل|صفحه وب|صفحهٔ وب|صفحه|وب‌?سایت|سایت|اپ|اپلیکیشن|برنامه|دمو|نمونه کد|تایمر|ساعت|ارتیفکت|آرتیفکت|داشبورد|شبیه‌?ساز|تعاملی|بساز|طراحی کن|لندینگ)/i;
+const CODE_TEXT="BUILD ANYTHING (when the user asks you to build something that runs: a tool, page, calculator, dashboard, game, visualization, data/Python analysis, prototype): reply with ONE complete working project in a fenced block whose language is  studio  — the user runs and edits it in the chat. Format: first optional header lines  title: ...  and  libs: chart, d3, three, plotly, gsap, math, lodash, marked, tailwind, react  (pick only what you need; omit for vanilla), optionally  layout: phone  for mobile-first apps; then sections introduced by lines  --- html  ,  --- css  ,  --- js  (use  --- jsx  for React with libs: react; the root is <div id=root>), and  --- py  for Python (runs in the browser with numpy, pandas, matplotlib, scipy; plt.show() draws into the preview; print() goes to the console), and  --- data  for inline CSV/JSON that code reads from window.DATA (JS) or DATA (Python). Quality bar: a real, finished product — thoughtful layout, mobile-friendly, clear empty/error states, keyboard and touch friendly, tasteful modern design (not default browser styling), meaningful interactions and animations, input validation, state kept in variables (NO localStorage/cookies/fetch/network — the sandbox blocks them; libraries listed in libs load from a pinned CDN). Work out the structure first (state, functions, edge cases), keep code clean and commented only where non-obvious, and make sure it runs with no console errors. If the user's request is vague, make sensible decisions yourself instead of asking. After the block add 2-4 lines: what it does and what to try. To change something later, send the FULL updated studio block. For plain snippets that are not runnable here use ordinary fenced code blocks.";
 function stemGuide(chat,txt){
   try{
     const recent=chat.msgs.slice(-4).map(m=>(m.uText||"")+" "+String(m.aRaw||"").slice(0,300)).join(" ")+" "+(txt||"");
@@ -4572,8 +4590,8 @@ async function send(){
   turnToolLog=[];
   if(txt)updateLongMemory(txt);
   let dispHtml=txt,useVision=false,imgData=null;
-  let docContext="";
-  if(attachedFiles.length){let gal='<div class="gal">';attachedFiles.forEach(f=>{if(f.type==="image"){gal+=`<div class="gal-i" onclick="openLightbox('${f.dataURL}')"><img src="${f.dataURL}" alt=""></div>`;useVision=true;if(!imgData)imgData=f.dataURL}else if(f.type==="doc"){gal+=`<div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:6px 11px;font-size:12px">📄 ${f.name}</div>`;if(f.text)docContext+=`\n\n[Attached document: ${f.name}]\n${f.text}`}});gal+="</div>";dispHtml=gal+(txt?"<br>"+txt:"");attachedFiles=[];renderPreviews()}
+  let docContext="";window.__turnDS=null;
+  if(attachedFiles.length){let gal='<div class="gal">';attachedFiles.forEach(f=>{if(f.type==="image"){gal+=`<div class="gal-i" onclick="openLightbox('${f.dataURL}')"><img src="${f.dataURL}" alt=""></div>`;useVision=true;if(!imgData)imgData=f.dataURL}else if(f.type==="doc"){gal+=`<div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:6px 11px;font-size:12px">📄 ${f.name}</div>`;if(f.dsId)(window.__turnDS=window.__turnDS||[]).push(f.dsId);if(f.text)docContext+=`\n\n[Attached document: ${f.name}]\n${f.text}`}});gal+="</div>";dispHtml=gal+(txt?"<br>"+txt:"");attachedFiles=[];renderPreviews()}
   const chat=chats.find(c=>c.id==curId);uiInput.value="";uiInput.style.height="44px";
   const idx=chat.msgs.length;
   const lastMsg=chat.msgs[chat.msgs.length-1];
@@ -4587,7 +4605,7 @@ async function send(){
   const isCodeQuery=/(code|bug|debug|python|javascript|html|css|react|api|sql|function|algorithm|باگ|کد|پایتون|دیباگ|برنامه|الگوریتم)/i.test(txt);
   const loaderType=activeModel==="2.7"?"think":isCodeQuery||activeModel==="2.6"?"code":activeModel==="2.5"?"think":"chat";
   startContextLoader("a-"+idx,loaderType,detectMsgLang(txt),txt);
-  let sys="You are Phraortes OS — an advanced intelligence assistant. Today is "+(()=>{const d=new Date();return d.toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"})+" (ISO "+d.toISOString().slice(0,10)+")"})()+" — treat this as the real current date; your training data may be older, so never assume the year from memory, and use this date when you search for recent or live information. Respond clearly and helpfully. Always respond in the same language the user just wrote in — match it exactly (Persian, English, Arabic, or any other language), regardless of what language earlier turns or these instructions are in. When giving a multi-step plan, checklist, or sequence of tasks, format it as a markdown task list using '- [ ] ' syntax for each step so it can be checked off. When a question depends on current, time-sensitive, or verifiable-online information (news, prices, recent releases, live facts) — use the web_search tool rather than answering from memory alone; the user sees exactly which real sources you used, so don't claim to have looked something up unless you actually called the tool. For genuinely multi-step tasks, chain tools together before answering — e.g. search, then read_url on the most promising result, then write_file to save a deliverable — rather than stopping after one call; the user can see each step happen live. When the user asks you to design, draw, or create a visual (a poster, logo, banner, icon, UI mockup, diagram, or any graphic) — reply with real, complete SVG markup in a \`\`\`svg code block (starting with <svg viewBox=\"...\">), not a text description of what it would look like; it renders live in the chat as an actual visual the user can download as SVG or PNG. Follow these rules strictly — they are what separates a professional result from an amateur one: (1) FONTS — SVG cannot load custom web fonts, so only ever use these safe stacks: \"Helvetica Neue,Arial,sans-serif\" for clean/modern, \"Georgia,serif\" for elegant/editorial, \"Courier New,monospace\" for technical — never name a Google Font or any font that isn't one of these, it will silently fall back to a broken default and ruin the design. (2) PALETTE — pick exactly 2-4 colors with clear roles (one dominant, one accent, one neutral background, optionally one highlight) and use ONLY those; never scatter many unrelated colors. (3) HIERARCHY — one element must clearly dominate (largest/boldest); everything else is visibly secondary. Vary font-size deliberately (e.g. a headline at 3-4x the body size), never use near-uniform sizing for everything. (4) GRID & ALIGNMENT — align elements to a consistent grid (shared x/y positions, even margins on all sides); nothing should look randomly placed. (5) NEGATIVE SPACE — leave real breathing room; do not fill the entire canvas edge-to-edge. (6) CANVAS SHAPE — match the viewBox proportions to the request: roughly square (e.g. 0 0 400 400) for a logo/icon, portrait (e.g. 0 0 600 850) for a poster, landscape (e.g. 0 0 1200 630) for a banner. (7) RESTRAINT — prefer flat design or a single simple 2-stop linearGradient over busy effects, filters, or many overlapping shapes; a clean simple design always reads as more professional than a cluttered one. When the user asks for a QR code, reply with ONLY the raw text/URL to encode in a \`\`\`qr code block (nothing else in that block) — it renders as a real, scannable QR code the user can download. When the user asks for a chart, graph, or visual comparison of numbers, reply with a \`\`\`chart code block containing ONLY valid JSON in this exact shape: {\"type\":\"bar\"|\"line\"|\"pie\",\"title\":\"...\",\"labels\":[...],\"values\":[...]} — it renders as a real, colored chart the user can download. When the user asks for a PDF, report, or downloadable document, reply with a \`\`\`pdf-report code block containing the full content in clean markdown, starting with a single # heading as the title — it renders as a card the user taps once to generate a real, properly formatted PDF, no separate tool needed. Use the remember_fact tool proactively whenever the user shares something worth remembering long-term (name, preferences, job, recurring projects) — don't wait to be asked, and use recall_memory when the user asks what you remember about them. ";
+  let sys="You are Phraortes OS — an advanced intelligence assistant. Today is "+(()=>{const d=new Date();return d.toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"})+" (ISO "+d.toISOString().slice(0,10)+"; user's local time now "+(()=>{const p=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"T"+p(d.getHours())+":"+p(d.getMinutes())})()+")"})()+" — treat this as the real current date; your training data may be older, so never assume the year from memory, and use this date when you search for recent or live information. Respond clearly and helpfully. Always respond in the same language the user just wrote in — match it exactly (Persian, English, Arabic, or any other language), regardless of what language earlier turns or these instructions are in. When giving a multi-step plan, checklist, or sequence of tasks, format it as a markdown task list using '- [ ] ' syntax for each step so it can be checked off. When a question depends on current, time-sensitive, or verifiable-online information (news, prices, recent releases, live facts) — use the web_search tool rather than answering from memory alone; the user sees exactly which real sources you used, so don't claim to have looked something up unless you actually called the tool. For genuinely multi-step tasks, chain tools together before answering — e.g. search, then read_url on the most promising result, then write_file to save a deliverable — rather than stopping after one call; the user can see each step happen live. When the user asks you to design, draw, or create a visual (a poster, logo, banner, icon, UI mockup, diagram, or any graphic) — reply with real, complete SVG markup in a \`\`\`svg code block (starting with <svg viewBox=\"...\">), not a text description of what it would look like; it renders live in the chat as an actual visual the user can download as SVG or PNG. Follow these rules strictly — they are what separates a professional result from an amateur one: (1) FONTS — SVG cannot load custom web fonts, so only ever use these safe stacks: \"Helvetica Neue,Arial,sans-serif\" for clean/modern, \"Georgia,serif\" for elegant/editorial, \"Courier New,monospace\" for technical — never name a Google Font or any font that isn't one of these, it will silently fall back to a broken default and ruin the design. (2) PALETTE — pick exactly 2-4 colors with clear roles (one dominant, one accent, one neutral background, optionally one highlight) and use ONLY those; never scatter many unrelated colors. (3) HIERARCHY — one element must clearly dominate (largest/boldest); everything else is visibly secondary. Vary font-size deliberately (e.g. a headline at 3-4x the body size), never use near-uniform sizing for everything. (4) GRID & ALIGNMENT — align elements to a consistent grid (shared x/y positions, even margins on all sides); nothing should look randomly placed. (5) NEGATIVE SPACE — leave real breathing room; do not fill the entire canvas edge-to-edge. (6) CANVAS SHAPE — match the viewBox proportions to the request: roughly square (e.g. 0 0 400 400) for a logo/icon, portrait (e.g. 0 0 600 850) for a poster, landscape (e.g. 0 0 1200 630) for a banner. (7) RESTRAINT — prefer flat design or a single simple 2-stop linearGradient over busy effects, filters, or many overlapping shapes; a clean simple design always reads as more professional than a cluttered one. When the user asks for a QR code, reply with ONLY the raw text/URL to encode in a \`\`\`qr code block (nothing else in that block) — it renders as a real, scannable QR code the user can download. When the user asks for a chart, graph, or visual comparison of numbers, reply with a \`\`\`chart code block containing ONLY valid JSON in this exact shape: {\"type\":\"bar\"|\"line\"|\"pie\",\"title\":\"...\",\"labels\":[...],\"values\":[...]} — it renders as a real, colored chart the user can download. When the user asks for a PDF, report, or downloadable document, reply with a \`\`\`pdf-report code block containing the full content in clean markdown, starting with a single # heading as the title — it renders as a card the user taps once to generate a real, properly formatted PDF, no separate tool needed. Use the remember_fact tool proactively whenever the user shares something worth remembering long-term (name, preferences, job, recurring projects) — don't wait to be asked, and use recall_memory when the user asks what you remember about them. ";
   const activePersonaObj=customPersonas.find(p=>p.id===activePersonaId);
   if(activePersonaObj)sys+=` You are currently acting as a custom assistant the user built and named "${activePersonaObj.name}". Follow these user-defined instructions closely and stay in this persona consistently for the rest of the conversation: ${activePersonaObj.instructions}`;
   if(activeModel==="2.7")sys+="You are Sovereign 2.7, Phraortes' most advanced core — built for large, complex, professional-grade projects. Take the time to think through edge cases and long-term maintainability; a longer, more deliberate, thorough response is expected and welcome here.";
@@ -4597,7 +4615,7 @@ async function send(){
   if(/^(🔬|🔭) /.test(txt||"")){const _deep=txt.startsWith("🔭");sys+=`\n\nDEEP RESEARCH MODE. The user wants a genuinely researched answer, not a recalled one. Protocol: (1) In your FIRST tool round, call web_search ${_deep?"5 to 6":"3"} times IN PARALLEL with differently-angled queries (definitions, latest data, expert/primary sources, counter-views). (2) Then call read_url on the ${_deep?"4 to 6":"2 to 3"} most authoritative results IN PARALLEL. (3) If a key fact is still missing, do one more round of targeted searches. (4) Write a structured report in the user's language: a 2-3 line bottom line first, then clear sections with headings, concrete numbers/dates, where sources disagree say so, and end with a short 'What is still uncertain' list. Only state facts you actually found in tool results; never invent a source. ${_deep?"Finish by offering the report as a PDF via a pdf-report block if that feature is available.":""}`}
   const toneHint=detectToneHint(txt);if(toneHint)sys+=" "+toneHint;
   const tonePref=localStorage.getItem("phraortes_tone_pref");if(tonePref)sys+=` The user has indicated they generally prefer a ${tonePref.toLowerCase()} tone.`;
-  sys+=getLongMemoryPrompt();
+  sys+=getLongMemoryPrompt(txt);
   try{if(window.phrProjectPrompt)sys+=phrProjectPrompt(chat,txt)}catch(_){}
   sys+=stemGuide(chat,txt);
   const canvasText=getCurrentCanvasText();
@@ -4925,6 +4943,7 @@ function imageMsgHTML(url,raw){
 }
 // ═══ FINISH TURN ═══
 function finishTurn(aiId,htmlContent,rawContent,chat,userHtml,userTxt,msgIndex,elapsedS,corrected){
+  if(window.__turnDS&&window.__turnDS.length){const _b=window.__turnDS.map(i=>"```databoard\nid: "+i+"\n```").join("\n\n")+"\n\n";window.__turnDS=null;rawContent=_b+rawContent;try{htmlContent=renderMD(_b)+htmlContent}catch(e){}}
   stopContextLoader(aiId);
   const actRec=actFinish(aiId);
   const wrap=document.getElementById(aiId)?.parentElement;if(!wrap){window.__phrStreamed=false;return}
@@ -4932,7 +4951,7 @@ function finishTurn(aiId,htmlContent,rawContent,chat,userHtml,userTxt,msgIndex,e
   const srcs=turnRealSources.slice(),encSrc=safeEnc(JSON.stringify(srcs)),qc=(userTxt||"").substring(0,14).replace(/['"\\`]/g,"");
   turnRealSources=[];
   const cardsData=turnCards.slice();turnCards=[];
-  const _studyFence=/```(?:chart|charts|chartboard|dashboard|pie|donut|doughnut|budget|percent|graph|plot|function-plot|sim|simulation|physics|solution|steps|worked|quiz|practice|flashcards?|cards|periodic|periodictable|ptable|molecule|molecules|mol|balance|equation|reaction|circuit|schematic|playground|codeplayground|livecode|webdemo|stats|statistics|statslab|histogram|regression|probability|optics|logic|gates|cpu|assembly|breadboard)\b[\s\S]*?```/gi;
+  const _studyFence=/```(?:chart|charts|chartboard|dashboard|pie|donut|doughnut|budget|percent|graph|plot|function-plot|sim|simulation|physics|solution|steps|worked|quiz|practice|flashcards?|cards|periodic|periodictable|ptable|molecule|molecules|mol|balance|equation|reaction|circuit|schematic|playground|codeplayground|livecode|webdemo|databoard|studio|webapp|codestudio|stats|statistics|statslab|histogram|regression|probability|optics|logic|gates|cpu|assembly|breadboard)\b[\s\S]*?```/gi;
   const _hasStudy=_studyFence.test(rawContent);
   const _codeOnly=rawContent.replace(_studyFence,"");
   const fuType=/^\[Image rendered/.test(rawContent)?"image":_hasStudy?(/[\u0600-\u06FF]/.test(rawContent)?"studyfa":"study"):/```/.test(_codeOnly)?"code":activeModel==="2.5"?"think":"chat";
@@ -5128,10 +5147,8 @@ async function summarizeChatForLongMemory(chat){
     if(summary&&!/^none$/i.test(summary.trim())){
       let changed=false;
       summary.split("\n").map(l=>l.replace(/^[-•*]\s*/,"").trim()).filter(Boolean).forEach(fact=>{
-        if(!longMemory.includes(fact)){longMemory.push(fact);changed=true}
+        try{LIFE.add({text:fact,src:"chat"})}catch(e){}
       });
-      if(longMemory.length>25)longMemory=longMemory.slice(-25);
-      if(changed)localStorage.setItem("phraortes_longmemory",JSON.stringify(longMemory));
     }
   }catch(e){}
 }
@@ -5563,6 +5580,11 @@ function resetSpeech(id){const b=document.getElementById(id);if(b)b.classList.re
 try{speechSynthesis.addEventListener("voiceschanged",()=>{if(SP.active)spUpdate()});speechSynthesis.getVoices()}catch(e){}
 
 // ═══ FILES ═══
+// CSV / Excel: also build a local dataset (profile + dashboard). The model gets a compact profile instead of raw rows.
+function phrIngestData(file,id){
+  if(!window.PHR_DATA)return Promise.resolve();
+  return PHR_DATA.ingest(file).then(ds=>{const f=attachedFiles.find(x=>x.id===id);if(f){f.dsId=ds.id;f.text=PHR_DATA.summary(ds)}}).catch(e=>{try{showToast(String(e.message||"Couldn't read this table").slice(0,90),"error")}catch(_){}});
+}
 function handleFiles(e){
   Array.from(e.target.files).forEach(file=>{
     const id=Date.now()+Math.random().toString(36).substr(2,6),sz=(file.size/1024).toFixed(1)+" KB";
@@ -5579,7 +5601,7 @@ function handleFiles(e){
       extractDocxText(file).then(text=>{const f=attachedFiles.find(x=>x.id===id);if(f){f.text=text;f.loading=false;renderPreviews()}}).catch(()=>{const f=attachedFiles.find(x=>x.id===id);if(f){f.text="[Could not extract text from this document]";f.loading=false;renderPreviews()}showToast("Couldn't read that Word file","error")});
     }else if(/\.(xlsx|xls)$/i.test(file.name)){
       attachedFiles.push({id,file,type:"doc",name:file.name,size:sz,dataURL:null,text:"",loading:true});renderPreviews();
-      extractSpreadsheetText(file).then(text=>{const f=attachedFiles.find(x=>x.id===id);if(f){f.text=text;f.loading=false;renderPreviews()}}).catch(()=>{const f=attachedFiles.find(x=>x.id===id);if(f){f.text="[Could not read this spreadsheet]";f.loading=false;renderPreviews()}showToast("Couldn't read that spreadsheet","error")});
+      extractSpreadsheetText(file).then(text=>{const f=attachedFiles.find(x=>x.id===id);if(f){f.text=text;renderPreviews()}return phrIngestData(file,id)}).then(()=>{const f=attachedFiles.find(x=>x.id===id);if(f){f.loading=false;renderPreviews()}}).catch(()=>{const f=attachedFiles.find(x=>x.id===id);if(f){f.text="[Could not read this spreadsheet]";f.loading=false;renderPreviews()}showToast("Couldn't read that spreadsheet","error")});
     }else if(/\.csv$/i.test(file.name)){
       const reader=new FileReader();
       reader.onload=ev=>{
@@ -5590,7 +5612,7 @@ function handleFiles(e){
           const wb=XLSX.read(text,{type:"string"});
           text=XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]]).slice(0,9000);
         }catch(e){}
-        attachedFiles.push({id,file,type:"doc",name:file.name,size:sz,dataURL:null,text});renderPreviews();
+        attachedFiles.push({id,file,type:"doc",name:file.name,size:sz,dataURL:null,text,loading:true});renderPreviews();phrIngestData(file,id).then(()=>{const f=attachedFiles.find(x=>x.id===id);if(f){f.loading=false;renderPreviews()}});
       };
       reader.readAsText(file);
     }else if(/\.(txt|md|json|js|py|html|css)$/i.test(file.name)){
@@ -5825,6 +5847,7 @@ function toggleS(e){if(e)e.stopPropagation();document.getElementById("sidebar").
   document.addEventListener("touchend",end,{passive:true});
   document.addEventListener("touchcancel",end,{passive:true});
 })();
+function phrBuildPrompt(){const u=document.getElementById("ui");u.value="Build me ";u.focus();try{u.setSelectionRange(9,9)}catch(e){}u.dispatchEvent(new Event("input",{bubbles:true}))}
 function closeAllDropMenus(){
   ["core-menu","tools-menu","hdr-menu"].forEach(id=>document.getElementById(id)?.classList.remove("show"));
   document.getElementById("core-pill-btn")?.classList.remove("open");document.getElementById("tools-btn")?.classList.remove("open");
@@ -7684,7 +7707,7 @@ body:not(.pet-ok) #phr-pet{display:none}
 (function(){
 const $=s=>document.querySelector(s);
 /* ---- 1. recede ---- */
-const OV=["#plans-sheet.in","#account-page.show:not(.closing)","#global-source-drawer.show","#files-panel.show","#memory-panel.show","#templates-panel.show","#persona-manager.show","#workspace-panel.show","#t2.show","#dr.show","#compare-modal.show","#premium-immersive-viewport.show","#payment-overlay.show","#whats-new-overlay.show","#pinned-msgs-overlay.show"].join(",");
+const OV=["#plans-sheet.in","#tasks-sheet.in","#life-sheet.in","#account-page.show:not(.closing)","#global-source-drawer.show","#files-panel.show","#memory-panel.show","#templates-panel.show","#persona-manager.show","#workspace-panel.show","#t2.show","#dr.show","#compare-modal.show","#premium-immersive-viewport.show","#payment-overlay.show","#whats-new-overlay.show","#pinned-msgs-overlay.show"].join(",");
 let raf=0;const chk=()=>{raf=0;const on=!!document.querySelector(OV)||[...document.querySelectorAll("#compare-modal,#workspace-panel,#premium-immersive-viewport,#payment-overlay,#persona-manager")].some(e=>{const s=getComputedStyle(e);return s.display!=="none"&&s.visibility!=="hidden"&&+s.opacity>.5&&e.getBoundingClientRect().height>200&&e.getBoundingClientRect().top<innerHeight*.6});document.body.classList.toggle("phr-recede",on)};
 new MutationObserver(()=>{if(!raf)raf=requestAnimationFrame(chk)}).observe(document.body,{subtree:true,attributes:true,attributeFilter:["class","style"]});
 /* ---- 2. pet ---- */
