@@ -51,6 +51,8 @@
 <script src="databoard.js"></script>
 <script src="studio.js"></script>
 <script src="tasks.js"></script>
+<script src="aura-stage.js" defer></script>
+<script src="agent.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -2509,7 +2511,9 @@ const AI_TOOLS=[
   {type:"function",function:{name:"write_file",description:"Create a new file or overwrite an existing one in this chat's Workspace, visible to the user in the Files panel — use this to save code, drafts, research notes, or any deliverable, instead of only putting it in your reply text.",parameters:{type:"object",properties:{name:{type:"string",description:"File name, including extension (e.g. notes.md, script.py)"},content:{type:"string",description:"Full file content"}},required:["name","content"]}}},
   {type:"function",function:{name:"remember_fact",description:"Save something about the user to their Life Memory so it is available in future conversations. Use proactively whenever the user shares something durable or time-bound: a fact or preference (kind=fact), a plan or goal (plan), a person in their life (person), a budget/price/amount (money), or ANYTHING they want to be reminded about (reminder — ALWAYS pass `due` for reminders, computed from the real current date/time given in the system prompt). Write it as a short third-person sentence. Do not ask permission first.",parameters:{type:"object",properties:{fact:{type:"string",description:"Short, specific, third person. e.g. 'Prefers concise answers', 'Has a dentist appointment', 'Trip budget is $800'"},kind:{type:"string",enum:["fact","plan","reminder","money","person","note"]},due:{type:"string",description:"Local date-time for reminders/plans in the form YYYY-MM-DDTHH:MM (e.g. 2026-11-06T09:00). Omit when there is no time."}},required:["fact"]}}},
   {type:"function",function:{name:"recall_memory",description:"Search the user's Life Memory (dated facts, plans, reminders, money, people). Use when they ask what you remember, 'what did we/I say about…', 'what's coming up', or to check a detail before answering. Understands time words like 'yesterday', 'last week'. Use query 'everything' for the full list.",parameters:{type:"object",properties:{query:{type:"string",description:"Keywords or a time phrase, e.g. 'trip budget', 'last week', 'reminders'"}},required:["query"]}}},
-  {type:"function",function:{name:"forget_memory",description:"Delete memories that match a phrase, when the user asks you to forget something.",parameters:{type:"object",properties:{query:{type:"string",description:"Words identifying the memory to delete"}},required:["query"]}}}
+  {type:"function",function:{name:"forget_memory",description:"Delete memories that match a phrase, when the user asks you to forget something.",parameters:{type:"object",properties:{query:{type:"string",description:"Words identifying the memory to delete"}},required:["query"]}}},
+  {type:"function",function:{name:"start_task",description:"Start a background Task: the user hands off a bigger goal (research, comparison, plan, report) and Phraortes plans the steps and works through them on its own. Use when the user says things like 'run a task', 'research X for me and get back to me', or asks for something that needs several steps. Not for quick questions.",parameters:{type:"object",properties:{goal:{type:"string",description:"The goal, written clearly with all needed detail"},depth:{type:"string",enum:["quick","standard","deep"],description:"How thorough. Default standard."}},required:["goal"]}}},
+  {type:"function",function:{name:"app_do",description:"Operate the Phraortes app itself: open or close panels (tasks, memory, plans, files, canvas, templates, pomodoro, exam, lab, chat map, account/settings, personas, pinned, search, sidebar/history), start a new chat, switch/rename/pin/delete chats, change theme, accent colour, AI core, custom persona, Aura persona/mode, open the data file picker, photo solver, prefill the message box, close everything, read the app state. Use it whenever the user asks to open, close, switch or change something in the app. Call action:'help' to list every action id. Examples: {action:'open_tasks'}, {action:'theme',args:{mode:'dark'}}, {action:'switch_chat',args:{query:'physics'}}, {action:'close_all'}.",parameters:{type:"object",properties:{action:{type:"string",description:"Action id, e.g. open_tasks, close_memory, new_chat, switch_chat, theme, core, close_all, state, help"},args:{type:"object",description:"Optional arguments, e.g. {query:'...'} {name:'...'} {mode:'dark'} {color:'gold'} {plan:'pro'} {text:'...'}"}},required:["action"]}}},
 ];
 // Every tool call gets a hard client-side timeout too — belt-and-suspenders alongside the
 // Worker's own timeouts, so a stuck network request can never freeze the whole conversation.
@@ -3090,6 +3094,15 @@ async function execTool(name,argsStr){
       save();updateFilesBadge();
       return `Saved ${args.name} (${(args.content||"").length} chars) to Workspace.`;
     }
+    if(name==="app_do"){
+      if(!window.PHR_AGENT)return "App control is not available.";
+      return await PHR_AGENT.do(args.action,args.args);
+    }
+    if(name==="start_task"){
+      if(!window.PHR_TASKS)return "Tasks are not available.";
+      const t=PHR_TASKS.start(args.goal,args.depth);
+      return t?("Task started: \""+t.goal.slice(0,80)+"\". It runs while the app stays open and the result will be in the Tasks sheet."):"Could not start the task (goal too short).";
+    }
     if(name==="remember_fact"){
       const fact=(args.fact||"").trim();
       if(!fact)return "No fact provided.";
@@ -3127,6 +3140,8 @@ function announceTool(elId,toolCalls){
       else if(tc.function.name==="write_file")label=`Writing file: ${args.name||""}`;
       else if(tc.function.name==="remember_fact")label="Remembering that...";
       else if(tc.function.name==="recall_memory")label="Checking memory...";
+      else if(tc.function.name==="start_task")label="Starting a task...";
+      else if(tc.function.name==="app_do")label="Operating the app...";
       else if(tc.function.name==="forget_memory")label="Updating memory...";
     }catch(e){}
     actStep(elId,label);
@@ -3733,7 +3748,8 @@ function updateLongMemory(userText){
 }
 function getLongMemoryPrompt(userText){
   const aura=(window.__auraActive&&typeof auraStyleHint==="function")?auraStyleHint():"";
-  try{return LIFE.promptFor(userText||window.__lastUserText||"")+aura}catch(e){return aura}
+  const ag=(window.PHR_AGENT?PHR_AGENT.prompt(userText||window.__lastUserText||""):"");
+  try{return LIFE.promptFor(userText||window.__lastUserText||"")+aura+ag}catch(e){return aura+ag}
 }
 
 // ═══ ROLLING IN-CHAT MEMORY: keeps token cost bounded on long conversations ═══
@@ -6171,6 +6187,7 @@ function auraListenTurn(fromTap){
       auraListenTurn();return;
     }
     auraFails=0;auraIdle=0;auraLog.push({w:"me",t:said});
+    try{if(window.AURA_STAGE&&AURA_STAGE.command(said)){auraSetCaption(said,"me");return}}catch(_e){}
     auraSetCaption(said,"me");auraState("thinking");auraHaptic("light");
     window.__auraTurnGotText=false;window.__auraWaiting=true;
     const turn=window.__auraTurn=(window.__auraTurn||0)+1;
