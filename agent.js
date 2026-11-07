@@ -13,7 +13,7 @@ var isFa=function(){try{return !!G("auraFa")()}catch(e){return /[؀-ۿ]/.test((G
 var P=[
 {id:"tasks",en:"Tasks",fa:"تسک‌ها",kw:["tasks","task list","background tasks","تسک","وظایف"],is:function(){return cls("tasks-sheet","in")},open:function(){PHR_TASKS.open()},close:function(){PHR_TASKS.close()}},
 {id:"memory",en:"Memory",fa:"حافظه",kw:["memory","memories","reminders","حافظه","یادآور"],is:function(){return cls("life-sheet","in")},open:function(){LIFE.open()},close:function(){LIFE.close()}},
-{id:"plans",en:"Plans",fa:"پلن‌ها",kw:["plans","pricing","upgrade","subscription","پلن","قیمت","اشتراک","ارتقا"],is:function(){return cls("plans-sheet","in")},open:function(a){PHR_PLANS.open(a&&a.plan)},close:function(){PHR_PLANS.close()}},
+{id:"plans",en:"Plans",fa:"پلن‌ها",kw:["plans","pricing","upgrade","subscription","پلن","برنامه","قیمت","اشتراک","ارتقا"],is:function(){return cls("plans-sheet","in")},open:function(a){PHR_PLANS.open(a&&a.plan)},close:function(){PHR_PLANS.close()}},
 {id:"files",en:"Files",fa:"فایل‌ها",kw:["files","workspace","فایل"],is:function(){return cls("workspace-panel","show")},open:function(){call("openWorkspace","files")},close:function(){call("closeWorkspace")}},
 {id:"canvas",en:"Canvas",fa:"بوم",kw:["canvas","editor","بوم","کنواس"],is:function(){return cls("workspace-panel","show")},open:function(){call("openWorkspace","canvas")},close:function(){call("closeWorkspace")}},
 {id:"templates",en:"Templates",fa:"قالب‌ها",kw:["templates","prompt templates","قالب"],is:function(){return cls("templates-panel","show")},open:function(){call("openTemplatesPanel")},close:function(){call("closeTemplatesPanel")}},
@@ -119,11 +119,12 @@ function prompt(text){
 // ── voice fast path (no round trip) ──
 function find(t){
  var best=null,bl=0;P.forEach(function(p){p.kw.forEach(function(k){if(t.indexOf(k)>=0&&k.length>bl){best=p;bl=k.length}})});return best}
-function voice(raw){
- var t=String(raw||"").toLowerCase().replace(/[.!?؟،,]/g," ").replace(/\s+/g," ").trim();if(!t||t.length>70)return false;
- var fa=/[؀-ۿ]/.test(t),ack=function(en,faT){try{G("auraSetCaption")(fa?faT:en,"hint");G("auraSpeak")(fa?faT:en)}catch(e){}return true};
+function voice(raw,quiet){
+ var t=String(raw||"").toLowerCase().replace(/[.!?؟،,]/g," ").replace(/\s+/g," ").trim();if(!t||t.length>80)return false;
+ t=t.replace(/^(?:(?:hey|hi|ok|okay|so|and|now|lets|let's|just|پلیز|لطفا|لطفاً|خب|حالا)\s+)+/,"").replace(/^(?:(?:can|could|would|will) you(?: please)?|i want you to|i need you to|i would like you to|i'd like you to|می ?شه|میشه|میتونی|می‌تونی|لطفا)\s+/,"").replace(/\s+(?:for me|please|now|right now|thanks|thank you|panel|tool|sheet|menu|section|page|screen|window|لطفا|پلیز|الان|برام|بخش|منوی|پنل|صفحه)$/g,"").replace(/\s+(?:for me|please|now|panel|tool|sheet|menu|section|page|لطفا|پلیز|الان|برام)$/g,"").trim();if(!t||t.split(" ").length>7)return false;
+ var fa=/[؀-ۿ]/.test(t),ack=function(en,faT){if(quiet)return fa?faT:en;try{G("auraSetCaption")(fa?faT:en,"hint");G("auraSpeak")(fa?faT:en)}catch(e){}return true};
  var rm=/^(?:please |hey )?(open|show|show me|go to|take me to|launch|bring up|pull up)(?: the| my)? (.+)$/.exec(t),rf=/^(.+?)\s*(?:رو|را)?\s*(?:باز کن|بازش کن|نشون بده|نشانم بده|نشون بدید|ببر)$|^(?:برو (?:به|توی) )(.+)$/.exec(t);
- var tgt=rm?rm[2]:rf?(rf[1]||rf[2]):null;
+ var rp=/^(?:باز کن|نشون بده|نشانم بده|بیار)\s+(.+)$/.exec(t),tgt=rm?rm[2]:rf?(rf[1]||rf[2]):rp?rp[1]:null;if(tgt){tgt=tgt.replace(/\s+(?:رو|را)$/,"").replace(/^(?:the|my|your|a|an)\s+/,"").trim();if(tgt.split(" ").length>3)tgt=null}
  if(tgt){var p=find(tgt);if(p){run("open_"+p.id);return ack("Opening "+p.en+".","باز می‌کنم: "+p.fa+".")}}
  var cm=/^(?:please )?(close|hide|dismiss)(?: the| my)? (.+)$/.exec(t),cf=/^(.+?)\s*(?:رو|را)?\s*(?:ببند|ببندش|ببند لطفا)$/.exec(t);
  var ct=cm?cm[2]:cf?cf[1]:null;
@@ -134,5 +135,5 @@ function voice(raw){
  var sw=/^(?:open|switch to|go to) (?:the )?chat (?:about |called |named )?(.+)$|^چت (.+?) رو باز کن$/.exec(t);if(sw){var res=run("switch_chat",{query:sw[1]||sw[2]});return ack(res.indexOf("Opened")===0?"Opened it.":"I couldn't find that chat.",res.indexOf("Opened")===0?"باز شد.":"چنین چتی پیدا نکردم.")}
  var mdl=/(?:switch to|use|change to|عوض کن به|برو روی) (prime|intellect|apex|sovereign|پرایم|اینتلکت|اپکس|سوورین)/.exec(t);if(mdl){var mp={"پرایم":"prime","اینتلکت":"intellect","اپکس":"apex","سوورین":"sovereign"};run("core",{name:mp[mdl[1]]||mdl[1]});return ack("Switching core.","هسته عوض شد.")}
  return false}
-window.PHR_AGENT={do:run,prompt:prompt,voice:voice,state:A.state,ids:IDS,help:A.help,panels:P,dock:dock,undock:undock};
+window.PHR_AGENT={do:run,prompt:prompt,voice:voice,typed:function(r){return voice(r,true)},state:A.state,ids:IDS,help:A.help,panels:P,dock:dock,undock:undock};
 })();

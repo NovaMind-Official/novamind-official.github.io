@@ -5,7 +5,7 @@
  * - Never touches API calls, POSTs, or anything else cross-origin (chat, payments, OAuth stay live).
  * Bump VERSION to force every device to drop old caches.
  */
-const VERSION = "phraortes-v2-45";
+const VERSION = "phraortes-v2-47";
 const SHELL = ["./", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png", "security.js", "artifacts.js", "chartboard.js", "learner.js", "payment.js", "plans.js", "life.js", "databoard.js", "studio.js", "tasks.js","aura-stage.js","agent.js", "studio-frame.html", "katex.min.js", "mhchem.min.js", "katex.min.css"];
 const CDN_HOSTS = ["cdn.jsdelivr.net", "cdnjs.cloudflare.com", "fonts.googleapis.com", "fonts.gstatic.com"];
 

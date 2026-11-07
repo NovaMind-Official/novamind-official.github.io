@@ -4591,6 +4591,7 @@ async function send(){
     cancelEdit();
   }
   if(!txt&&!attachedFiles.length)return;
+  if(txt&&!attachedFiles.length&&!editMsgId&&window.PHR_AGENT&&PHR_AGENT.typed){let _r=false;try{_r=PHR_AGENT.typed(txt)}catch(_e){}if(_r){uiInput.value="";uiInput.style.height="44px";try{localStorage.removeItem("draft_"+curId)}catch(_e){}showToast(typeof _r==="string"?_r:"Done","success");return}}
   try{window.PHR_learn&&PHR_learn.note(txt)}catch(e){}
   if(activePlan==="free"){
     // Check the real wall-clock reset FIRST — otherwise the very first message attempt right
@@ -4732,14 +4733,41 @@ function retryMsg(idx,encTxt){uiInput.value=decodeURIComponent(encTxt);autoResiz
 // (returns JSON instead), the reply is handled exactly like before, and after two such misses
 // this session stops asking for a stream.
 let _streamFails=0;
-function phrPseudoCalls(raw){ // some models write a tool call as plain text ( <> {"query": "..."} <web_search"> ) instead of calling it — recover the queries and run them for real
+function phrPseudoCalls(raw){ // some models write a tool call as plain text instead of calling it — recover it (search queries and every other tool, incl. app_do / start_task) and run it for real
   if(typeof raw!=="string"||raw.length>1500)return null;
-  const q=[],re=/["”“]\s*query\s*["”“]\s*:\s*["”“]([^"”“\n]{2,200})["”“]/gi;let m;
-  while((m=re.exec(raw))&&q.length<3)q.push(m[1].trim());
-  if(!q.length)return null;
-  const rest=raw.replace(re,"").replace(/[<>{}\[\]"”“:,\/|]|web_search|read_url|tool_call\w*|function|name|arguments|parameters|python_tag/gi,"").replace(/\s+/g," ").trim();
-  if(rest.length>40)return null;
-  return q.map((s,i)=>({id:"pseudo-"+Date.now()+"-"+i,type:"function",function:{name:"web_search",arguments:JSON.stringify({query:s})}}));
+  const names=AI_TOOLS.map(t=>t.function.name),calls=[];let rest=raw;
+  const mk=(n,a)=>{if(a&&typeof a.args==="string"){try{a.args=JSON.parse(a.args)}catch(e){delete a.args}}calls.push({id:"pseudo-"+Date.now()+"-"+calls.length,type:"function",function:{name:n,arguments:JSON.stringify(a||{})}})};
+  const nameAt=(s)=>{let b=null,bi=-1;for(const n of names){const k=s.lastIndexOf(n);if(k>bi){bi=k;b=n}}return b};
+  // 1) python/function style: app_do(action="open_tasks", args={...})  app_do("open_tasks")
+  {
+    const re=new RegExp("\\b("+names.join("|")+")\\s*\\(([^)]*)\\)","g");let m;
+    while((m=re.exec(raw))&&calls.length<4){
+      const a={},body=m[2],kv=/(\w+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^,\s)]+))/g;let k,any=false;
+      while((k=kv.exec(body))){a[k[1]]=k[2]!==undefined?k[2]:k[3]!==undefined?k[3]:k[4];any=true}
+      if(!any){const s=/^\s*["']([^"']+)["']/.exec(body);if(s){a[m[1]==="app_do"?"action":m[1]==="web_search"?"query":"goal"]=s[1]}}
+      if(Object.keys(a).length){mk(m[1],a);rest=rest.replace(m[0],"")}
+    }
+  }
+  // 2) JSON objects (balanced braces): {"name":"app_do","arguments":{...}} | <app_do>{"action":"open_tasks"} | bare {"action":"open_tasks"}
+  for(let p=0;!calls.length&&p<raw.length&&calls.length<4;p++){
+    if(raw[p]!=="{")continue;
+    let d=0,q=p,inS=false,esc=false;
+    for(;q<raw.length;q++){const c=raw[q];if(inS){if(esc)esc=false;else if(c==="\\")esc=true;else if(c==='"')inS=false}else if(c==='"')inS=true;else if(c==="{")d++;else if(c==="}"){d--;if(!d)break}}
+    if(d)break;
+    let o;try{o=JSON.parse(raw.slice(p,q+1))}catch(e){continue}
+    if(!o||typeof o!=="object")continue;
+    let n=null,a=o;
+    const nm=o.name||o.tool||o.function||o.tool_name;
+    if(typeof nm==="string"&&names.includes(nm)){n=nm;a=o.arguments||o.parameters||o.args||{};if(typeof a==="string"){try{a=JSON.parse(a)}catch(e){a={}}}}
+    else{n=nameAt(raw.slice(Math.max(0,p-60),p))||nameAt(raw.slice(q+1,q+41))}
+    if(!n){if(typeof o.action==="string")n="app_do";else if(typeof o.query==="string")n="web_search";else if(typeof o.goal==="string")n="start_task";}
+    if(!n)continue;
+    mk(n,a);rest=rest.replace(raw.slice(p,q+1),"");p=q;
+  }
+  if(!calls.length)return null;
+  rest=rest.replace(/<\|[^|>\n]{1,40}\|>/g,"").replace(/[<>{}\[\]()"”“'`:,\/|=]|web_search|read_url|tool_call\w*|tool_use|function|name|arguments|parameters|python_tag|call|json/gi,"").replace(new RegExp(names.join("|"),"g"),"").replace(/\s+/g," ").trim();
+  if(rest.length>60)return null;
+  return calls.map(c=>c);
 }
 function phrEchoesQuery(content){ // after searching, a model sometimes "answers" with just its search query — never show that as an answer
   if(typeof content!=="string"||!turnToolLog.length)return false;
@@ -4749,7 +4777,7 @@ function phrEchoesQuery(content){ // after searching, a model sometimes "answers
 }
 function phrClean(t){ // some free models emit their safety-classifier verdict ("User Safety: safe / Response Safety: safe") — never show it
   if(typeof t!=="string")return t;
-  if(t.length<1500&&/^[\s<>{\[]*[<{\[]/.test(t)&&phrPseudoCalls(t))return"";
+  if(t.length<1500&&(/^[\s<>{\[`]*[<{\[]/.test(t)||/^\s*`*\s*(?:app_do|start_task|web_search|read_url|[a-z_]+)\s*[({]/i.test(t))&&phrPseudoCalls(t))return"";
   t=t.replace(/<\|tool_call_start\|>[\s\S]*?(?:<\|tool_call_end\|>|$)/g,"").replace(/<\|[^|>\n]{1,40}\|>/g,"");
   return t.replace(/(^|\n)[ \t]*(?:user|response|prompt)\s+safety\s*(?:\([^)\n]*\))?\s*[:：]\s*[a-z]+[^\n]*/gi,"$1").replace(/(^|\n)[ \t]*safety\s+categor(?:y|ies)\s*[:：][^\n]*/gi,"$1").replace(/^\s+/,"");
 }
@@ -4796,16 +4824,16 @@ async function fetchAI(messages,useVision,isCodeQuery,opts){
   if(activeModel==="2.5"&&activePlan==="free")throw new Error("Intellect 2.5 requires the Plus plan or above.");
   if(activeModel==="2.6"&&activePlan!=="pro"&&activePlan!=="ultimate")throw new Error("Apex 2.6 requires the Pro plan or above.");
   if(activeModel==="2.7"&&activePlan!=="ultimate")throw new Error("Sovereign 2.7 requires the Max plan.");
-  // Model routing — OpenRouter FREE models (":free"), newest first, checked 2026-10. Each core has a priority chain: if the
-  // first model is busy, rate-limited or does not support tools, the loop below silently moves to the next one.
+  // Model routing — OpenRouter FREE models (":free"), checked 2026-11-07 against OpenRouter's live free list (all support tool calling).
+  // Each core has a priority chain: if the first model is busy, rate-limited or fails, the loop below silently moves to the next one.
   // The last entry of every chain is OpenRouter's own free router, so a turn never dies because one model is down.
   const FREE_ANY="openrouter/free";
   let orCandidates;
-  if(useVision){orCandidates=["thinkingmachines/inkling:free","nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free","google/gemma-4-31b-it:free",FREE_ANY]}
-  else if(activeModel==="2.7"){orCandidates=["thinkingmachines/inkling:free","nvidia/nemotron-3-ultra-550b-a55b:free","dots-studio/dots-3-note-preview:free","nvidia/nemotron-3-super-120b-a12b:free",FREE_ANY]}
-  else if(isCodeQuery||activeModel==="2.6"){orCandidates=["poolside/laguna-s-2.1:free","cohere/north-mini-code:free","nvidia/nemotron-3-super-120b-a12b:free","poolside/laguna-xs-2.1:free",FREE_ANY]}
-  else if(activeModel==="2.5"){orCandidates=["nvidia/nemotron-3-super-120b-a12b:free","qwen/qwen3.8-27b:free","thinkingmachines/inkling-small:free","google/gemma-4-31b-it:free",FREE_ANY]}
-  else{orCandidates=["nvidia/nemotron-3.5-lightning:free","google/gemma-4-26b-a4b-it:free","qwen/qwen3.8-27b:free","thinkingmachines/inkling-small:free",FREE_ANY]}
+  if(useVision){orCandidates=["nvidia/nemotron-3.5-super-vl:free","google/gemma-4-31b-it:free","dots-studio/dots-3-note-preview:free","nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",FREE_ANY]}
+  else if(activeModel==="2.7"){orCandidates=["nvidia/nemotron-3-ultra-550b-a55b:free","nvidia/nemotron-3.5-super-vl:free","google/gemma-4-31b-it:free","xingchen-agi/xing4.0-29b-a4b:free",FREE_ANY]}
+  else if(isCodeQuery||activeModel==="2.6"){orCandidates=["google/gemma-4-26b-a4b-it:free","cohere/north-mini-code:free","nvidia/nemotron-3.5-super-vl:free","nvidia/nemotron-3-ultra-550b-a55b:free",FREE_ANY]}
+  else if(activeModel==="2.5"){orCandidates=["nvidia/nemotron-3.5-super-vl:free","google/gemma-4-31b-it:free","nvidia/nemotron-3-ultra-550b-a55b:free","dots-studio/dots-3-note-preview:free",FREE_ANY]}
+  else{orCandidates=["google/gemma-4-26b-a4b-it:free","nvidia/nemotron-3.5-lightning:free","xingchen-agi/xing4.0-29b-a4b:free","recursive/flint-v1.0:free",FREE_ANY]}
   // Tools only make sense for real chat turns (not vision, not utility calls like title/summary generation).
   // Capped at 8 round-trips — enough for a real multi-step task (search → read a page → save a file →
   // answer) while still guaranteeing a confused model can't loop forever.
