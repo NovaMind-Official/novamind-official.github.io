@@ -1129,7 +1129,7 @@
     root.innerHTML = head(root, T("periodic"), title, '<button class="phr-w-btn" data-a="fit">' + esc(T("zoom")) + "</button>") +
       '<div class="pt-chips">' + chips + '</div><div class="pt-scroll"><div class="pt-grid">' + cells + '</div></div><div class="pt-detail"><canvas></canvas><div class="pt-info"></div></div>' + (map.note ? '<div class="phr-note">' + inline(map.note) + "</div>" : "");
     var grid = root.querySelector(".pt-grid"), scroll = root.querySelector(".pt-scroll"), cv = root.querySelector(".pt-detail canvas"), info = root.querySelector(".pt-info");
-    function layout() { var w = scroll.clientWidth || 320; cs = fit ? Math.max(15, Math.floor((w - 20 - 17 * 2) / 18)) : 38; grid.style.setProperty("--cs", cs + "px"); }
+    function layout() { var w = scroll.clientWidth || 320; cs = fit ? Math.max(15, Math.floor((w - 20 - 17 * 2) / 18)) : 38; grid.style.setProperty("--cs", cs + "px"); grid.style.touchAction = fit ? "pan-y" : ""; }
     function paint() {
       var cat = active.cat;
       [].forEach.call(grid.querySelectorAll(".pt-c"), function (b) {
@@ -1169,6 +1169,29 @@
       });
     }
     grid.addEventListener("click", function (ev) { var b = ev.target.closest && ev.target.closest(".pt-c"); if (!b) return; sel = +b.getAttribute("data-z"); try { window.PHR_haptic && window.PHR_haptic("light"); } catch (e) {} paint(); });
+    // fat-finger help: pressing / sliding over the small cells shows an enlarged loupe above the finger and selects as you slide
+    (function () {
+      var lp = document.createElement("div"); lp.className = "pt-loupe"; lp.setAttribute("aria-hidden", "true"); root.appendChild(lp);
+      var down = false, lastZ = 0;
+      function at(x, y) { var n = document.elementFromPoint(x, y); return n && n.closest ? n.closest(".pt-c") : null; }
+      function show(b) {
+        if (!b || !fit) { lp.classList.remove("on"); return; }
+        var z = +b.getAttribute("data-z"), e = ELS[z], rb = b.getBoundingClientRect(), rr = root.getBoundingClientRect();
+        lp.style.setProperty("--k", CATS[e.c][3]);
+        lp.innerHTML = "<small>" + z + "</small><b>" + esc(e.s) + "</b><i>" + esc(e.n) + "</i>";
+        var x = rb.left + rb.width / 2 - rr.left, y = rb.top - rr.top;
+        lp.style.left = Math.max(40, Math.min(rr.width - 40, x)) + "px"; lp.style.top = (y - 8) + "px"; lp.classList.add("on");
+      }
+      function pick(ev) {
+        var b = at(ev.clientX, ev.clientY); if (!b) { lp.classList.remove("on"); return; }
+        var z = +b.getAttribute("data-z"); show(b);
+        if (z !== lastZ) { lastZ = z; sel = z; try { window.PHR_haptic && window.PHR_haptic("light"); } catch (e) {} paint(); }
+      }
+      grid.addEventListener("pointerdown", function (ev) { if (!fit) return; down = true; lastZ = 0; pick(ev); });
+      grid.addEventListener("pointermove", function (ev) { if (down) pick(ev); });
+      function up() { down = false; lp.classList.remove("on"); }
+      grid.addEventListener("pointerup", up); grid.addEventListener("pointercancel", up); grid.addEventListener("pointerleave", up);
+    })();
     root.querySelector(".pt-chips").addEventListener("click", function (ev) { var c = ev.target.closest && ev.target.closest(".pt-chip"); if (!c) return; var k = c.getAttribute("data-cat"); active.cat = (active.cat === k || k === "*") ? null : k; paint(); });
     root.querySelector('[data-a="fit"]').addEventListener("click", function (ev) { fit = !fit; ev.currentTarget.classList.toggle("on", !fit); layout(); });
     W.observeResize(root, function () { layout(); S = null; drawBohr(t0); });
@@ -2558,6 +2581,434 @@
     draw();
   };
 
+
+  // ================================================================ GEOMETRY LAB  (```geometry)
+  // Draggable points on a grid: triangle (centres, circles), circle (chord, central/inscribed angle), polygon (area, angles).
+  ["geometry", "geo", "geom", "triangle", "circle", "polygon", "euclid", "geometrylab", "هندسه"].forEach(function (k) { ALIAS[k] = "geometry"; });
+  W.kinds.geometry = 1;
+  var GEL = {
+    en: { badge: "Geometry", triangle: "Triangle", circle: "Circle", polygon: "Polygon", ang: "Angles", len: "Lengths", snap: "Snap", fit: "Fit", circ: "Circumcircle", inc: "Incircle", cen: "Centres", euler: "Euler line", chord: "Chord", add: "+ Vertex", del: "− Vertex", reset: "Reset",
+      area: "Area", per: "Perimeter", angles: "Angles", type: "Type", R: "Circumradius R", r: "Inradius r", sides: "Sides", rad: "Radius", circf: "Circumference", chordl: "Chord AB", arc: "Arc AB", cang: "Central angle", iang: "Inscribed angle", sect: "Sector area", sum: "Angle sum", conv: "Convex", concv: "Concave", reg: "Regular", n: "Vertices",
+      right: "right", acute: "acute", obtuse: "obtuse", equi: "equilateral", iso: "isosceles", scal: "scalene", degen: "degenerate", yes: "yes", no: "no", hint: "Drag the points", G: "Centroid", O: "Circumcentre", I: "Incentre", H: "Orthocentre" },
+    fa: { badge: "هندسه", triangle: "مثلث", circle: "دایره", polygon: "چندضلعی", ang: "زاویه‌ها", len: "طول‌ها", snap: "چسبیدن", fit: "جا کردن", circ: "دایره‌ی محیطی", inc: "دایره‌ی محاطی", cen: "مراکز", euler: "خط اویلر", chord: "وتر", add: "+ رأس", del: "− رأس", reset: "از نو",
+      area: "مساحت", per: "محیط", angles: "زاویه‌ها", type: "نوع", R: "شعاع محیطی R", r: "شعاع محاطی r", sides: "اضلاع", rad: "شعاع", circf: "محیط دایره", chordl: "وتر AB", arc: "کمان AB", cang: "زاویه‌ی مرکزی", iang: "زاویه‌ی محاطی", sect: "مساحت قطاع", sum: "مجموع زوایا", conv: "محدب", concv: "مقعر", reg: "منتظم", n: "تعداد رأس",
+      right: "قائم‌الزاویه", acute: "حاده", obtuse: "منفرجه", equi: "متساوی‌الاضلاع", iso: "متساوی‌الساقین", scal: "مختلف‌الاضلاع", degen: "تبهگن", yes: "بله", no: "خیر", hint: "نقطه‌ها را بکشید", G: "مرکز ثقل", O: "مرکز محیطی", I: "مرکز محاطی", H: "مرکز ارتفاعی" }
+  };
+  function GT(l, k) { return (GEL[l] && GEL[l][k]) || GEL.en[k] || k; }
+  W.builders.geometry = function (root, lines, map) {
+    var lang = root._lang, T = function (k) { return GT(lang, k); }, acc = accent();
+    function dig(v) { return String(v == null ? "" : v).replace(/[۰-۹]/g, function (c) { return c.charCodeAt(0) - 0x06F0; }); }
+    var key = String(map.type || map.mode || map.shape || "").toLowerCase().replace(/[^a-z]/g, "");
+    var mode = { triangle: "triangle", tri: "triangle", circle: "circle", polygon: "polygon", quadrilateral: "polygon", quad: "polygon", pentagon: "polygon" }[key] || "triangle";
+    var given = [], rx = /([A-Za-z])?\s*\(\s*(-?[\d.]+)\s*[,،]\s*(-?[\d.]+)\s*\)/g, src = dig(map.points || map.vertices || map.p || ""), m;
+    while ((m = rx.exec(src))) given.push([parseFloat(m[2]), parseFloat(m[3])]);
+    given = given.filter(function (p) { return isFinite(p[0]) && isFinite(p[1]) && Math.abs(p[0]) < 1e4 && Math.abs(p[1]) < 1e4; }).slice(0, 8);
+    if (given.length >= 4 && !map.type) mode = "polygon";
+    var LET = "ABCDEFGH";
+    var D = {
+      triangle: given.length >= 3 ? given.slice(0, 3) : [[1, 1], [8, 1], [3.5, 6.5]],
+      polygon: given.length >= 3 ? given.slice() : [[1, 1], [8, 1], [9, 5.5], [4, 7.5]],
+      circle: { O: given.length ? given[0] : [5, 4], P: given.length > 1 ? given[1] : [8.5, 4], a: 0.6, b: 2.3 }
+    };
+    var S = { ang: true, len: true, snap: true, circ: false, inc: false, cen: false, euler: false, insc: true }, view = null, cvs = null, drag = null, hot = -1;
+    root.innerHTML = '<div class="phr-w-head"><span class="phr-w-badge">' + esc(T("badge")) + '</span><span class="phr-w-title">' + esc(map.title || "") + '</span><button class="phr-w-btn" data-a="full">⤢</button></div>' +
+      '<div class="pg-tabs gm-modes">' + ["triangle", "circle", "polygon"].map(function (k) { return '<button class="pg-tab" data-t="' + k + '">' + esc(T(k)) + "</button>"; }).join("") + '</div>' +
+      '<div class="phr-cvwrap gm-wrap"><canvas></canvas></div><div class="pg-tabs gm-opts"></div><div class="phr-reads"></div><div class="phr-formula"></div>' +
+      (map.note ? '<div class="phr-note">' + window.PHR_inline(map.note) + "</div>" : "");
+    var cv = root.querySelector("canvas"), opts = root.querySelector(".gm-opts"), reads = root.querySelector(".phr-reads"), fml = root.querySelector(".phr-formula");
+    cv.style.touchAction = "pan-y";
+    function pts() { return mode === "circle" ? circlePts() : D[mode]; }
+    function circlePts() { var c = D.circle, r = Math.hypot(c.P[0] - c.O[0], c.P[1] - c.O[1]) || 1e-6; return [c.O, c.P, [c.O[0] + r * Math.cos(c.a), c.O[1] + r * Math.sin(c.a)], [c.O[0] + r * Math.cos(c.b), c.O[1] + r * Math.sin(c.b)]]; }
+    function fitView() {
+      var ps = pts().slice(), pad = 1.4, ex = [];
+      if (mode === "circle") { var c = D.circle, r = Math.hypot(c.P[0] - c.O[0], c.P[1] - c.O[1]); ex = [[c.O[0] - r, c.O[1] - r], [c.O[0] + r, c.O[1] + r]]; }
+      if (mode === "triangle" && (S.circ || S.cen)) { var cc = tri(D.triangle); if (cc && cc.R < 40) ex = ex.concat([[cc.O[0] - cc.R, cc.O[1] - cc.R], [cc.O[0] + cc.R, cc.O[1] + cc.R]]); }
+      ps = ps.concat(ex);
+      var x0 = Math.min.apply(null, ps.map(function (p) { return p[0]; })), x1 = Math.max.apply(null, ps.map(function (p) { return p[0]; })), y0 = Math.min.apply(null, ps.map(function (p) { return p[1]; })), y1 = Math.max.apply(null, ps.map(function (p) { return p[1]; }));
+      var w = Math.max(x1 - x0, 4) + pad * 2, h = Math.max(y1 - y0, 4) + pad * 2, sc = Math.min(cvs.w / w, cvs.h / h);
+      view = { sc: sc, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 };
+    }
+    function X(x) { return cvs.w / 2 + (x - view.cx) * view.sc; }
+    function Y(y) { return cvs.h / 2 - (y - view.cy) * view.sc; }
+    function iX(px) { return (px - cvs.w / 2) / view.sc + view.cx; }
+    function iY(py) { return -(py - cvs.h / 2) / view.sc + view.cy; }
+    function dist(a, b) { return Math.hypot(a[0] - b[0], a[1] - b[1]); }
+    function angAt(p, q, r) { var ux = q[0] - p[0], uy = q[1] - p[1], vx = r[0] - p[0], vy = r[1] - p[1], d = Math.hypot(ux, uy) * Math.hypot(vx, vy); return d < 1e-12 ? 0 : Math.acos(Math.max(-1, Math.min(1, (ux * vx + uy * vy) / d))) * 180 / Math.PI; }
+    function tri(P) {
+      var A = P[0], B = P[1], C = P[2], a = dist(B, C), b = dist(C, A), c = dist(A, B), ar2 = (B[0] - A[0]) * (C[1] - A[1]) - (C[0] - A[0]) * (B[1] - A[1]), area = Math.abs(ar2) / 2;
+      if (area < 1e-6) return { a: a, b: b, c: c, area: 0, deg: true, ang: [angAt(A, B, C), angAt(B, C, A), angAt(C, A, B)] };
+      var d = 2 * ar2, ux = ((A[0] * A[0] + A[1] * A[1]) * (B[1] - C[1]) + (B[0] * B[0] + B[1] * B[1]) * (C[1] - A[1]) + (C[0] * C[0] + C[1] * C[1]) * (A[1] - B[1])) / d,
+        uy = ((A[0] * A[0] + A[1] * A[1]) * (C[0] - B[0]) + (B[0] * B[0] + B[1] * B[1]) * (A[0] - C[0]) + (C[0] * C[0] + C[1] * C[1]) * (B[0] - A[0])) / d, s = (a + b + c) / 2, p = a + b + c;
+      var O = [ux, uy], G = [(A[0] + B[0] + C[0]) / 3, (A[1] + B[1] + C[1]) / 3], I = [(a * A[0] + b * B[0] + c * C[0]) / p, (a * A[1] + b * B[1] + c * C[1]) / p], H = [A[0] + B[0] + C[0] - 2 * ux, A[1] + B[1] + C[1] - 2 * uy];
+      return { a: a, b: b, c: c, area: area, per: p, R: a * b * c / (4 * area), r: area / s, O: O, G: G, I: I, H: H, ang: [angAt(A, B, C), angAt(B, C, A), angAt(C, A, B)] };
+    }
+    function polyArea(P) { var s = 0; for (var i = 0; i < P.length; i++) { var q = P[(i + 1) % P.length]; s += P[i][0] * q[1] - q[0] * P[i][1]; } return s / 2; }
+    function interior(P) { var sg = polyArea(P) >= 0 ? 1 : -1, out = []; for (var i = 0; i < P.length; i++) { var p = P[(i + P.length - 1) % P.length], q = P[i], r = P[(i + 1) % P.length], a = angAt(q, p, r), cr = (q[0] - p[0]) * (r[1] - q[1]) - (q[1] - p[1]) * (r[0] - q[0]); out.push(cr * sg < 0 ? 360 - a : a); } return out; }
+    function nice(v) { var e = Math.pow(10, Math.floor(Math.log10(v))), f = v / e; return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * e; }
+    function arcMark(c, p, q, r, rad, label, col) {
+      var P1 = [X(q[0]), Y(q[1])], P0 = [X(p[0]), Y(p[1])], P2 = [X(r[0]), Y(r[1])];
+      var a1 = Math.atan2(P1[1] - P0[1], P1[0] - P0[0]), a2 = Math.atan2(P2[1] - P0[1], P2[0] - P0[0]), d = a2 - a1; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
+      var deg = angAt(p, q, r);
+      c.strokeStyle = col; c.fillStyle = col; c.lineWidth = 1.6;
+      if (Math.abs(deg - 90) < 0.6) { var u1 = [Math.cos(a1) * rad * .8, Math.sin(a1) * rad * .8], u2 = [Math.cos(a2) * rad * .8, Math.sin(a2) * rad * .8]; c.beginPath(); c.moveTo(P0[0] + u1[0], P0[1] + u1[1]); c.lineTo(P0[0] + u1[0] + u2[0], P0[1] + u1[1] + u2[1]); c.lineTo(P0[0] + u2[0], P0[1] + u2[1]); c.stroke(); }
+      else { c.beginPath(); c.arc(P0[0], P0[1], rad, a1, a1 + d, d < 0); c.stroke(); }
+      if (label) { var am = a1 + d / 2, lr = rad + 14; c.font = "600 11px 'Space Mono',monospace"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(W.fmt(deg, 3) + "°", P0[0] + Math.cos(am) * lr, P0[1] + Math.sin(am) * lr); }
+    }
+    function lenLabel(c, a, b, val, out) {
+      var mx = (X(a[0]) + X(b[0])) / 2, my = (Y(a[1]) + Y(b[1])) / 2, dx = X(b[0]) - X(a[0]), dy = Y(b[1]) - Y(a[1]), L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
+      if (out) { var cx = out[0], cy = out[1]; if ((mx - cx) * nx + (my - cy) * ny < 0) { nx = -nx; ny = -ny; } }
+      c.font = "600 11px 'Space Mono',monospace"; c.textAlign = "center"; c.textBaseline = "middle"; var t = W.fmt(val, 3), tw = c.measureText(t).width + 8;
+      c.fillStyle = "rgba(10,7,4,.78)"; c.beginPath(); (c.roundRect ? c.roundRect(mx + nx * 13 - tw / 2, my + ny * 13 - 8, tw, 16, 5) : c.rect(mx + nx * 13 - tw / 2, my + ny * 13 - 8, tw, 16)); c.fill();
+      c.fillStyle = "rgba(255,255,255,.92)"; c.fillText(t, mx + nx * 13, my + ny * 13);
+    }
+    function dot(c, p, col, r, label, up) {
+      var x = X(p[0]), y = Y(p[1]); c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+      if (label) { c.fillStyle = "rgba(255,255,255,.92)"; c.font = "700 12px 'Space Grotesk',sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(label, x + (up ? 0 : 12), y + (up ? -14 : -12)); }
+    }
+    function draw() {
+      if (!cvs) return; if (!view) fitView();
+      var c = cvs.ctx, w = cvs.w, h = cvs.h; c.clearRect(0, 0, w, h);
+      var step = nice(54 / view.sc), x0 = Math.floor(iX(0) / step) * step, x1 = iX(w), y1 = Math.floor(iY(h) / step) * step, y0 = iY(0);
+      c.lineWidth = 1; c.font = "9px 'Space Mono',monospace"; c.fillStyle = "rgba(255,255,255,.28)"; c.textAlign = "left"; c.textBaseline = "top";
+      for (var gx = x0; gx <= x1; gx += step) { c.strokeStyle = Math.abs(gx) < 1e-9 ? "rgba(255,255,255,.28)" : "rgba(255,255,255,.07)"; c.beginPath(); c.moveTo(X(gx), 0); c.lineTo(X(gx), h); c.stroke(); if (Math.abs(gx) > 1e-9) c.fillText(W.fmt(gx, 3), X(gx) + 3, h - 12); }
+      for (var gy = y1; gy <= y0; gy += step) { c.strokeStyle = Math.abs(gy) < 1e-9 ? "rgba(255,255,255,.28)" : "rgba(255,255,255,.07)"; c.beginPath(); c.moveTo(0, Y(gy)); c.lineTo(w, Y(gy)); c.stroke(); if (Math.abs(gy) > 1e-9) c.fillText(W.fmt(gy, 3), 4, Y(gy) + 3); }
+      var P = pts(), fillc = acc.charAt(0) === "#" && acc.length === 7 ? "rgba(" + parseInt(acc.slice(1, 3), 16) + "," + parseInt(acc.slice(3, 5), 16) + "," + parseInt(acc.slice(5, 7), 16) + ",.14)" : "rgba(212,162,76,.14)";
+      c.lineJoin = "round";
+      if (mode === "circle") {
+        var O = P[0], R = dist(O, P[1]), A = P[2], B = P[3], Cc = (function () { var mid = (D.circle.a + D.circle.b) / 2 + Math.PI; var cand = [O[0] + R * Math.cos(mid), O[1] + R * Math.sin(mid)]; return cand; })();
+        c.strokeStyle = acc; c.lineWidth = 2.4; c.beginPath(); c.arc(X(O[0]), Y(O[1]), R * view.sc, 0, 7); c.fillStyle = fillc; c.fill(); c.stroke();
+        c.strokeStyle = "rgba(255,255,255,.35)"; c.lineWidth = 1.2; c.setLineDash([5, 5]); c.beginPath(); c.moveTo(X(O[0]), Y(O[1])); c.lineTo(X(P[1][0]), Y(P[1][1])); c.stroke(); c.setLineDash([]);
+        c.strokeStyle = "#7fe0a8"; c.lineWidth = 2; c.beginPath(); c.moveTo(X(A[0]), Y(A[1])); c.lineTo(X(O[0]), Y(O[1])); c.lineTo(X(B[0]), Y(B[1])); c.stroke();
+        c.strokeStyle = "#ffd9a0"; c.beginPath(); c.moveTo(X(A[0]), Y(A[1])); c.lineTo(X(B[0]), Y(B[1])); c.stroke();
+        if (S.insc) { c.strokeStyle = "rgba(255,143,177,.9)"; c.beginPath(); c.moveTo(X(A[0]), Y(A[1])); c.lineTo(X(Cc[0]), Y(Cc[1])); c.lineTo(X(B[0]), Y(B[1])); c.stroke(); }
+        if (S.ang) { arcMark(c, O, A, B, 22, true, "#7fe0a8"); if (S.insc) arcMark(c, Cc, A, B, 20, true, "#ff8fb1"); }
+        if (S.len) { lenLabel(c, O, P[1], R, null); lenLabel(c, A, B, dist(A, B), O); }
+        dot(c, O, "#fff", 4.5, "O"); dot(c, A, acc, 7, "A"); dot(c, B, acc, 7, "B"); dot(c, P[1], "rgba(255,255,255,.9)", 6, "");
+        if (S.insc) dot(c, Cc, "#ff8fb1", 5, "C");
+      } else {
+        var n = P.length, poly = D[mode], sg = polyArea(poly) >= 0 ? 1 : -1, cen = [poly.reduce(function (s, p) { return s + p[0]; }, 0) / n, poly.reduce(function (s, p) { return s + p[1]; }, 0) / n], t = mode === "triangle" ? tri(poly) : null;
+        if (t && !t.deg) {
+          if (S.circ) { c.strokeStyle = "rgba(143,211,255,.8)"; c.lineWidth = 1.6; c.setLineDash([6, 5]); c.beginPath(); c.arc(X(t.O[0]), Y(t.O[1]), t.R * view.sc, 0, 7); c.stroke(); c.setLineDash([]); }
+          if (S.inc) { c.strokeStyle = "rgba(127,224,168,.9)"; c.lineWidth = 1.6; c.beginPath(); c.arc(X(t.I[0]), Y(t.I[1]), t.r * view.sc, 0, 7); c.stroke(); }
+          if (S.euler) { c.strokeStyle = "rgba(255,255,255,.4)"; c.lineWidth = 1.3; c.setLineDash([4, 5]); var ds = [t.G, t.O, t.H].sort(function (p, q) { return p[0] - q[0] || p[1] - q[1]; }); c.beginPath(); c.moveTo(X(ds[0][0]), Y(ds[0][1])); c.lineTo(X(ds[2][0]), Y(ds[2][1])); c.stroke(); c.setLineDash([]); }
+        }
+        c.fillStyle = fillc; c.strokeStyle = acc; c.lineWidth = 2.4; c.beginPath(); poly.forEach(function (p, i) { i ? c.lineTo(X(p[0]), Y(p[1])) : c.moveTo(X(p[0]), Y(p[1])); }); c.closePath(); c.fill(); c.stroke();
+        if (S.ang) { var ia = interior(poly); poly.forEach(function (q, i) { var p0 = poly[(i + n - 1) % n], r0 = poly[(i + 1) % n], reflex = ia[i] > 180; if (reflex) arcMark(c, q, r0, p0, 20, true, "rgba(255,255,255,.85)"); else arcMark(c, q, p0, r0, 20, true, "rgba(255,255,255,.85)"); }); }
+        if (S.len) poly.forEach(function (p, i) { var q = poly[(i + 1) % n]; lenLabel(c, p, q, dist(p, q), [X(cen[0]), Y(cen[1])]); });
+        if (t && !t.deg && S.cen) { dot(c, t.G, "#ffd9a0", 4.5, "G", 1); dot(c, t.O, "#8fd3ff", 4.5, "O", 1); dot(c, t.I, "#7fe0a8", 4.5, "I", 1); dot(c, t.H, "#ff8fb1", 4.5, "H", 1); }
+        poly.forEach(function (p, i) { var hotp = (drag && drag.i === i) || hot === i; if (hotp) { c.fillStyle = "rgba(255,255,255,.12)"; c.beginPath(); c.arc(X(p[0]), Y(p[1]), 20, 0, 7); c.fill(); } var vx = X(p[0]) - X(cen[0]), vy = Y(p[1]) - Y(cen[1]), L = Math.hypot(vx, vy) || 1; c.fillStyle = acc; c.beginPath(); c.arc(X(p[0]), Y(p[1]), 7.5, 0, 7); c.fill(); c.fillStyle = "#1a1206"; c.beginPath(); c.arc(X(p[0]), Y(p[1]), 2.6, 0, 7); c.fill(); c.fillStyle = "#fff"; c.font = "700 13px 'Space Grotesk',sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(LET[i], X(p[0]) + vx / L * 20, Y(p[1]) + vy / L * 20); });
+      }
+      if (!draw._hint) { c.fillStyle = "rgba(255,255,255,.35)"; c.font = "10.5px 'Space Grotesk',sans-serif"; c.textAlign = "right"; c.textBaseline = "top"; c.fillText(T("hint"), w - 10, 8); }
+    }
+    function readsOf() {
+      var R = [], f = function (v) { return W.fmt(v, 4); };
+      if (mode === "triangle") {
+        var t = tri(D.triangle); R.push([T("sides"), "a " + f(t.a) + " · b " + f(t.b) + " · c " + f(t.c)]);
+        if (t.deg) { R.push([T("type"), T("degen")]); } else {
+          var mx = Math.max.apply(null, t.ang), sd = [t.a, t.b, t.c].sort(function (a, b) { return a - b; }), eq = function (x, y) { return Math.abs(x - y) < 0.012 * Math.max(x, y); };
+          var kind = (Math.abs(mx - 90) < 0.5 ? T("right") : mx > 90 ? T("obtuse") : T("acute")) + " · " + (eq(sd[0], sd[2]) ? T("equi") : (eq(sd[0], sd[1]) || eq(sd[1], sd[2])) ? T("iso") : T("scal"));
+          R.push([T("angles"), "A " + f(t.ang[0]) + "° · B " + f(t.ang[1]) + "° · C " + f(t.ang[2]) + "°"], [T("type"), kind], [T("area"), f(t.area)], [T("per"), f(t.per)], [T("R"), f(t.R)], [T("r"), f(t.r)]);
+        }
+      } else if (mode === "circle") {
+        var c = D.circle, r = dist(c.O, c.P), da = Math.abs(((c.b - c.a) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI)), th = Math.min(da, 2 * Math.PI - da);
+        R.push([T("rad"), f(r)], [T("circf"), f(2 * Math.PI * r)], [T("area"), f(Math.PI * r * r)], [T("chordl"), f(2 * r * Math.sin(th / 2))], [T("cang"), f(th * 180 / Math.PI) + "°"], [T("iang"), f(th * 90 / Math.PI) + "°"], [T("arc"), f(r * th)], [T("sect"), f(r * r * th / 2)]);
+      } else {
+        var P = D.polygon, n = P.length, ia = interior(P), conv = ia.every(function (a) { return a <= 180.0001; }), sides = P.map(function (p, i) { return dist(p, P[(i + 1) % n]); }), regular = conv && sides.every(function (s) { return Math.abs(s - sides[0]) < 0.012 * sides[0]; }) && ia.every(function (a) { return Math.abs(a - ia[0]) < 0.6; });
+        R.push([T("n"), String(n)], [T("area"), f(Math.abs(polyArea(P)))], [T("per"), f(sides.reduce(function (a, b) { return a + b; }, 0))], [T("sum"), f(ia.reduce(function (a, b) { return a + b; }, 0)) + "°"], [T("conv"), conv ? T("yes") : T("no")], [T("reg"), regular ? T("yes") : T("no")]);
+      }
+      var html = R.map(function (x) { var v = String(x[1]); return '<div class="phr-read' + (v.length > 11 ? " wd" : "") + '"><small>' + esc(x[0]) + "</small><span>" + esc(v) + "</span></div>"; }).join("");
+      if (reads._h !== html) { reads._h = html; reads.innerHTML = html; }
+    }
+    function optsUI() {
+      var o = [["ang", "ang"], ["len", "len"]];
+      if (mode === "triangle") o.push(["circ", "circ"], ["inc", "inc"], ["cen", "cen"], ["euler", "euler"]);
+      if (mode === "circle") o.push(["insc", "iang"]);
+      o.push(["snap", "snap"]);
+      var h = o.map(function (k) { return '<button class="pg-tab' + (S[k[0]] ? " on" : "") + '" data-o="' + k[0] + '">' + esc(T(k[1])) + "</button>"; }).join("");
+      if (mode === "polygon") h += '<button class="pg-tab" data-a="add">' + esc(T("add")) + '</button><button class="pg-tab" data-a="del">' + esc(T("del")) + "</button>";
+      h += '<button class="pg-tab" data-a="fit">' + esc(T("fit")) + '</button><button class="pg-tab" data-a="reset">' + esc(T("reset")) + "</button>";
+      opts.innerHTML = h; opts._pf = 0; opts.classList.remove("phr-rowfade");
+      var f = {
+        triangle: "A=\\tfrac12\\,bc\\sin A=rs=\\dfrac{abc}{4R}", circle: "\\angle ACB=\\tfrac12\\,\\angle AOB,\\quad s=r\\theta,\\quad A_{\\text{sector}}=\\tfrac12 r^2\\theta",
+        polygon: "A=\\tfrac12\\Big|\\sum_{i}(x_i\\,y_{i+1}-x_{i+1}\\,y_i)\\Big|"
+      }[mode];
+      fml.innerHTML = window.PHR_texHTML(f, true) + (mode === "polygon" ? window.PHR_texHTML("\\Sigma\\angle=(n-2)\\cdot180^\\circ", true) : "");
+    }
+    function setMode(k) { mode = k; view = null; [].forEach.call(root.querySelectorAll(".gm-modes .pg-tab"), function (b) { b.classList.toggle("on", b.getAttribute("data-t") === k); }); optsUI(); size(); }
+    function size() { cvs = W.fitCanvas(cv, cv.parentElement.clientWidth < 520 ? 0.95 : 0.62, 250, 440); view = null; draw(); readsOf(); }
+    function snapV(v) { return S.snap ? Math.round(v / 0.5) * 0.5 : Math.round(v * 100) / 100; }
+    function target() {
+      var P = pts(), best = -1, bd = 1e9; return function (ev) {
+        var r = cv.getBoundingClientRect(), px = ev.clientX - r.left, py = ev.clientY - r.top, Pn = pts();
+        best = -1; bd = 1e9; Pn.forEach(function (p, i) { if (mode === "circle" && i === 0) { } var d = Math.hypot(X(p[0]) - px, Y(p[1]) - py); if (d < bd) { bd = d; best = i; } });
+        var lim = ev.pointerType === "mouse" ? 18 : 34; return bd <= lim ? best : -1;
+      };
+    }
+    function moveTo(ev) {
+      var r = cv.getBoundingClientRect(), x = snapV(iX(ev.clientX - r.left)), y = snapV(iY(ev.clientY - r.top)), i = drag.i;
+      if (mode === "circle") {
+        var c = D.circle;
+        if (i === 0) { c.O = [x, y]; c.P = [x + drag.rx, y + drag.ry]; }
+        else if (i === 1) { if (Math.hypot(x - c.O[0], y - c.O[1]) >= 0.5) { c.P = [x, y]; drag.rx = x - c.O[0]; drag.ry = y - c.O[1]; } }
+        else { var ang = Math.atan2(iY(ev.clientY - r.top) - c.O[1], iX(ev.clientX - r.left) - c.O[0]); if (S.snap) ang = Math.round(ang / (Math.PI / 12)) * (Math.PI / 12); if (i === 2) c.a = ang; else c.b = ang; }
+      } else { D[mode][i] = [x, y]; }
+      var key = mode + i + (mode === "circle" ? "" : x + "," + y); if (key !== moveTo._k) { moveTo._k = key; try { window.PHR_haptic && window.PHR_haptic("light"); } catch (e) {} }
+      draw(); readsOf();
+    }
+    var pick = target();
+    cv.addEventListener("touchstart", function (e) { var t = e.touches[0]; if (!t) return; var r = cv.getBoundingClientRect(); var fake = { clientX: t.clientX, clientY: t.clientY, pointerType: "touch" }; if (pick(fake) >= 0) e.preventDefault(); }, { passive: false });
+    cv.addEventListener("pointerdown", function (e) { var i = pick(e); if (i < 0) return; var c = D.circle; drag = { i: i, rx: c.P[0] - c.O[0], ry: c.P[1] - c.O[1] }; draw._hint = 1; try { cv.setPointerCapture(e.pointerId); } catch (x) {} moveTo(e); });
+    cv.addEventListener("pointermove", function (e) { if (drag) moveTo(e); else if (e.pointerType === "mouse") { var h = pick(e); if (h !== hot) { hot = h; cv.style.cursor = h >= 0 ? "grab" : ""; draw(); } } });
+    function up() { if (drag) { drag = null; draw(); } }
+    ["pointerup", "pointercancel"].forEach(function (n) { cv.addEventListener(n, up); });
+    root.querySelector(".gm-modes").addEventListener("click", function (e) { var b = e.target.closest(".pg-tab"); if (b) setMode(b.getAttribute("data-t")); });
+    opts.addEventListener("click", function (e) {
+      var b = e.target.closest(".pg-tab"); if (!b) return; var o = b.getAttribute("data-o"), a = b.getAttribute("data-a");
+      if (o) { S[o] = !S[o]; b.classList.toggle("on", S[o]); if (o === "circ" || o === "cen") view = null; draw(); }
+      else if (a === "fit") { view = null; draw(); }
+      else if (a === "reset") { D.triangle = [[1, 1], [8, 1], [3.5, 6.5]]; D.polygon = [[1, 1], [8, 1], [9, 5.5], [4, 7.5]]; D.circle = { O: [5, 4], P: [8.5, 4], a: 0.6, b: 2.3 }; view = null; draw(); readsOf(); }
+      else if (a === "add") { var P = D.polygon; if (P.length < 8) { var i = P.length - 1, q = P[0], p = P[i]; P.splice(P.length, 0, [snapV((p[0] + q[0]) / 2 + 0.5), snapV((p[1] + q[1]) / 2 + 0.5)]); view = null; draw(); readsOf(); } }
+      else if (a === "del") { var P2 = D.polygon; if (P2.length > 3) { P2.pop(); view = null; draw(); readsOf(); } }
+    });
+    W.attachExpand(root, root.querySelector('[data-a="full"]'), size); W.observeResize(root, size);
+    setMode(mode);
+  };
+
+  // ================================================================ CHEMISTRY LAB  (```chemlab)
+  // Acid–base titration (exact charge-balance pH), pH of a solution / dilution, ideal-gas cylinder.
+  ["chemlab", "chemistrylab", "chemlabs", "titration", "ph", "phlab", "acidbase", "gaslab", "gaslaw", "gaslaws", "idealgas", "تیتراسیون", "آزمایشگاه-شیمی"].forEach(function (k) { ALIAS[k] = "chemlab"; });
+  W.kinds.chemlab = 1;
+  var CLL = {
+    en: { badge: "Chem lab", titration: "Titration", ph: "pH", gas: "Gas laws", sa: "Strong acid", wa: "Weak acid", sb: "Strong base", wb: "Weak base", ca: "Analyte conc.", va: "Analyte volume", cb: "Titrant conc.", pk: "pK", vt: "Titrant added", ind: "Indicator", auto: "Auto indicator", none: "None",
+      phph: "Phenolphthalein", mo: "Methyl orange", bb: "Bromothymol blue", half: "Half-equivalence", eq: "Equivalence", curve: "Titration curve", conc: "Concentration", sub: "Substance", dil: "Dilute ×10", reset: "Reset",
+      pH: "pH", pOH: "pOH", h: "[H⁺]", oh: "[OH⁻]", ion: "Ionisation", acidic: "acidic", basic: "basic", neutral: "neutral", pe: "pH at equivalence", ve: "Equivalence volume", cur: "Now", vol: "Total volume",
+      hcl: "HCl (strong acid)", hac: "Acetic acid", nh3: "Ammonia", naoh: "NaOH (strong base)", water: "Pure water", T: "Temperature", V: "Volume", n: "Amount", P: "Pressure", pvs: "P–V (Boyle)", avg: "Mean speed", kpa: "kPa", mol: "mol", add: "Add 1 mL" },
+    fa: { badge: "آزمایشگاه شیمی", titration: "تیتراسیون", ph: "pH", gas: "قوانین گازها", sa: "اسید قوی", wa: "اسید ضعیف", sb: "باز قوی", wb: "باز ضعیف", ca: "غلظت نمونه", va: "حجم نمونه", cb: "غلظت تیترانت", pk: "pK", vt: "تیترانت افزوده", ind: "شناساگر", auto: "شناساگر خودکار", none: "بدون", 
+      phph: "فنول‌فتالئین", mo: "متیل نارنجی", bb: "برموتیمول آبی", half: "نیم‌نقطه‌ی هم‌ارزی", eq: "نقطه‌ی هم‌ارزی", curve: "منحنی تیتراسیون", conc: "غلظت", sub: "ماده", dil: "رقیق‌سازی ×۱۰", reset: "از نو",
+      pH: "pH", pOH: "pOH", h: "[H⁺]", oh: "[OH⁻]", ion: "یونش", acidic: "اسیدی", basic: "بازی", neutral: "خنثی", pe: "pH در هم‌ارزی", ve: "حجم هم‌ارزی", cur: "اکنون", vol: "حجم کل",
+      hcl: "HCl (اسید قوی)", hac: "استیک اسید", nh3: "آمونیاک", naoh: "NaOH (باز قوی)", water: "آب خالص", T: "دما", V: "حجم", n: "مقدار", P: "فشار", pvs: "P–V (بویل)", avg: "سرعت میانگین", kpa: "kPa", mol: "mol", add: "۱ mL اضافه" }
+  };
+  function CT(l, k) { return (CLL[l] && CLL[l][k]) || CLL.en[k] || k; }
+  var KW = 1e-14;
+  // exact pH from the charge balance (monotone in h → bisection in pH space)
+  function solvePH(kind, K, C, ion) {
+    // kind: "acid" (HA, titrated with a strong base: ion = [Na+]) | "base" (B, titrated with strong acid: ion = [Cl-]); K = Ka (acid) or Kb (base); K<=0 → strong
+    var lo = -1.5, hi = 15.5, i, mid, h, f;
+    for (i = 0; i < 70; i++) {
+      mid = (lo + hi) / 2; h = Math.pow(10, -mid);
+      if (kind === "acid") f = ion + h - C * (K > 0 ? K / (K + h) : 1) - KW / h;
+      else f = h + C * (K > 0 ? h / (h + KW / K) : 1) - ion - KW / h;
+      if (f > 0) lo = mid; else hi = mid;   // f>0 → too much H+ → raise pH
+    }
+    return (lo + hi) / 2;
+  }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function mix(c1, c2, t) { t = Math.max(0, Math.min(1, t)); return [lerp(c1[0], c2[0], t), lerp(c1[1], c2[1], t), lerp(c1[2], c2[2], t), lerp(c1[3], c2[3], t)]; }
+  function stops(ph, S) { // S: [[pH, [r,g,b,a]], ...] ascending
+    if (ph <= S[0][0]) return S[0][1]; for (var i = 1; i < S.length; i++) if (ph <= S[i][0]) return mix(S[i - 1][1], S[i][1], (ph - S[i - 1][0]) / (S[i][0] - S[i - 1][0])); return S[S.length - 1][1];
+  }
+  var INDS = {
+    phph: { lo: 8.2, hi: 10, st: [[8.2, [200, 225, 255, .30]], [9.1, [236, 120, 190, .62]], [10, [226, 40, 140, .88]]] },
+    mo: { lo: 3.1, hi: 4.4, st: [[3.1, [235, 60, 55, .85]], [3.75, [244, 130, 50, .85]], [4.4, [250, 205, 60, .85]]] },
+    bb: { lo: 6, hi: 7.6, st: [[6, [250, 210, 60, .85]], [6.8, [120, 200, 110, .85]], [7.6, [60, 110, 230, .88]]] }
+  };
+  var UNI = [[0, [226, 40, 50, .9]], [3, [244, 110, 50, .9]], [5, [250, 200, 60, .9]], [7, [90, 190, 110, .9]], [9, [60, 150, 210, .9]], [11, [90, 80, 200, .9]], [14, [120, 50, 170, .9]]];
+  function rgba(c) { return "rgba(" + Math.round(c[0]) + "," + Math.round(c[1]) + "," + Math.round(c[2]) + "," + (+c[3]).toFixed(2) + ")"; }
+  W.builders.chemlab = function (root, lines, map) {
+    var lang = root._lang, T = function (k) { return CT(lang, k); }, acc = accent();
+    function num(v, d, lo, hi) { var n = parseFloat(String(v == null ? "" : v).replace(/[۰-۹]/g, function (c) { return c.charCodeAt(0) - 0x06F0; })); return isFinite(n) ? Math.min(hi, Math.max(lo, n)) : d; }
+    var key = String(map.type || map.mode || map.name || "titration").toLowerCase().replace(/[^a-z]/g, "");
+    var mode = { titration: "titration", titrate: "titration", acidbase: "titration", ph: "ph", phlab: "ph", dilution: "ph", gas: "gas", gaslab: "gas", gaslaw: "gas", gaslaws: "gas", idealgas: "gas", boyle: "gas", charles: "gas" }[key] || "titration";
+    var aKind = String(map.analyte || map.acid || map.base || "sa").toLowerCase();
+    var an = /weak.*base|wb|nh3|ammonia/.test(aKind) ? "wb" : /weak|wa|acet|hac/.test(aKind) ? "wa" : /base|naoh|sb/.test(aKind) ? "sb" : "sa";
+    var P = { an: an, ca: num(map.ca || map.conc || map.c, 0.1, 0.01, 1), va: num(map.va || map.volume || map.v, 25, 10, 50), cb: num(map.cb, 0.1, 0.01, 1), pk: num(map.pk || map.pka || map.pkb, an === "wb" ? 4.75 : 4.76, 2, 11), vt: num(map.vt || map.added, 0, 0, 200), ind: String(map.indicator || "").toLowerCase().replace(/[^a-z]/g, "") || "auto",
+      sub: "hcl", lc: -1, Tk: num(map.t || map.temp, 300, 150, 700), Vl: num(map.v || map.volume, 5, 1, 10), n: num(map.n || map.moles, 1, 0.2, 3) };
+    if (!INDS[P.ind] && P.ind !== "none") P.ind = "auto";
+    var cvs = null, cv, raf = 0, parts = [], drip = 0;
+    root.innerHTML = '<div class="phr-w-head"><span class="phr-w-badge">' + esc(T("badge")) + '</span><span class="phr-w-title">' + esc(map.title || "") + '</span><button class="phr-w-btn" data-a="full">⤢</button></div>' +
+      '<div class="pg-tabs cl-modes">' + ["titration", "ph", "gas"].map(function (k) { return '<button class="pg-tab" data-t="' + k + '">' + esc(T(k)) + "</button>"; }).join("") + '</div>' +
+      '<div class="pg-tabs cl-sub"></div><div class="phr-cvwrap"><canvas></canvas></div><div class="phr-controls" data-r="ctl"></div><div class="pg-tabs cl-bar"></div><div class="phr-reads"></div><div class="phr-formula"></div>' +
+      (map.note ? '<div class="phr-note">' + window.PHR_inline(map.note) + "</div>" : "");
+    cv = root.querySelector("canvas"); var ctl = root.querySelector('[data-r="ctl"]'), sub = root.querySelector(".cl-sub"), bar = root.querySelector(".cl-bar"), reads = root.querySelector(".phr-reads"), fml = root.querySelector(".phr-formula");
+    var isAcid = function () { return P.an === "sa" || P.an === "wa"; }, isWeak = function () { return P.an === "wa" || P.an === "wb"; };
+    function K() { return isWeak() ? Math.pow(10, -P.pk) : 0; }
+    function Ve() { return P.ca * P.va / P.cb; }
+    function titr(vt) {
+      var V = P.va + vt, C = P.ca * P.va / V, ion = P.cb * vt / V;
+      return solvePH(isAcid() ? "acid" : "base", K(), C, ion);
+    }
+    function indKey() { return P.ind === "auto" ? (isAcid() ? "phph" : "mo") : P.ind; }
+    function liquid(ph) { var k = indKey(); return k === "none" ? [150, 200, 255, .32] : stops(ph, INDS[k].st); }
+    // ---------------------------------------------------------------- shared UI
+    function sliderHTML(defs) {
+      return defs.map(function (d) { return '<label class="phr-sl"><span class="phr-sl-l">' + esc(d[1]) + '</span><input type="range" data-k="' + d[0] + '" min="' + d[2] + '" max="' + d[3] + '" step="' + d[4] + '" value="' + d[5] + '"><span class="phr-sl-v"></span></label>'; }).join("");
+    }
+    function bindSliders(onInput, fmtv) {
+      [].forEach.call(ctl.querySelectorAll("input"), function (inp) {
+        function upd() { var v = parseFloat(inp.value), lo = parseFloat(inp.min), hi = parseFloat(inp.max); inp.style.setProperty("--fill", ((v - lo) / (hi - lo) * 100) + "%"); inp.parentElement.querySelector(".phr-sl-v").textContent = fmtv(inp.getAttribute("data-k"), v); }
+        inp._u = upd; upd(); inp.addEventListener("input", function () { onInput(inp.getAttribute("data-k"), parseFloat(inp.value)); upd(); });
+      });
+    }
+    function btn(a, label, gold, on) { return '<button class="pg-tab' + (on ? " on" : "") + (gold ? " cl-gold" : "") + '" data-a="' + a + '">' + esc(label) + "</button>"; }
+    function setReads(R) {
+      var html = R.map(function (x) { var v = String(x[1]); return '<div class="phr-read' + (v.length > 11 ? " wd" : "") + '"><small>' + esc(x[0]) + "</small><span>" + esc(v) + "</span></div>"; }).join("");
+      if (reads._h !== html) { reads._h = html; reads.innerHTML = html; }
+    }
+    function f3(v) { return W.fmt(v, 3); }
+    function sci(v) { if (!isFinite(v) || v === 0) return "0"; var a = Math.abs(v), p = a.toExponential(2).split("e"), m = +p[0], e = +p[1]; if (e >= -2 && e <= 3) return W.fmt(v, 3); var sup = String(e).replace(/-/g, "⁻").replace(/\d/g, function (d) { return "⁰¹²³⁴⁵⁶⁷⁸⁹"[d]; }); return (m === 1 ? "" : m + "×") + "10" + sup; }
+    // ---------------------------------------------------------------- canvas helpers
+    function beaker(c, x, y, w, h, level, col, label) {
+      c.save(); c.lineWidth = 2; var r = 9;
+      c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + h - r); c.quadraticCurveTo(x, y + h, x + r, y + h); c.lineTo(x + w - r, y + h); c.quadraticCurveTo(x + w, y + h, x + w, y + h - r); c.lineTo(x + w, y);
+      c.save(); c.clip(); // liquid
+      var ly = y + h - h * level; c.fillStyle = rgba(col); c.fillRect(x, ly, w, h);
+      var g = c.createLinearGradient(x, 0, x + w, 0); g.addColorStop(0, "rgba(255,255,255,.18)"); g.addColorStop(.25, "rgba(255,255,255,0)"); g.addColorStop(1, "rgba(0,0,0,.18)"); c.fillStyle = g; c.fillRect(x, ly, w, h);
+      c.fillStyle = "rgba(255,255,255,.28)"; c.fillRect(x, ly, w, 2); c.restore();
+      c.strokeStyle = "rgba(255,255,255,.6)"; c.stroke();
+      c.strokeStyle = "rgba(255,255,255,.22)"; c.lineWidth = 1; for (var k = 1; k < 5; k++) { var yy = y + h * k / 5; c.beginPath(); c.moveTo(x + 2, yy); c.lineTo(x + 9, yy); c.stroke(); }
+      c.restore();
+    }
+    function axes(c, x, y, w, h, xmax, ymax, xl, yl, ticksY) {
+      c.strokeStyle = "rgba(255,255,255,.08)"; c.lineWidth = 1; c.fillStyle = "rgba(255,255,255,.42)"; c.font = "9.5px 'Space Mono',monospace"; c.textAlign = "right"; c.textBaseline = "middle";
+      (ticksY || [0, 2, 4, 6, 8, 10, 12, 14]).forEach(function (t) { var yy = y + h - t / ymax * h; c.beginPath(); c.moveTo(x, yy); c.lineTo(x + w, yy); c.stroke(); c.fillText(String(t), x - 5, yy); });
+      c.textAlign = "center"; c.textBaseline = "top"; var nx = 4; for (var i = 0; i <= nx; i++) { var vx = x + w * i / nx; c.fillText(W.fmt(xmax * i / nx, 3), vx, y + h + 5); }
+      c.strokeStyle = "rgba(255,255,255,.3)"; c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + h); c.lineTo(x + w, y + h); c.stroke();
+      c.fillStyle = "rgba(255,255,255,.55)"; c.font = "600 10px 'Space Grotesk',sans-serif"; c.textAlign = "right"; c.fillText(xl, x + w, y + h + 19); c.textAlign = "left"; c.fillText(yl, x + 4, y - 14);
+    }
+    // ---------------------------------------------------------------- TITRATION
+    function drawTitration() {
+      var c = cvs.ctx, w = cvs.w, h = cvs.h, wide = w >= 520; c.clearRect(0, 0, w, h);
+      var ve = Ve(), vmax = ve * 2, ph = titr(P.vt), col = liquid(ph);
+      var bx, by, bw, bh, gx, gy, gw, gh;
+      if (wide) { bx = 22; bw = Math.min(110, w * .22); by = 78; bh = h - 78 - 20; gx = bx + bw + 56; gw = w - gx - 18; gy = 30; gh = h - gy - 40; }
+      else { bw = Math.min(96, w * .27); bx = 18; by = 62; bh = h * .36; gx = 40; gy = by + bh + 50; gw = w - gx - 14; gh = h - gy - 36; }
+      // burette
+      var burW = 14, burX = bx + bw / 2 - burW / 2, burTop = 8, burBot = by - 20, frac = Math.max(0, 1 - P.vt / Math.max(vmax, 1e-9));
+      c.strokeStyle = "rgba(255,255,255,.55)"; c.lineWidth = 1.6; c.strokeRect(burX, burTop, burW, burBot - burTop);
+      c.fillStyle = "rgba(200,225,255,.35)"; var lv = (burBot - burTop - 6) * frac; c.fillRect(burX + 1.5, burBot - lv - 3, burW - 3, lv);
+      c.fillStyle = "rgba(255,255,255,.7)"; c.fillRect(burX + burW / 2 - 2, burBot, 4, 12);
+      if (drip > 0) { var t = 1 - drip; c.fillStyle = "rgba(200,225,255,.9)"; c.beginPath(); c.arc(burX + burW / 2, burBot + 12 + t * (by + bh * (1 - .55) - burBot - 12), 2.6, 0, 7); c.fill(); }
+      var level = Math.min(.8, .46 + (P.vt / Math.max(vmax, 1)) * .28);
+      beaker(c, bx, by, bw, bh, level, col);
+      c.fillStyle = "rgba(255,255,255,.9)"; c.font = "700 15px 'Space Mono',monospace"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("pH " + f3(ph), bx + bw / 2, by + bh + 12);
+      // curve
+      axes(c, gx, gy, gw, gh, vmax, 14, "mL", "pH");
+      var ik = indKey(); if (ik !== "none") { var I = INDS[ik], y1 = gy + gh - I.hi / 14 * gh, y0 = gy + gh - I.lo / 14 * gh; c.fillStyle = "rgba(255,255,255,.06)"; c.fillRect(gx, y1, gw, y0 - y1); c.fillStyle = "rgba(255,255,255,.38)"; c.font = "9px 'Space Grotesk',sans-serif"; c.textAlign = "left"; c.textBaseline = "bottom"; c.fillText(T(ik), gx + 6, y1 - 2); }
+      c.strokeStyle = acc; c.lineWidth = 2.6; c.lineJoin = "round"; c.beginPath(); var N = 160;
+      for (var i = 0; i <= N; i++) { var v = vmax * i / N, p = titr(v); var xx = gx + gw * i / N, yy = gy + gh - Math.max(0, Math.min(14, p)) / 14 * gh; i ? c.lineTo(xx, yy) : c.moveTo(xx, yy); } c.stroke();
+      var ex = gx + gw * .5; c.setLineDash([4, 5]); c.strokeStyle = "rgba(255,255,255,.3)"; c.lineWidth = 1; c.beginPath(); c.moveTo(ex, gy); c.lineTo(ex, gy + gh); c.stroke(); c.setLineDash([]);
+      var pe = titr(ve), ey = gy + gh - Math.max(0, Math.min(14, pe)) / 14 * gh; c.fillStyle = "#fff"; c.beginPath(); c.arc(ex, ey, 3.4, 0, 7); c.fill(); c.font = "600 9.5px 'Space Grotesk',sans-serif"; c.textAlign = ex > gx + gw * .5 ? "left" : "left"; c.textBaseline = "top"; c.fillStyle = "rgba(255,255,255,.8)"; c.fillText(T("eq"), ex + 6, gy + gh - 14 * 0 - 16);
+      if (isWeak()) { var hv = ve / 2, hp = titr(hv), hx = gx + gw * hv / vmax, hy = gy + gh - hp / 14 * gh; c.fillStyle = "#7fe0a8"; c.beginPath(); c.arc(hx, hy, 3.2, 0, 7); c.fill(); }
+      var cx = gx + gw * P.vt / vmax, cy = gy + gh - Math.max(0, Math.min(14, ph)) / 14 * gh;
+      c.fillStyle = "rgba(255,255,255,.14)"; c.beginPath(); c.arc(cx, cy, 11, 0, 7); c.fill(); c.fillStyle = acc; c.beginPath(); c.arc(cx, cy, 5.5, 0, 7); c.fill(); c.strokeStyle = "#1a1206"; c.lineWidth = 2; c.stroke();
+    }
+    function readsTitration() {
+      var ve = Ve(), ph = titr(P.vt), V = P.va + P.vt; var R = [[T("pH"), f3(ph)], [T("vt"), f3(P.vt) + " mL"], [T("ve"), f3(ve) + " mL"], [T("pe"), f3(titr(ve))]];
+      if (isWeak()) R.push([T("half"), "pH = pK = " + f3(P.pk)]);
+      R.push([T("vol"), f3(V) + " mL"]); setReads(R);
+    }
+    function uiTitration() {
+      sub.innerHTML = ["sa", "wa", "sb", "wb"].map(function (k) { return '<button class="pg-tab' + (P.an === k ? " on" : "") + '" data-an="' + k + '">' + esc(T(k)) + "</button>"; }).join("");
+      var defs = [["ca", T("ca"), 0.01, 1, 0.01, P.ca], ["va", T("va"), 10, 50, 5, P.va], ["cb", T("cb"), 0.01, 1, 0.01, P.cb]]; if (isWeak()) defs.push(["pk", T("pk"), 2, 11, 0.01, P.pk]); defs.push(["vt", T("vt"), 0, +(Ve() * 2).toFixed(2), 0.05, Math.min(P.vt, Ve() * 2)]);
+      ctl.innerHTML = sliderHTML(defs);
+      bindSliders(function (k, v) { P[k] = v; if (k !== "vt") { var s = ctl.querySelector('[data-k="vt"]'); var mx = +(Ve() * 2).toFixed(2); s.max = mx; if (P.vt > mx) { P.vt = mx; s.value = mx; } s._u(); } else { drip = 1; } redraw(); }, function (k, v) { return k === "va" || k === "vt" ? f3(v) + " mL" : k === "pk" ? f3(v) : f3(v) + " M"; });
+      bar.innerHTML = btn("half", T("half"), 0) + btn("eq", T("eq"), 1) + ["auto", "phph", "mo", "bb", "none"].map(function (k) { return '<button class="pg-tab' + (P.ind === k ? " on" : "") + '" data-ind="' + k + '">' + esc(k === "auto" ? T("auto") : T(k)) + "</button>"; }).join("");
+      fml.innerHTML = window.PHR_texHTML(isAcid() ? "[\\mathrm{Na^+}]+[\\mathrm{H^+}]=[\\mathrm{A^-}]+[\\mathrm{OH^-}]" : "[\\mathrm{H^+}]+[\\mathrm{BH^+}]=[\\mathrm{Cl^-}]+[\\mathrm{OH^-}]", true);
+    }
+    // ---------------------------------------------------------------- pH LAB
+    var SUBS = { hcl: { k: "acid", K: 0, strong: true }, hac: { k: "acid", K: 1.8e-5 }, nh3: { k: "base", K: 1.8e-5 }, naoh: { k: "base", K: 0, strong: true }, water: { k: "acid", K: 0, water: true } };
+    function phOf() { var s = SUBS[P.sub], C = Math.pow(10, P.lc); if (s.water) return 7; return solvePHFree(s.k, s.K, C); }
+    function solvePHFree(kind, K, C) { // no titrant ion: acid HA alone = solve with ion 0; base B alone likewise
+      return solvePH(kind, K, C, 0);
+    }
+    function drawPH() {
+      var c = cvs.ctx, w = cvs.w, h = cvs.h; c.clearRect(0, 0, w, h); var ph = phOf(), col = stops(ph, UNI);
+      var bw = Math.min(120, w * .3), bx = 20, by = 26, bh = h - 52;
+      beaker(c, bx, by, bw, bh, .62, col); c.fillStyle = "rgba(255,255,255,.92)"; c.font = "700 17px 'Space Mono',monospace"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("pH " + f3(ph), bx + bw / 2, by + bh + 14);
+      var sx = bx + bw + 30, sw = w - sx - 20, sy = h / 2 - 8, sh = 26; var g = c.createLinearGradient(sx, 0, sx + sw, 0); UNI.forEach(function (s) { g.addColorStop(s[0] / 14, rgba(s[1])); }); c.fillStyle = g; c.beginPath(); (c.roundRect ? c.roundRect(sx, sy, sw, sh, 13) : c.rect(sx, sy, sw, sh)); c.fill();
+      c.fillStyle = "rgba(255,255,255,.55)"; c.font = "9.5px 'Space Mono',monospace"; c.textAlign = "center"; c.textBaseline = "top"; for (var i = 0; i <= 14; i += 2) c.fillText(String(i), sx + sw * i / 14, sy + sh + 6);
+      var mx = sx + sw * Math.max(0, Math.min(14, ph)) / 14; c.fillStyle = "#fff"; c.beginPath(); c.moveTo(mx, sy - 4); c.lineTo(mx - 8, sy - 17); c.lineTo(mx + 8, sy - 17); c.closePath(); c.fill(); c.strokeStyle = "rgba(255,255,255,.9)"; c.lineWidth = 2; c.beginPath(); c.moveTo(mx, sy - 2); c.lineTo(mx, sy + sh + 2); c.stroke();
+      c.fillStyle = "rgba(255,255,255,.4)"; c.font = "600 10px 'Space Grotesk',sans-serif"; c.textAlign = "left"; c.fillText(T("acidic"), sx, sy - 32); c.textAlign = "right"; c.fillText(T("basic"), sx + sw, sy - 32);
+    }
+    function readsPH() {
+      var s = SUBS[P.sub], ph = phOf(), C = Math.pow(10, P.lc), h = Math.pow(10, -ph), oh = KW / h, R = [[T("pH"), f3(ph)], [T("pOH"), f3(14 - ph)], [T("h"), sci(h) + " M"], [T("oh"), sci(oh) + " M"]];
+      if (!s.water && !s.strong) R.push([T("ion"), f3((s.k === "acid" ? (h - oh) : (oh - h)) / C * 100) + " %"]);
+      R.push([T("cur"), Math.abs(ph - 7) < 0.05 ? T("neutral") : ph < 7 ? T("acidic") : T("basic")]); setReads(R);
+    }
+    function uiPH() {
+      sub.innerHTML = ["hcl", "hac", "nh3", "naoh", "water"].map(function (k) { return '<button class="pg-tab' + (P.sub === k ? " on" : "") + '" data-sub="' + k + '">' + esc(T(k)) + "</button>"; }).join("");
+      ctl.innerHTML = sliderHTML([["lc", T("conc"), -6, 0, 0.05, P.lc]]); ctl.style.display = P.sub === "water" ? "none" : "";
+      bindSliders(function (k, v) { P[k] = v; redraw(); }, function (k, v) { return sci(Math.pow(10, v)) + " M"; });
+      bar.innerHTML = btn("dil", T("dil"), 1) + btn("reset", T("reset"), 0);
+      fml.innerHTML = window.PHR_texHTML("\\mathrm{pH}=-\\log_{10}[\\mathrm{H^+}],\\quad K_a=\\dfrac{[\\mathrm{H^+}][\\mathrm{A^-}]}{[\\mathrm{HA}]}", true);
+    }
+    // ---------------------------------------------------------------- GAS LAB
+    var R_GAS = 0.082057;
+    function gasP() { return P.n * R_GAS * P.Tk / P.Vl; }
+    function ensureParts() {
+      var want = Math.round(P.n * 34); while (parts.length < want) parts.push({ x: Math.random(), y: Math.random(), a: Math.random() * 6.283 }); parts.length = want;
+    }
+    function stepGas(dt) {
+      var sp = Math.sqrt(P.Tk / 300) * .55, wall = 0;
+      parts.forEach(function (p) { p.x += Math.cos(p.a) * sp * dt; p.y += Math.sin(p.a) * sp * dt; if (p.x < 0) { p.x = -p.x; p.a = Math.PI - p.a; wall++; } if (p.x > 1) { p.x = 2 - p.x; p.a = Math.PI - p.a; wall++; } if (p.y < 0) { p.y = -p.y; p.a = -p.a; } if (p.y > 1) { p.y = 2 - p.y; p.a = -p.a; } });
+    }
+    function drawGas() {
+      var c = cvs.ctx, w = cvs.w, h = cvs.h, wide = w >= 520; c.clearRect(0, 0, w, h);
+      var cx = 18, cy = 26, cw = wide ? w * .56 : w - 36, ch = wide ? h - 52 : h * .52, vfrac = P.Vl / 10, pw = cw * (.18 + .82 * vfrac);
+      c.strokeStyle = "rgba(255,255,255,.5)"; c.lineWidth = 2.2; c.beginPath(); c.moveTo(cx + cw + 6, cy); c.lineTo(cx, cy); c.lineTo(cx, cy + ch); c.lineTo(cx + cw + 6, cy + ch); c.stroke();
+      c.fillStyle = "rgba(255,255,255,.03)"; c.fillRect(cx, cy, pw, ch);
+      var t = Math.min(1, (P.Tk - 150) / 550), col = [lerp(120, 255, t), lerp(180, 120, t), lerp(255, 80, t)];
+      parts.forEach(function (p) { c.fillStyle = "rgba(" + col.map(Math.round).join(",") + ",.92)"; c.beginPath(); c.arc(cx + 5 + p.x * (pw - 10), cy + 5 + p.y * (ch - 10), 3.1, 0, 7); c.fill(); });
+      var g = c.createLinearGradient(cx + pw, 0, cx + pw + 12, 0); g.addColorStop(0, "rgba(255,255,255,.65)"); g.addColorStop(1, "rgba(255,255,255,.18)"); c.fillStyle = g; c.fillRect(cx + pw, cy, 10, ch); c.fillStyle = "rgba(255,255,255,.4)"; c.fillRect(cx + pw + 10, cy + ch / 2 - 3, Math.min(cw - pw + 10, 60), 6);
+      c.fillStyle = "rgba(255,255,255,.55)"; c.font = "10px 'Space Mono',monospace"; c.textAlign = "left"; c.textBaseline = "top"; c.fillText(f3(P.Tk) + " K", cx + 4, cy + ch + 6);
+      // P–V isotherm
+      var gx, gy, gw, gh; if (wide) { gx = cx + cw + 56; gw = w - gx - 16; gy = 30; gh = h - 76; } else { gx = 46; gw = w - gx - 16; gy = cy + ch + 34; gh = h - gy - 30; }
+      var pmax = P.n * R_GAS * 700 / 1; pmax = Math.max(2, Math.ceil(P.n * R_GAS * Math.max(P.Tk, 300) / 1 * 1.1)); axes(c, gx, gy, gw, gh, 10, pmax, "L", "atm", [0, Math.round(pmax / 2), pmax]);
+      c.strokeStyle = acc; c.lineWidth = 2.4; c.beginPath(); for (var i = 0; i <= 80; i++) { var v = 1 + 9 * i / 80, pp = P.n * R_GAS * P.Tk / v, xx = gx + gw * v / 10, yy = gy + gh - Math.min(pp, pmax) / pmax * gh; i ? c.lineTo(xx, yy) : c.moveTo(xx, yy); } c.stroke();
+      var mx = gx + gw * P.Vl / 10, my = gy + gh - Math.min(gasP(), pmax) / pmax * gh; c.fillStyle = "rgba(255,255,255,.16)"; c.beginPath(); c.arc(mx, my, 11, 0, 7); c.fill(); c.fillStyle = acc; c.beginPath(); c.arc(mx, my, 5.5, 0, 7); c.fill();
+    }
+    function readsGas() {
+      var p = gasP(), vavg = Math.sqrt(8 * 8.314 * P.Tk / (Math.PI * 0.028)); setReads([[T("P"), f3(p) + " atm"], [T("P"), f3(p * 101.325) + " kPa"], [T("T"), f3(P.Tk) + " K · " + f3(P.Tk - 273.15) + " °C"], [T("V"), f3(P.Vl) + " L"], [T("n"), f3(P.n) + " mol"], [T("avg"), f3(vavg) + " m/s (N₂)"]]);
+    }
+    function uiGas() {
+      sub.innerHTML = ""; ctl.style.display = "";
+      ctl.innerHTML = sliderHTML([["Tk", T("T"), 150, 700, 5, P.Tk], ["Vl", T("V"), 1, 10, 0.1, P.Vl], ["n", T("n"), 0.2, 3, 0.1, P.n]]);
+      bindSliders(function (k, v) { P[k] = v; ensureParts(); redraw(); }, function (k, v) { return k === "Tk" ? f3(v) + " K" : k === "Vl" ? f3(v) + " L" : f3(v) + " mol"; });
+      bar.innerHTML = btn("reset", T("reset"), 0);
+      fml.innerHTML = window.PHR_texHTML("PV=nRT,\\quad R=0.08206\\ \\mathrm{L\\,atm\\,mol^{-1}K^{-1}}", true);
+      ensureParts();
+    }
+    // ---------------------------------------------------------------- wiring
+    function redraw() { if (mode === "titration") { drawTitration(); readsTitration(); } else if (mode === "ph") { drawPH(); readsPH(); } else { drawGas(); readsGas(); } }
+    function setMode(k) {
+      mode = k; [].forEach.call(root.querySelectorAll(".cl-modes .pg-tab"), function (b) { b.classList.toggle("on", b.getAttribute("data-t") === k); });
+      ctl.style.display = ""; (k === "titration" ? uiTitration : k === "ph" ? uiPH : uiGas)(); [sub, bar].forEach(function (r) { r._pf = 0; r.classList.remove("phr-rowfade"); }); size();
+    }
+    function size() { var wd = cv.parentElement.clientWidth || 320; cvs = W.fitCanvas(cv, wd < 520 ? (mode === "ph" ? .6 : 1.12) : (mode === "ph" ? .42 : .6), 250, 460); redraw(); }
+    root.querySelector(".cl-modes").addEventListener("click", function (e) { var b = e.target.closest(".pg-tab"); if (b) { try { window.PHR_haptic && window.PHR_haptic("light"); } catch (x) {} setMode(b.getAttribute("data-t")); } });
+    sub.addEventListener("click", function (e) {
+      var b = e.target.closest(".pg-tab"); if (!b) return;
+      if (b.hasAttribute("data-an")) { P.an = b.getAttribute("data-an"); P.pk = P.an === "wb" ? 4.75 : 4.76; P.vt = 0; uiTitration(); }
+      else if (b.hasAttribute("data-sub")) { P.sub = b.getAttribute("data-sub"); uiPH(); }
+      try { window.PHR_haptic && window.PHR_haptic("light"); } catch (x) {} redraw();
+    });
+    bar.addEventListener("click", function (e) {
+      var b = e.target.closest(".pg-tab"); if (!b) return; var a = b.getAttribute("data-a"), ind = b.getAttribute("data-ind");
+      if (ind) { P.ind = ind; [].forEach.call(bar.querySelectorAll("[data-ind]"), function (x) { x.classList.toggle("on", x === b); }); }
+      else if (a === "half") { P.vt = Math.min(Ve() * 2, Ve() / 2); syncVt(); } else if (a === "eq") { P.vt = Ve(); syncVt(); }
+      else if (a === "dil") { P.lc = Math.max(-6, P.lc - 1); var s = ctl.querySelector('[data-k="lc"]'); if (s) { s.value = P.lc; s._u(); } }
+      else if (a === "reset") { if (mode === "ph") { P.lc = -1; var s2 = ctl.querySelector('[data-k="lc"]'); if (s2) { s2.value = P.lc; s2._u(); } } else if (mode === "gas") { P.Tk = 300; P.Vl = 5; P.n = 1; uiGas(); } }
+      try { window.PHR_haptic && window.PHR_haptic("light"); } catch (x) {} redraw();
+    });
+    function syncVt() { var s = ctl.querySelector('[data-k="vt"]'); if (s) { s.value = P.vt; s._u(); } drip = 1; }
+    var last = 0;
+    W.loop(root, function (dt) {
+      if (mode === "gas") { stepGas(dt); drawGas(); } else if (drip > 0 && mode === "titration") { drip = Math.max(0, drip - dt * 2.2); drawTitration(); }
+    });
+    W.attachExpand(root, root.querySelector('[data-a="full"]'), size); W.observeResize(root, size);
+    setMode(mode);
+  };
+
   // ---------------------------------------------------------------- SKIN: instrument-panel look for every block (overrides the base look above)
   (function () {
     var st = document.createElement("style"); st.id = "phr-artifacts-skin";
@@ -2640,5 +3091,45 @@
 @media (prefers-reduced-motion:reduce){.phr-w{animation:none}.phr-w-badge::before{animation:none}}\
 ";
     document.head.appendChild(st);
+  })();
+
+  // ---------------------------------------------------------------- POLISH: finger-sized targets, scroll hints, loupe
+  (function () {
+    var st = document.createElement("style"); st.id = "phr-artifacts-polish";
+    st.textContent = "\
+@media (pointer:coarse),(hover:none),(max-width:820px){\
+.phr-w-btn{min-height:40px;padding:8px 14px;font-size:13px}\
+.phr-w-head .phr-w-btn{min-width:40px;display:inline-flex;align-items:center;justify-content:center}\
+.pg-tab{min-height:38px;padding:8px 15px;font-size:12.5px}\
+.pt-chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:6px}.pt-chip{flex:0 0 auto;min-height:34px;padding:6px 12px;font-size:11.5px;white-space:nowrap}\
+.phr-sl input[type=range]{height:40px}\
+.phr-sl input[type=range]::-webkit-slider-thumb{width:26px;height:26px}\
+.lg-r span{padding-block:9px}\
+}\
+.pt-loupe{position:absolute;z-index:30;transform:translate(-50%,-100%) scale(.85);opacity:0;pointer-events:none;transition:opacity .12s,transform .12s;min-width:62px;padding:7px 10px 8px;border-radius:14px;text-align:center;background:rgba(var(--k,212,162,76),.22);border:1px solid rgba(var(--k,212,162,76),.7);color:#fff;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 12px 30px -8px rgba(0,0,0,.7);direction:ltr;line-height:1.15}\
+.pt-loupe.on{opacity:1;transform:translate(-50%,-100%) scale(1)}\
+.pt-loupe small{display:block;font:500 9px 'Space Mono',monospace;opacity:.75}.pt-loupe b{display:block;font:700 22px 'Space Grotesk',sans-serif}.pt-loupe i{display:block;font:500 11px 'Space Grotesk',sans-serif;font-style:normal;opacity:.9}\
+.phr-w{position:relative}.phr-read.wd{grid-column:1/-1}\
+.phr-rowfade{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 var(--fl,0px),#000 calc(100% - var(--fr,0px)),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 var(--fl,0px),#000 calc(100% - var(--fr,0px)),transparent 100%);scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}\
+.phr-rowfade::-webkit-scrollbar{display:none}\
+";
+    document.head.appendChild(st);
+    var ROWS = ".pg-tabs,.mol-tabs,.pt-chips,.st-tabs,.ox-tabs,.bb-row,.phr-w-tabs";
+    function hint(r) {
+      var max = r.scrollWidth - r.clientWidth, x = Math.abs(r.scrollLeft), rtl = getComputedStyle(r).direction === "rtl";
+      var a = x > 4 ? 26 : 0, b = x < max - 4 ? 26 : 0;
+      r.style.setProperty("--fl", (rtl ? b : a) + "px"); r.style.setProperty("--fr", (rtl ? a : b) + "px");
+    }
+    function arm(r) {
+      if (r._pf) return; r._pf = 1;
+      if (r.scrollWidth <= r.clientWidth + 2) { r._pf = 0; return; }
+      r.classList.add("phr-rowfade"); hint(r);
+      r.addEventListener("scroll", function () { hint(r); }, { passive: true });
+      r.addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) setTimeout(function () { try { b.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" }); } catch (x) {} }, 30); });
+    }
+    function sweep() { [].forEach.call(document.querySelectorAll(".phr-w " + ROWS.split(",").join(",.phr-w ")), arm); }
+    var q = 0; new MutationObserver(function () { if (!q) q = setTimeout(function () { q = 0; sweep(); }, 120); }).observe(document.documentElement, { childList: true, subtree: true });
+    window.addEventListener("resize", function () { [].forEach.call(document.querySelectorAll(".phr-rowfade"), hint); });
+    setTimeout(sweep, 300);
   })();
 })();
