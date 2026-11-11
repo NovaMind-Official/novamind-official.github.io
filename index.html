@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'self';
-  script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline';
+  script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline' 'wasm-unsafe-eval';
+  worker-src 'self' blob:;
   style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com 'unsafe-inline';
   font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com;
   img-src * data: blob:;
@@ -44,6 +45,7 @@
 <script src="mhchem.min.js"></script>
 <script src="security.js"></script>
 <script src="artifacts.js"></script>
+<script src="pylab.js"></script>
 <script src="chartboard.js"></script>
 <script src="payment.js"></script>
 <script src="plans.js"></script>
@@ -2551,6 +2553,7 @@ let branches=JSON.parse(localStorage.getItem("phraortes_branches")||"{}");
 let attachedFiles=[],pendingPlan="",editMsgId=null,editOrig=null;
 let selectMode=false,selectedChatIds=new Set();
 let currentSendController=null;
+window.PHR_sendText=function(t){if(currentSendController||typeof t!=='string'||!t.trim())return false;uiInput.value=t;send();return true};
 function resetSendBtn(){sendBtn.onclick=send;sendBtn.innerHTML=SEND_ICON_SVG;currentSendController=null}
 function stopGeneration(){
   if(currentSendController){currentSendController.abort();currentSendController=null}
@@ -4489,6 +4492,7 @@ const STEM_TEXT="STUDY MODE (the user is doing maths / physics / science work). 
 "```breadboard — LED + resistor on a breadboard (Ohm's law, current limiting, resistor colour bands, burn-out warning):  led: red | yellow | green | blue | white   source: 5   resistor: 220   leds: 1   (1-3 LEDs in series; the user can drag the supply and resistor)\n"+
 "```geometry — interactive geometry with draggable points on a grid (live lengths, angles, area):  type: triangle | circle | polygon   points: A(1,1) B(8,1) C(3.5,6.5)   title: ...   (triangle shows circumcircle, incircle, centroid/orthocentre/Euler line; circle shows central vs inscribed angle, chord, arc, sector; polygon with 3-8 vertices shows area, angle sum, convexity). Use it for any geometry question\n"+
 "```chemlab — chemistry lab:  type: titration | ph | gas.  titration: analyte: strong acid | weak acid | strong base | weak base   ca: 0.1   va: 25   cb: 0.1   pk: 4.76 (for weak)   vt: 12.5 (mL added)   indicator: phenolphthalein | methyl orange | bromothymol blue  — exact pH curve, equivalence and half-equivalence points, beaker colour. ph: pH of HCl / acetic acid / ammonia / NaOH vs concentration (dilution). gas: ideal gas law with moving particles and a P-V curve (t: 300  v: 5  n: 1). Use it for acid-base, pH, titration and gas-law questions\n"+
+"```pyrun — a real Python computer in the user's app (Python 3 with numpy, pandas, sympy, scipy, matplotlib; files persist in /work; the user can upload CSV/Excel files there). Put ONLY runnable Python in it. First lines may be comments: # title: ...  # report (the app runs it and sends you the output automatically so you can continue)  # autorun. Use pyrun whenever a number, a dataset, a plot or a simulation must be COMPUTED rather than guessed: statistics, equation solving (sympy), numeric integration, regression, unit checks, file creation. Print results with print(); use matplotlib for plots (shown to the user); save files with open('name.csv','w'). If you receive a message starting with [pyrun error], fix the code and send a corrected pyrun block; if it starts with [pyrun result], explain the result to the user. Never fake output: wait for the real result. Plain ```python blocks stay non-executed examples\n"+
 "Add the line  lang: fa  inside a block when the user writes Persian. Give numeric results in your normal text too; blocks are for visual understanding. Never use these blocks for non-study topics.";
 const CODE_RE=/(\b(python|pandas|numpy|matplotlib|react|html|css|javascript|tool|script|chart|plot|canvas|animation|animated|webpage|web page|website|landing page|game|calculator|widget|demo|prototype|snake|todo|to-do|clock|timer|artifact|app|dashboard|simulation|simulator|visuali[sz]ation|interactive|mini ?game|ui|page)\b|انیمیشن|بازی|ماشین حساب|ابزار|پایتون|تحلیل|صفحه وب|صفحهٔ وب|صفحه|وب‌?سایت|سایت|اپ|اپلیکیشن|برنامه|دمو|نمونه کد|تایمر|ساعت|ارتیفکت|آرتیفکت|داشبورد|شبیه‌?ساز|تعاملی|بساز|طراحی کن|لندینگ)/i;
 const CODE_TEXT="BUILD ANYTHING (when the user asks you to build something that runs: a tool, page, calculator, dashboard, game, visualization, data/Python analysis, prototype): reply with ONE complete working project in a fenced block whose language is  studio  — the user runs and edits it in the chat. Format: first optional header lines  title: ...  and  libs: chart, d3, three, plotly, gsap, math, lodash, marked, tailwind, react  (pick only what you need; omit for vanilla), optionally  layout: phone  for mobile-first apps; then sections introduced by lines  --- html  ,  --- css  ,  --- js  (use  --- jsx  for React with libs: react; the root is <div id=root>), and  --- py  for Python (runs in the browser with numpy, pandas, matplotlib, scipy; plt.show() draws into the preview; print() goes to the console), and  --- data  for inline CSV/JSON that code reads from window.DATA (JS) or DATA (Python). Quality bar: a real, finished product — thoughtful layout, mobile-friendly, clear empty/error states, keyboard and touch friendly, tasteful modern design (not default browser styling), meaningful interactions and animations, input validation, state kept in variables (NO localStorage/cookies/fetch/network — the sandbox blocks them; libraries listed in libs load from a pinned CDN). Work out the structure first (state, functions, edge cases), keep code clean and commented only where non-obvious, and make sure it runs with no console errors. If the user's request is vague, make sensible decisions yourself instead of asking. After the block add 2-4 lines: what it does and what to try. To change something later, send the FULL updated studio block. For plain snippets that are not runnable here use ordinary fenced code blocks.";
@@ -4500,6 +4504,7 @@ function stemGuide(chat,txt){
     window.PHR_FORCE_STEM=false;
     if(!g.includes("STUDY MODE")&&/(نمودار|رسم|ترسیم|شبیه|\b(plot|graph|chart|draw|simulate|visuali[sz]e)\b)/i.test(txt||""))g+="\n\n"+STEM_TEXT;
     if(CODE_RE.test((txt||"")+" "+String(chat.msgs.slice(-1)[0]?.uText||"")))g+="\n\n"+CODE_TEXT;
+    if(!g.includes("pyrun")&&(/\b(python|pandas|numpy|csv|dataset|regression|correlation|simulate|monte carlo|integrate|derivative|solve|calculate|compute|statistics)\b|پایتون|محاسبه|حساب کن|تحلیل|داده|اکسل|رگرسیون|شبیه‌?سازی|\[pyrun/i.test((txt||"")+" "+recent)))g+="\n\n"+STEM_TEXT;
     return g;
   }catch(e){return ""}
 }
@@ -4579,6 +4584,7 @@ async function phrPreSearch(txt,elId){
   return out;
 }
 async function send(){
+  window.PHR_LIVE=Date.now();
   const raw=uiInput.value;const txt=raw.trim().replace(/\n{3,}/g,"\n\n");
   if(editMsgId){
     if(!txt){cancelEdit();return}

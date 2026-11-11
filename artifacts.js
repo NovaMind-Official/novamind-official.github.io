@@ -300,6 +300,7 @@
   // ---------------------------------------------------------------- entry points used by renderMD
   var ALIAS = { graph: "graph", plot: "graph", "function-plot": "graph", sim: "sim", simulation: "sim", physics: "sim", solution: "solution", steps: "solution", worked: "solution", quiz: "quiz", practice: "quiz", flashcards: "flash", cards: "flash", flashcard: "flash", periodic: "periodic", periodictable: "periodic", ptable: "periodic", elements: "periodic", molecule: "molecule", molecules: "molecule", mol: "molecule", molecular: "molecule", balance: "balance", equation: "balance", reaction: "balance", chemeq: "balance", circuit: "circuit", schematic: "circuit", circuits: "circuit" };
   var LABEL = { graph: "graph", sim: "sim", solution: "solution", quiz: "quiz", flash: "flash" };
+  W.ALIAS = ALIAS;
   W.kindOf = function (lang) { return ALIAS[String(lang || "").toLowerCase()] || null; };
   W.kinds = { graph: 1, sim: 1, solution: 1, quiz: 1, flash: 1, periodic: 1, molecule: 1, balance: 1, circuit: 1 };
   // Returns TRUSTED html (the caller wraps it in PHR_trusted). Config is carried in an encoded attribute, mounted after insertion.
