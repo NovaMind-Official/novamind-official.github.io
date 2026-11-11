@@ -46,6 +46,7 @@
 <script src="security.js"></script>
 <script src="artifacts.js"></script>
 <script src="pylab.js"></script>
+<script src="coach.js"></script>
 <script src="chartboard.js"></script>
 <script src="payment.js"></script>
 <script src="plans.js"></script>
@@ -2553,6 +2554,7 @@ let branches=JSON.parse(localStorage.getItem("phraortes_branches")||"{}");
 let attachedFiles=[],pendingPlan="",editMsgId=null,editOrig=null;
 let selectMode=false,selectedChatIds=new Set();
 let currentSendController=null;
+window.PHR_sendImage=function(d,t){if(currentSendController||!d)return false;try{attachedFiles.push({id:'sk'+Date.now(),file:null,type:'image',name:'sketch.jpg',size:Math.round(d.length*.75),dataURL:d});renderPreviews();uiInput.value=t||'';send();return true}catch(e){return false}};
 window.PHR_sendText=function(t){if(currentSendController||typeof t!=='string'||!t.trim())return false;uiInput.value=t;send();return true};
 function resetSendBtn(){sendBtn.onclick=send;sendBtn.innerHTML=SEND_ICON_SVG;currentSendController=null}
 function stopGeneration(){
@@ -4493,6 +4495,9 @@ const STEM_TEXT="STUDY MODE (the user is doing maths / physics / science work). 
 "```geometry — interactive geometry with draggable points on a grid (live lengths, angles, area):  type: triangle | circle | polygon   points: A(1,1) B(8,1) C(3.5,6.5)   title: ...   (triangle shows circumcircle, incircle, centroid/orthocentre/Euler line; circle shows central vs inscribed angle, chord, arc, sector; polygon with 3-8 vertices shows area, angle sum, convexity). Use it for any geometry question\n"+
 "```chemlab — chemistry lab:  type: titration | ph | gas.  titration: analyte: strong acid | weak acid | strong base | weak base   ca: 0.1   va: 25   cb: 0.1   pk: 4.76 (for weak)   vt: 12.5 (mL added)   indicator: phenolphthalein | methyl orange | bromothymol blue  — exact pH curve, equivalence and half-equivalence points, beaker colour. ph: pH of HCl / acetic acid / ammonia / NaOH vs concentration (dilution). gas: ideal gas law with moving particles and a P-V curve (t: 300  v: 5  n: 1). Use it for acid-base, pH, titration and gas-law questions\n"+
 "```pyrun — a real Python computer in the user's app (Python 3 with numpy, pandas, sympy, scipy, matplotlib; files persist in /work; the user can upload CSV/Excel files there). Put ONLY runnable Python in it. First lines may be comments: # title: ...  # report (the app runs it and sends you the output automatically so you can continue)  # autorun. Use pyrun whenever a number, a dataset, a plot or a simulation must be COMPUTED rather than guessed: statistics, equation solving (sympy), numeric integration, regression, unit checks, file creation. Print results with print(); use matplotlib for plots (shown to the user); save files with open('name.csv','w'). If you receive a message starting with [pyrun error], fix the code and send a corrected pyrun block; if it starts with [pyrun result], explain the result to the user. Never fake output: wait for the real result. Plain ```python blocks stay non-executed examples\n"+
+"```ask — diagnostic question card (interactive, graded, with explanations). Use it at the START of a new topic when the student level is unknown, before showing a simulation (a prediction question), after a teaching step to check understanding, and whenever the user says quiz me / ask me. Format:  title: ...  report: true  then per question:  q: ...  a: wrong option :: why it is wrong  a*: correct option :: why  why: general explanation  hint: ...  topic: ...  (numeric question: type: number  answer: 9.8  tol: 0.1  unit: m/s2). Several questions separated by a line ---. With report: true the app sends you [ask result]; after such a block STOP, write nothing more and wait for that message, then adapt to it. Keep 1-4 questions, make wrong options reflect real misconceptions.\n"+
+"```exam — timed mock exam (timer, flagging, grading, per-topic breakdown, report to you). Use when the user asks for an exam/test:  title: ...  time: 10 (minutes)  then 5-15 questions in the ask format with topic: on each. After it STOP and wait for [exam result]; then analyse weak topics and give a short plan.\n"+
+"```sketch — drawing board where the user draws an answer by hand (diagram, graph, free-body diagram, structure, geometry); the drawing is sent to you as an image:  prompt: Draw the free-body diagram of ...  title: ...  grid: true. After it STOP and wait; then judge the drawing carefully. When you receive [ask result] / [exam result] adapt your next reply to it.\n"+
 "Add the line  lang: fa  inside a block when the user writes Persian. Give numeric results in your normal text too; blocks are for visual understanding. Never use these blocks for non-study topics.";
 const CODE_RE=/(\b(python|pandas|numpy|matplotlib|react|html|css|javascript|tool|script|chart|plot|canvas|animation|animated|webpage|web page|website|landing page|game|calculator|widget|demo|prototype|snake|todo|to-do|clock|timer|artifact|app|dashboard|simulation|simulator|visuali[sz]ation|interactive|mini ?game|ui|page)\b|انیمیشن|بازی|ماشین حساب|ابزار|پایتون|تحلیل|صفحه وب|صفحهٔ وب|صفحه|وب‌?سایت|سایت|اپ|اپلیکیشن|برنامه|دمو|نمونه کد|تایمر|ساعت|ارتیفکت|آرتیفکت|داشبورد|شبیه‌?ساز|تعاملی|بساز|طراحی کن|لندینگ)/i;
 const CODE_TEXT="BUILD ANYTHING (when the user asks you to build something that runs: a tool, page, calculator, dashboard, game, visualization, data/Python analysis, prototype): reply with ONE complete working project in a fenced block whose language is  studio  — the user runs and edits it in the chat. Format: first optional header lines  title: ...  and  libs: chart, d3, three, plotly, gsap, math, lodash, marked, tailwind, react  (pick only what you need; omit for vanilla), optionally  layout: phone  for mobile-first apps; then sections introduced by lines  --- html  ,  --- css  ,  --- js  (use  --- jsx  for React with libs: react; the root is <div id=root>), and  --- py  for Python (runs in the browser with numpy, pandas, matplotlib, scipy; plt.show() draws into the preview; print() goes to the console), and  --- data  for inline CSV/JSON that code reads from window.DATA (JS) or DATA (Python). Quality bar: a real, finished product — thoughtful layout, mobile-friendly, clear empty/error states, keyboard and touch friendly, tasteful modern design (not default browser styling), meaningful interactions and animations, input validation, state kept in variables (NO localStorage/cookies/fetch/network — the sandbox blocks them; libraries listed in libs load from a pinned CDN). Work out the structure first (state, functions, edge cases), keep code clean and commented only where non-obvious, and make sure it runs with no console errors. If the user's request is vague, make sensible decisions yourself instead of asking. After the block add 2-4 lines: what it does and what to try. To change something later, send the FULL updated studio block. For plain snippets that are not runnable here use ordinary fenced code blocks.";
@@ -4505,6 +4510,7 @@ function stemGuide(chat,txt){
     if(!g.includes("STUDY MODE")&&/(نمودار|رسم|ترسیم|شبیه|\b(plot|graph|chart|draw|simulate|visuali[sz]e)\b)/i.test(txt||""))g+="\n\n"+STEM_TEXT;
     if(CODE_RE.test((txt||"")+" "+String(chat.msgs.slice(-1)[0]?.uText||"")))g+="\n\n"+CODE_TEXT;
     if(!g.includes("pyrun")&&(/\b(python|pandas|numpy|csv|dataset|regression|correlation|simulate|monte carlo|integrate|derivative|solve|calculate|compute|statistics)\b|پایتون|محاسبه|حساب کن|تحلیل|داده|اکسل|رگرسیون|شبیه‌?سازی|\[pyrun/i.test((txt||"")+" "+recent)))g+="\n\n"+STEM_TEXT;
+    if(!g.includes("```ask")&&/(\bquiz\b|\bexam\b|ask me|test me|\bsketch\b|\bdraw\b|\[ask result\]|\[exam result\]|آزمون|امتحان|بپرس|بکش|سوال بپرس|بسنج)/i.test((txt||"")+" "+recent))g+="\n\n"+STEM_TEXT;
     return g;
   }catch(e){return ""}
 }
@@ -5004,7 +5010,7 @@ function finishTurn(aiId,htmlContent,rawContent,chat,userHtml,userTxt,msgIndex,e
   const srcs=turnRealSources.slice(),encSrc=safeEnc(JSON.stringify(srcs)),qc=(userTxt||"").substring(0,14).replace(/['"\\`]/g,"");
   turnRealSources=[];
   const cardsData=turnCards.slice();turnCards=[];
-  const _studyFence=/```(?:chart|charts|chartboard|dashboard|pie|donut|doughnut|budget|percent|graph|plot|function-plot|sim|simulation|physics|solution|steps|worked|quiz|practice|flashcards?|cards|periodic|periodictable|ptable|molecule|molecules|mol|balance|equation|reaction|circuit|schematic|playground|codeplayground|livecode|webdemo|databoard|studio|webapp|codestudio|stats|statistics|statslab|histogram|regression|probability|optics|logic|gates|cpu|assembly|breadboard|geometry|geom|chemlab|titration)\b[\s\S]*?```/gi;
+  const _studyFence=/```(?:chart|charts|chartboard|dashboard|pie|donut|doughnut|budget|percent|graph|plot|function-plot|sim|simulation|physics|solution|steps|worked|quiz|practice|flashcards?|cards|periodic|periodictable|ptable|molecule|molecules|mol|balance|equation|reaction|circuit|schematic|playground|codeplayground|livecode|webdemo|databoard|studio|webapp|codestudio|stats|statistics|statslab|histogram|regression|probability|optics|logic|gates|cpu|assembly|breadboard|geometry|geom|chemlab|titration|ask|diagnostic|checkpoint|predict|exam|mockexam|sketch|drawboard|pyrun|pylab|pyexec|pycomputer)\b[\s\S]*?```/gi;
   const _hasStudy=_studyFence.test(rawContent);
   const _codeOnly=rawContent.replace(_studyFence,"");
   const fuType=/^\[Image rendered/.test(rawContent)?"image":_hasStudy?(/[\u0600-\u06FF]/.test(rawContent)?"studyfa":"study"):/```/.test(_codeOnly)?"code":activeModel==="2.5"?"think":"chat";
@@ -8308,6 +8314,31 @@ body:not(.light-theme) #tools-menu.drop-menu{background:rgba(18,22,27,.97)!impor
 body:not(.light-theme) #tools-menu .menu-header-label span{font-family:var(--v12-mono);font-weight:600;letter-spacing:.14em;color:var(--v12-di)}
 body:not(.light-theme) .hall-wordmark,body:not(.light-theme) #welcome-persona{font-family:var(--v12-disp);font-style:normal;color:var(--v12-mu);text-shadow:none}
 body:not(.light-theme) #welcome-persona *{font-style:normal}
+</style>
+<style id="phr-v14-ui">
+/* v14 — graphite-indigo user bubble, floating slim composer, luminous send orb */
+body:not(.light-theme) .msg.user{background:linear-gradient(160deg,#262F47,#1D2538);color:#E9EDF6;font-weight:500;border:1px solid rgba(130,150,210,.22);border-radius:20px 20px 6px 20px;box-shadow:0 6px 18px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06)}
+body:not(.light-theme) .msg.user *{color:inherit}
+body:not(.light-theme) footer{padding:6px 16px max(18px,calc(env(safe-area-inset-bottom,0px) + 8px));background:linear-gradient(to top,rgba(11,14,18,.97) 35%,transparent)}
+body:not(.light-theme) .input-bar#main-input-bar{width:min(330px,calc(100% - 8px));max-width:none;min-height:46px;padding:0 5px;gap:2px;border-radius:23px;transition:width .35s cubic-bezier(.2,.8,.2,1),border-color .25s,box-shadow .25s}
+body:not(.light-theme) .input-bar#main-input-bar:focus-within{width:min(520px,100%)}
+@media(min-width:700px){body:not(.light-theme) .input-bar#main-input-bar{width:420px}body:not(.light-theme) .input-bar#main-input-bar:focus-within{width:620px}}
+body:not(.light-theme) #main-input-bar .btn-icon:not(#send-btn){width:32px;height:32px;padding:0;flex:none}
+body:not(.light-theme) #main-input-bar #send-btn{width:34px;height:34px;min-width:34px}
+body:not(.light-theme) #main-input-bar #ui{padding:11px 4px;font-size:15px;line-height:22px;min-height:24px}
+/* luminous send orb */
+body:not(.light-theme) #send-btn{position:relative;overflow:hidden;width:34px;height:34px;flex:none;border-radius:50%;border:0;color:#3a2a08;background:radial-gradient(circle at 34% 26%,#fff 0,#FFF3CF 28%,#F6D98A 62%,#E3AE45 100%);box-shadow:0 0 0 3px rgba(246,217,138,.13),0 4px 14px rgba(240,200,100,.45),inset 0 1px 0 #fff;opacity:.5;transform:scale(.94)}
+body:not(.light-theme) #ui:not(:placeholder-shown) ~ #send-btn,body:not(.light-theme) #ui:disabled ~ #send-btn{opacity:1;transform:scale(1);background:radial-gradient(circle at 34% 26%,#fff 0,#FFF3CF 28%,#F6D98A 62%,#E3AE45 100%);box-shadow:0 0 0 3px rgba(246,217,138,.2),0 0 18px rgba(255,226,140,.65),0 4px 14px rgba(240,200,100,.5),inset 0 1px 0 #fff}
+body:not(.light-theme) #send-btn svg{stroke:#3a2a08;stroke-width:2.6;position:relative;z-index:1}
+body:not(.light-theme) #send-btn::before{content:'';position:absolute;top:-30%;left:-80%;width:50%;height:160%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.9),transparent);transform:rotate(18deg);animation:v14shine 3.6s ease-in-out infinite}
+body:not(.light-theme) #ui:placeholder-shown ~ #send-btn::before{animation:none;opacity:0}
+@keyframes v14shine{0%,55%{left:-80%}100%{left:150%}}
+/* call: slim light ring with waveform */
+body:not(.light-theme) .aura-call-btn{width:32px;height:32px;flex:none;background:rgba(246,217,138,.06);border:1px solid rgba(246,217,138,.5);color:#F6D98A;box-shadow:0 0 12px rgba(246,217,138,.18),inset 0 0 8px rgba(246,217,138,.08);animation:none}
+body:not(.light-theme) .aura-call-btn::after{inset:-4px;border:1px solid rgba(246,217,138,.3);opacity:.0;animation:v14ring 3.2s ease-out infinite}
+@keyframes v14ring{0%{transform:scale(.9);opacity:.5}100%{transform:scale(1.25);opacity:0}}
+body:not(.light-theme) .aura-call-btn svg{width:17px;height:17px}
+@media(prefers-reduced-motion:reduce){body:not(.light-theme) #send-btn::before,body:not(.light-theme) .aura-call-btn::after{animation:none}}
 </style>
 </body>
 </html>
