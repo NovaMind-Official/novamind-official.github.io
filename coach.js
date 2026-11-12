@@ -290,7 +290,7 @@
   if (W.ALIAS) Object.keys(AL).forEach(function (k) { W.ALIAS[k] = AL[k]; });
   W.kinds.ask = W.kinds.exam = W.kinds.sketch = 1;
 
-  var SKIP = { plan: 1, act: 1, ask: 1, exam: 1, sketch: 1, pylab: 1, quiz: 1, flash: 1, solution: 1, playground: 1, studio: 1 };
+  var SKIP = { deck: 1, map: 1, board: 1, lab: 1, plan: 1, act: 1, ask: 1, exam: 1, sketch: 1, pylab: 1, quiz: 1, flash: 1, solution: 1, playground: 1, studio: 1 };
   var baseMount = W.mount;
   W.mount = function (root) {
     var was = root && root._m; baseMount.call(W, root);

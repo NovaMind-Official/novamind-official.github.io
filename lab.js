@@ -331,7 +331,7 @@
     paintTags(); preload(); run(); setTimeout(run, 50);
     root._labRun = run;
   };
-  var AL = { lab: "lab", experiment: "lab", vlab: "lab", virtuallab: "lab", reaction: "lab" };
+  var AL = { lab: "lab", experiment: "lab", vlab: "lab", virtuallab: "lab" };
   if (W.ALIAS) Object.keys(AL).forEach(function (k) { W.ALIAS[k] = AL[k]; });
   W.kinds.lab = 1;
 })();
