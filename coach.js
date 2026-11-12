@@ -15,18 +15,18 @@
     en: { ask: "check", exam: "exam", sketch: "sketch", hint: "Hint", next: "Next", prev: "Back", finish: "See result", correct: "Correct", wrong: "Not quite", ans: "Answer", check: "Check", send: "Continue with the AI",
       sent: "Sent", your: "Your answer", right: "Correct answer", of: "of", start: "Start exam", qs: "questions", min: "min", flag: "Flag", flagged: "Flagged", submit: "Submit", unanswered: "unanswered", submitSure: "Submit with {n} unanswered?",
       yes: "Submit", back: "Keep going", score: "Score", topics: "By topic", review: "Review", report: "Send report to the AI", timeup: "Time is up", pen: "Pen", eraser: "Eraser", undo: "Undo", clear: "Clear", grid: "Grid", checkAI: "Check with the AI",
-      draw: "Draw here with your finger", quizMe: "Quiz me", testMe: "Mini exam", typeNum: "Type a number", empty: "Nothing drawn yet", ok: "Done" },
+      draw: "Draw here with your finger", quizMe: "Quiz me", clarify: "questions", multi: "Select all that apply", typeAns: "Write your answer…", sendAns: "Send my answers", skip: "Skip", other: "Something else…", sentClar: "Answers sent to the AI", testMe: "Mini exam", typeNum: "Type a number", empty: "Nothing drawn yet", ok: "Done" },
     fa: { ask: "سؤال", exam: "آزمون", sketch: "بوم", hint: "راهنمایی", next: "بعدی", prev: "قبلی", finish: "دیدن نتیجه", correct: "درست", wrong: "نه کاملاً", ans: "جواب", check: "بررسی", send: "ادامه با هوش مصنوعی",
       sent: "ارسال شد", your: "جواب تو", right: "جواب درست", of: "از", start: "شروع آزمون", qs: "سؤال", min: "دقیقه", flag: "نشان‌گذاری", flagged: "نشان‌دار", submit: "پایان آزمون", unanswered: "بی‌جواب", submitSure: "با {n} سؤال بی‌جواب تحویل بدهم؟",
       yes: "تحویل", back: "ادامه می‌دهم", score: "نمره", topics: "به تفکیک مبحث", review: "مرور", report: "ارسال گزارش به AI", timeup: "زمان تمام شد", pen: "قلم", eraser: "پاک‌کن", undo: "برگردان", clear: "پاک کردن همه", grid: "شبکه", checkAI: "بررسی با AI",
-      draw: "با انگشت اینجا بکش", quizMe: "از من بپرس", testMe: "آزمون کوتاه", typeNum: "یک عدد بنویس", empty: "هنوز چیزی نکشیده‌ای", ok: "تمام" }
+      draw: "با انگشت اینجا بکش", quizMe: "از من بپرس", clarify: "چند سؤال", multi: "همه گزینه‌های درست را انتخاب کن", typeAns: "جوابت را بنویس…", sendAns: "ارسال جواب‌ها", skip: "نمی‌دانم", other: "چیز دیگر…", sentClar: "جواب‌ها برای AI فرستاده شد", testMe: "آزمون کوتاه", typeNum: "یک عدد بنویس", empty: "هنوز چیزی نکشیده‌ای", ok: "تمام" }
   };
 
   /* ---------- parser ---------- */
-  var KEY = /^\s*(q|a\*|a|why|hint|topic|type|answer|tol|unit)\s*:\s?(.*)$/i;
+  var KEY = /^\s*(q|a\*|a|why|hint|topic|type|answer|tol|unit|other|labels|min|max)\s*:\s?(.*)$/i;
   function parse(raw) {
     var lines = String(raw || "").replace(/\r/g, "").split("\n"), top = {}, qs = [], cur = null, last = null, i, m;
-    function nq() { cur = { q: "", opts: [], why: "", hint: "", topic: "", type: "", answer: "", tol: "", unit: "" }; qs.push(cur); last = null; }
+    function nq() { cur = { q: "", opts: [], why: "", hint: "", topic: "", type: "", answer: "", tol: "", unit: "", other: "", labels: "", min: "", max: "" }; qs.push(cur); last = null; }
     for (i = 0; i < lines.length; i++) {
       var ln = lines[i];
       if (/^\s*-{3,}\s*$/.test(ln)) { cur = null; last = null; continue; }
@@ -39,22 +39,39 @@
         else { cur[k] = v; last = k; }
         continue;
       }
-      var t = ln.match(/^\s*(title|time|report|lang|prompt|grid|level)\s*:\s*(.*)$/i);
-      if (t && (!cur || /^(title|time|report|lang|prompt|grid)$/i.test(t[1]))) { top[t[1].toLowerCase()] = t[2].trim(); last = null; continue; }
+      var t = ln.match(/^\s*(title|time|report|lang|prompt|grid|level|mode|intro)\s*:\s*(.*)$/i);
+      if (t && (!cur || /^(title|time|report|lang|prompt|grid|mode|intro)$/i.test(t[1]))) { top[t[1].toLowerCase()] = t[2].trim(); last = null; continue; }
       if (cur && last && ln.trim()) { if (last === "opt") { var o = cur.opts[cur.opts.length - 1]; o.t += " " + ln.trim(); } else cur[last] += "\n" + ln.trim(); }
     }
-    qs = qs.filter(function (q) { return q.q && (q.opts.length >= 2 || /number|num/i.test(q.type) || q.answer !== ""); });
-    qs.forEach(function (q) { if (!q.type) q.type = q.opts.length ? "choice" : "number"; q.type = /num/i.test(q.type) ? "number" : "choice"; });
+    top.clarify = /^(clarify|gather|interview|survey|poll)$/i.test(top.mode || "");
+    qs = qs.filter(function (q) { return q.q; });
+    qs.forEach(function (q) {
+      var t = String(q.type || "").toLowerCase();
+      q.type = /num/.test(t) ? "number" : /open|text|free|short/.test(t) ? "open" : /multi|check|several/.test(t) ? "multi" : /scale|rate|slider|confid/.test(t) ? "scale" : /choice|single|mcq/.test(t) ? "choice" : (q.opts.length ? "choice" : (q.answer !== "" ? "number" : "open"));
+      if (q.type === "choice" && q.opts.filter(function (o) { return o.ok; }).length > 1) q.type = "multi";
+    });
+    qs = qs.filter(function (q) { return (q.type === "choice" || q.type === "multi") ? q.opts.length >= 2 : true; });
     return { top: top, qs: qs };
   }
+  // pick: index (choice) or array (multi); returns true/false, or null when the question is not gradable
   function grade(q, pick, text) {
+    if (q.type === "open" || q.type === "scale") return null;
     if (q.type === "number") {
       var x = parseFloat(faDigits(text).replace(/[^\d.eE+\-]/g, "")), a = parseFloat(faDigits(q.answer)), tol = q.tol !== "" ? parseFloat(faDigits(q.tol)) : Math.max(1e-6, Math.abs(a) * 0.01);
       return isFinite(x) && isFinite(a) && Math.abs(x - a) <= (isFinite(tol) ? tol : 0);
     }
+    if (q.type === "multi") { var ps = pick || []; if (!q.opts.some(function (o) { return o.ok; })) return null; return q.opts.every(function (o, i) { return o.ok === (ps.indexOf(i) >= 0); }); }
+    if (!q.opts.some(function (o) { return o.ok; })) return null;
     return pick >= 0 && !!q.opts[pick] && q.opts[pick].ok;
   }
-  function correctText(q) { if (q.type === "number") return q.answer + (q.unit ? " " + q.unit : ""); var r = q.opts.filter(function (o) { return o.ok; })[0]; return r ? r.t : ""; }
+  function correctText(q) { if (q.type === "number") return q.answer + (q.unit ? " " + q.unit : ""); return q.opts.filter(function (o) { return o.ok; }).map(function (o) { return o.t; }).join(" + "); }
+  function pickedText(q, r) {
+    if (q.type === "number" || q.type === "open") return r.text || "—";
+    if (q.type === "scale") return r.pick >= 0 ? String(r.pick) : "—";
+    var arr = q.type === "multi" ? (r.pick || []) : (r.pick >= 0 ? [r.pick] : []), s = arr.map(function (i) { return q.opts[i] && q.opts[i].t; }).filter(Boolean);
+    if (r.text) s.push("(other) " + r.text);
+    return s.length ? s.join(" + ") : "—";
+  }
 
   /* ---------- chat bridge ---------- */
   function sendToChat(text, tries) {
@@ -75,6 +92,8 @@
     ".cc-o:active{background:rgba(255,255,255,.07)}.cc-o b{flex:none;width:24px;height:24px;border-radius:8px;border:1px solid rgba(255,255,255,.2);display:grid;place-items:center;font:600 11px 'IBM Plex Mono',monospace;direction:ltr}" +
     ".cc-o.sel{border-color:var(--p,#E2BE6A);background:rgba(226,190,106,.09)}.cc-o.ok{border-color:#58C48F;background:rgba(88,196,143,.12)}.cc-o.ok b{background:#58C48F;border-color:#58C48F;color:#06220f}.cc-o.no{border-color:#ff6b5a;background:rgba(255,107,90,.1)}.cc-o.no b{background:#ff6b5a;border-color:#ff6b5a;color:#2a0a05}" +
     ".cc-o[disabled]{cursor:default}.cc-num{display:flex;gap:8px;margin:0 0 10px}.cc-num input{flex:1;min-width:0;height:46px;border-radius:12px;border:1px solid rgba(255,255,255,.16);background:rgba(0,0,0,.25);color:inherit;font:600 16px 'IBM Plex Mono',monospace;padding:0 14px;direction:ltr;outline:none}.cc-num input:focus{border-color:var(--p,#E2BE6A)}" +
+    ".cc-ta{width:100%;min-height:84px;resize:vertical;border-radius:12px;border:1px solid rgba(255,255,255,.16);background:rgba(0,0,0,.25);color:inherit;font:15px/1.6 inherit;font-family:inherit;padding:11px 13px;outline:none;margin:0 0 8px}.cc-ta:focus,.cc-oth input:focus{border-color:var(--p,#E2BE6A)}.cc-oth input{direction:auto;font:15px inherit;font-family:inherit}" +
+    ".cc-scale{display:flex;gap:6px;margin:0 0 6px}.cc-scale button{flex:1;height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.035);color:inherit;font:600 15px 'IBM Plex Mono',monospace;cursor:pointer}.cc-scale button.sel{background:var(--p,#E2BE6A);color:#1a1206;border-color:transparent}.cc-lab{display:flex;justify-content:space-between;font-size:11.5px;opacity:.6;margin:0 2px 10px}.cc-o.sel b{background:var(--p,#E2BE6A);border-color:transparent;color:#1a1206}" +
     ".cc-fb{margin:4px 0 10px;padding:12px 14px;border-radius:14px;font-size:14px;line-height:1.65;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04)}.cc-fb b.t{display:block;font:700 11px 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}.cc-fb.ok b.t{color:#58C48F}.cc-fb.no b.t{color:#ff8a7a}" +
     ".cc-hint{margin:0 0 10px;color:#c9b27a;font-size:13.5px;line-height:1.6}.cc-bar{display:flex;flex-wrap:wrap;gap:8px;padding:6px 14px 14px;align-items:center}.cc-sp{flex:1}" +
     ".cc-big{font:800 52px/1 'Inter Tight',sans-serif;letter-spacing:-.04em;direction:ltr;display:inline-block}.cc-sum{display:flex;align-items:center;gap:16px;padding:6px 0 14px}" +
@@ -95,55 +114,73 @@
   W.builders.ask = function (root) {
     var raw = ""; try { raw = decodeURIComponent(root.getAttribute("data-cfg") || ""); } catch (e) {}
     var P = parse(raw); if (!P.qs.length) throw new Error("ask: no question");
-    var T = langOf(root), qs = P.qs, idx = 0, results = [], report = /^(true|yes|1)$/i.test(P.top.report || ""), sent = false, hintShown = false;
-    root.innerHTML = head(root, T.ask, P.top.title || "") + '<div class="cc"></div><div class="cc-bar"></div>';
+    var T = langOf(root), qs = P.qs, idx = 0, results = [], sent = false, clar = P.top.clarify;
+    var report = clar || /^(true|yes|1)$/i.test(P.top.report || "");
+    root.innerHTML = head(root, clar ? T.clarify : T.ask, P.top.title || "") + '<div class="cc"></div><div class="cc-bar"></div>';
     var body = root.querySelector(".cc"), bar = root.querySelector(".cc-bar");
-    function prog() { return qs.length > 1 ? '<div class="cc-prog">' + qs.map(function (q, i) { var r = results[i]; return '<i class="' + (r ? (r.ok ? "ok" : "no") : i === idx ? "on" : "") + '"></i>'; }).join("") + "</div>" : ""; }
+    function prog() { return qs.length > 1 ? '<div class="cc-prog">' + qs.map(function (q, i) { var r = results[i]; return '<i class="' + (r ? (r.ok === true ? "ok" : r.ok === false ? "no" : "on") : i === idx ? "on" : "") + '"></i>'; }).join("") + "</div>" : ""; }
+    function otherRow(q) { return /^(true|yes|1)$/i.test(q.other || "") || (clar && q.opts.length) ? '<div class="cc-num cc-oth"><input type="text" data-o autocomplete="off" placeholder="' + esc(T.other) + '"></div>' : ""; }
     function show() {
-      var q = qs[idx], done = results[idx]; hintShown = !!done;
-      var h = prog() + '<div class="cc-q">' + inline(q.q) + "</div>";
-      if (q.type === "choice") h += q.opts.map(function (o, i) { return '<button class="cc-o" data-i="' + i + '"><b>' + LET[i] + "</b><span>" + inline(o.t) + "</span></button>"; }).join("");
-      else h += '<div class="cc-num"><input type="text" inputmode="decimal" autocomplete="off" placeholder="' + esc(T.typeNum) + (q.unit ? " (" + esc(q.unit) + ")" : "") + '"><button class="phr-w-btn gold" data-a="chk">' + T.check + "</button></div>";
-      h += '<div class="cc-slot"></div>';
-      body.innerHTML = h; bar.innerHTML = q.hint ? '<button class="phr-w-btn" data-a="hint">' + T.hint + "</button>" : "";
-      var slot = body.querySelector(".cc-slot");
-      body.querySelectorAll(".cc-o").forEach(function (b) { b.addEventListener("click", function () { answer(+b.getAttribute("data-i"), ""); }); });
-      var inp = body.querySelector("input");
-      if (inp) { inp.addEventListener("keydown", function (e) { if (e.key === "Enter") answer(-1, inp.value); }); body.querySelector('[data-a="chk"]').addEventListener("click", function () { answer(-1, inp.value); }); }
-      var hb = bar.querySelector('[data-a="hint"]'); if (hb) hb.addEventListener("click", function () { if (slot.querySelector(".cc-hint")) return; var d = document.createElement("div"); d.className = "cc-hint"; d.innerHTML = "💡 " + inline(q.hint); slot.appendChild(d); hb.disabled = true; });
-      if (done) reveal(done);
+      var q = qs[idx], done = results[idx], sel = []; var cur = { pick: q.type === "multi" ? [] : -1, text: "" };
+      var h = prog() + (idx === 0 && P.top.intro ? '<div class="cc-hint" style="color:inherit;opacity:.8">' + inline(P.top.intro) + "</div>" : "") + '<div class="cc-q">' + inline(q.q) + "</div>";
+      if (q.type === "choice" || q.type === "multi") h += (q.type === "multi" ? '<div class="cc-hint" style="margin:-6px 0 8px;font-size:12px;opacity:.7">' + T.multi + "</div>" : "") + q.opts.map(function (o, i) { return '<button class="cc-o" data-i="' + i + '"><b>' + (q.type === "multi" ? "✓" : LET[i]) + "</b><span>" + inline(o.t) + "</span></button>"; }).join("") + otherRow(q);
+      else if (q.type === "number") h += '<div class="cc-num"><input type="text" inputmode="decimal" autocomplete="off" placeholder="' + esc(T.typeNum) + (q.unit ? " (" + esc(q.unit) + ")" : "") + '"></div>';
+      else if (q.type === "open") h += '<textarea class="cc-ta" rows="3" placeholder="' + esc(T.typeAns) + '"></textarea>';
+      else { var lo = (q.labels.split("|")[0] || "").trim(), hi = (q.labels.split("|")[1] || "").trim(), mx = Math.min(10, Math.max(3, parseInt(q.max, 10) || 5)), mn = parseInt(q.min, 10) || 1; h += '<div class="cc-scale">' + Array.apply(null, Array(mx - mn + 1)).map(function (_, i) { return '<button data-v="' + (mn + i) + '">' + num(root, mn + i) + "</button>"; }).join("") + '</div><div class="cc-lab"><span>' + esc(lo) + "</span><span>" + esc(hi) + "</span></div>"; }
+      h += '<div class="cc-slot"></div>'; body.innerHTML = h;
+      var slot = body.querySelector(".cc-slot"), hb;
+      var inp = body.querySelector("input:not([data-o])"), ta = body.querySelector("textarea"), oth = body.querySelector("input[data-o]");
+      var optBtns = body.querySelectorAll(".cc-o");
+      optBtns.forEach(function (b) { b.addEventListener("click", function () {
+        if (results[idx]) return; var i = +b.getAttribute("data-i");
+        if (q.type === "multi") { var p = cur.pick.indexOf(i); if (p >= 0) cur.pick.splice(p, 1); else cur.pick.push(i); b.classList.toggle("sel"); }
+        else { cur.pick = i; if (oth) oth.value = ""; if (!clar) return commit(cur); optBtns.forEach(function (x) { x.classList.toggle("sel", x === b); }); }
+        paintBar(); }); });
+      body.querySelectorAll(".cc-scale button").forEach(function (b) { b.addEventListener("click", function () { if (results[idx]) return; cur.pick = +b.getAttribute("data-v"); body.querySelectorAll(".cc-scale button").forEach(function (x) { x.classList.toggle("sel", x === b); }); paintBar(); }); });
+      function ready() { if (q.type === "number") return !!(inp && inp.value.trim()); if (q.type === "open") return !!(ta && ta.value.trim()); if (q.type === "scale") return cur.pick >= 0; if (q.type === "multi") return cur.pick.length > 0 || !!(oth && oth.value.trim()); return cur.pick >= 0 || !!(oth && oth.value.trim()); }
+      function paintBar() {
+        var need = q.type === "number" || q.type === "open" || q.type === "scale" || q.type === "multi" || clar; var last = idx === qs.length - 1;
+        var lbl = clar || q.type === "open" || q.type === "scale" ? (last ? T.sendAns : T.next) : (q.type === "multi" || q.type === "number" ? T.check : T.next);
+        bar.innerHTML = (q.hint ? '<button class="phr-w-btn" data-a="hint">' + T.hint + "</button>" : "") + '<span class="cc-sp"></span>' + (clar || q.type !== "choice" ? '<button class="phr-w-btn" data-a="skip">' + T.skip + "</button>" : "") + (need ? '<button class="phr-w-btn gold" data-a="go"' + (ready() ? "" : " disabled") + ">" + lbl + "</button>" : "");
+        hb = bar.querySelector('[data-a="hint"]'); if (hb) hb.addEventListener("click", function () { if (slot.querySelector(".cc-hint")) return; var d = document.createElement("div"); d.className = "cc-hint"; d.innerHTML = "💡 " + inline(q.hint); slot.appendChild(d); hb.disabled = true; });
+        var g = bar.querySelector('[data-a="go"]'); if (g) g.addEventListener("click", function () { cur.text = (inp && inp.value) || (ta && ta.value) || (oth && oth.value) || ""; commit(cur); });
+        var sk = bar.querySelector('[data-a="skip"]'); if (sk) sk.addEventListener("click", function () { results[idx] = { ok: null, pick: q.type === "multi" ? [] : -1, text: "", skipped: true, q: q }; advance(); });
+      }
+      [inp, ta, oth].forEach(function (el) { if (el) el.addEventListener("input", function () { if (el === oth && q.type === "choice" && el.value) { cur.pick = -1; optBtns.forEach(function (x) { x.classList.remove("sel"); }); } var g = bar.querySelector('[data-a="go"]'); if (g) g.disabled = !ready(); }); });
+      if (inp) inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { var g = bar.querySelector('[data-a="go"]'); if (g && !g.disabled) g.click(); } });
+      if (done) { reveal(done, true); } else paintBar();
     }
-    function answer(pick, text) {
-      if (results[idx]) return; var q = qs[idx];
-      if (q.type === "number" && !String(text).trim()) return;
-      var ok = grade(q, pick, text);
-      var r = results[idx] = { ok: ok, pick: pick, text: String(text).trim(), q: q };
+    function commit(cur) {
+      if (results[idx]) return; var q = qs[idx], text = String(cur.text || "").trim();
+      var ok = clar ? null : grade(q, cur.pick, text);
+      var r = results[idx] = { ok: ok, pick: cur.pick, text: text, q: q };
+      if (ok === null || clar) { advance(); return; }
       reveal(r);
     }
     function reveal(r) {
       var q = r.q, slot = body.querySelector(".cc-slot");
-      if (q.type === "choice") body.querySelectorAll(".cc-o").forEach(function (b, i) { b.disabled = true; if (q.opts[i].ok) b.classList.add("ok"); else if (i === r.pick) b.classList.add("no"); });
-      else { var inp = body.querySelector("input"); if (inp) { inp.value = r.text; inp.disabled = true; } var cb = body.querySelector('[data-a="chk"]'); if (cb) cb.disabled = true; }
-      var why = (q.type === "choice" && r.pick >= 0 && q.opts[r.pick].why && !r.ok ? q.opts[r.pick].why + "\n" : "") + (q.why || "");
+      if (q.type === "choice" || q.type === "multi") body.querySelectorAll(".cc-o").forEach(function (b, i) { b.disabled = true; var picked = q.type === "multi" ? (r.pick || []).indexOf(i) >= 0 : i === r.pick; b.classList.remove("sel"); if (q.opts[i].ok) b.classList.add("ok"); else if (picked) b.classList.add("no"); });
+      else { var inp = body.querySelector("input"); if (inp) { inp.value = r.text; inp.disabled = true; } }
+      var why = (q.type === "choice" && r.pick >= 0 && q.opts[r.pick] && q.opts[r.pick].why && !r.ok ? q.opts[r.pick].why + "\n" : "") + (q.why || "");
       var d = document.createElement("div"); d.className = "cc-fb " + (r.ok ? "ok" : "no");
       d.innerHTML = '<b class="t">' + (r.ok ? T.correct : T.wrong) + "</b>" + (!r.ok ? '<div>' + esc(T.right) + ": <b>" + inline(correctText(q)) + "</b></div>" : "") + (why ? "<div>" + inline(why).replace(/\n/g, "<br>") + "</div>" : "");
       slot.appendChild(d);
       var pg = body.querySelector(".cc-prog"); if (pg) pg.outerHTML = prog();
-      bar.innerHTML = idx < qs.length - 1 ? '<span class="cc-sp"></span><button class="phr-w-btn gold" data-a="next">' + T.next + "</button>" : '<span class="cc-sp"></span><button class="phr-w-btn gold" data-a="fin">' + (report ? T.send : T.finish) + "</button>";
-      var nb = bar.querySelector('[data-a="next"]'); if (nb) nb.addEventListener("click", function () { idx++; show(); });
-      var fb = bar.querySelector('[data-a="fin"]'); if (fb) fb.addEventListener("click", finish);
+      bar.innerHTML = '<span class="cc-sp"></span><button class="phr-w-btn gold" data-a="n">' + (idx < qs.length - 1 ? T.next : (report ? T.send : T.finish)) + "</button>";
+      bar.querySelector('[data-a="n"]').addEventListener("click", advance);
     }
+    function advance() { if (idx < qs.length - 1) { idx++; show(); } else finish(); }
     function message() {
-      var t = P.top.title || (qs[0].topic || "");
-      var s = "[ask result]\n" + (t ? "Topic: " + t + "\n" : "");
-      qs.forEach(function (q, i) { var r = results[i]; if (!r) return; s += (i + 1) + ". " + short(q.q, 140) + "\n   user: " + (q.type === "choice" ? (r.pick >= 0 ? q.opts[r.pick].t : "?") : r.text) + " → " + (r.ok ? "correct" : "incorrect (correct: " + correctText(q) + ")") + "\n"; });
-      return s + "Adapt your next reply to this result: confirm what is solid, fix the misconception, then go deeper or simpler.";
+      var t = P.top.title || (qs[0].topic || ""), s = (clar ? "[ask answers]\n" : "[ask result]\n") + (t ? "Topic: " + t + "\n" : "");
+      qs.forEach(function (q, i) { var r = results[i]; if (!r) return; var ans = r.skipped ? "(skipped)" : pickedText(q, r) + (q.type === "scale" && r.pick >= 0 ? "/" + (q.max || 5) : "");
+        s += (i + 1) + ". " + short(q.q, 140) + "\n   user: " + short(ans, 600) + (r.ok === true ? " → correct" : r.ok === false ? " → incorrect (correct: " + correctText(q) + ")" : "") + "\n"; });
+      return s + (clar ? "These are my answers to your clarifying questions. Now proceed with the real answer, tailored to them. Do not ask the same things again." : "Adapt your next reply to this result: confirm what is solid, fix the misconception (and review any open answers I wrote), then go deeper or simpler.");
     }
     function finish() {
-      var ok = results.filter(function (r) { return r && r.ok; }).length;
-      if (report) { if (!sent) { sent = true; sendToChat(message()); } }
-      var sumHTML = (qs.length > 1 || !report) ? '<div class="cc-sum"><span class="cc-big">' + num(root, ok) + "/" + num(root, qs.length) + "</span></div>" : "";
-      body.innerHTML = prog() + sumHTML + (report ? '<div class="cc-fb"><b class="t">' + T.sent + "</b>" + esc(T.send) + " ✓</div>" : ""); bar.innerHTML = "";
+      var graded = results.filter(function (r) { return r && r.ok !== null && r.ok !== undefined; }), ok = graded.filter(function (r) { return r.ok; }).length;
+      if (report && !sent) { sent = true; sendToChat(message()); }
+      var sumHTML = graded.length > 1 ? '<div class="cc-sum"><span class="cc-big">' + num(root, ok) + "/" + num(root, graded.length) + "</span></div>" : "";
+      body.innerHTML = prog() + sumHTML + (report ? '<div class="cc-fb"><b class="t">' + T.sent + "</b>" + esc(clar ? T.sentClar : T.send) + " ✓</div>" : ""); bar.innerHTML = "";
     }
     show();
   };
@@ -151,7 +188,7 @@
   /* ================= EXAM ================= */
   W.builders.exam = function (root) {
     var raw = ""; try { raw = decodeURIComponent(root.getAttribute("data-cfg") || ""); } catch (e) {}
-    var P = parse(raw); if (!P.qs.length) throw new Error("exam: no questions");
+    var P = parse(raw); P.qs = P.qs.filter(function (q) { return q.type === "choice" || q.type === "number"; }); if (!P.qs.length) throw new Error("exam: no questions");
     var T = langOf(root), qs = P.qs, mins = Math.max(1, Math.min(180, parseInt(faDigits(P.top.time || ""), 10) || Math.ceil(qs.length * 1.5)));
     var ans = qs.map(function () { return { pick: -1, text: "" }; }), flag = qs.map(function () { return false; }), cur = 0, left = mins * 60, tm = null, phase = "intro", sent = false;
     root.innerHTML = head(root, T.exam, P.top.title || "", '<span class="cc-timer" hidden></span>') + '<div class="cc-mod"><div class="cc"></div></div><div class="cc-bar"></div>';
@@ -253,7 +290,7 @@
   if (W.ALIAS) Object.keys(AL).forEach(function (k) { W.ALIAS[k] = AL[k]; });
   W.kinds.ask = W.kinds.exam = W.kinds.sketch = 1;
 
-  var SKIP = { ask: 1, exam: 1, sketch: 1, pylab: 1, quiz: 1, flash: 1, solution: 1, playground: 1, studio: 1 };
+  var SKIP = { plan: 1, act: 1, ask: 1, exam: 1, sketch: 1, pylab: 1, quiz: 1, flash: 1, solution: 1, playground: 1, studio: 1 };
   var baseMount = W.mount;
   W.mount = function (root) {
     var was = root && root._m; baseMount.call(W, root);
