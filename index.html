@@ -47,7 +47,7 @@
 <script src="artifacts.js"></script>
 <script src="pylab.js"></script>
 <script src="coach.js"></script>
-<script src="agent.js"></script>
+<script src="mission.js"></script>
 <script src="lab.js"></script>
 <script src="docs.js"></script>
 <script src="research.js"></script>
@@ -61,6 +61,7 @@
 <script src="tasks.js"></script>
 <script src="aura-stage.js" defer></script>
 <script src="agent.js" defer></script>
+<script src="hands.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -2522,6 +2523,9 @@ const AI_TOOLS=[
   {type:"function",function:{name:"recall_memory",description:"Search the user's Life Memory (dated facts, plans, reminders, money, people). Use when they ask what you remember, 'what did we/I say about…', 'what's coming up', or to check a detail before answering. Understands time words like 'yesterday', 'last week'. Use query 'everything' for the full list.",parameters:{type:"object",properties:{query:{type:"string",description:"Keywords or a time phrase, e.g. 'trip budget', 'last week', 'reminders'"}},required:["query"]}}},
   {type:"function",function:{name:"forget_memory",description:"Delete memories that match a phrase, when the user asks you to forget something.",parameters:{type:"object",properties:{query:{type:"string",description:"Words identifying the memory to delete"}},required:["query"]}}},
   {type:"function",function:{name:"start_task",description:"Start a background Task: the user hands off a bigger goal (research, comparison, plan, report) and Phraortes plans the steps and works through them on its own. Use when the user says things like 'run a task', 'research X for me and get back to me', or asks for something that needs several steps. Not for quick questions.",parameters:{type:"object",properties:{goal:{type:"string",description:"The goal, written clearly with all needed detail"},depth:{type:"string",enum:["quick","standard","deep"],description:"How thorough. Default standard."}},required:["goal"]}}},
+  {type:"function",function:{name:"set_reminder",description:"Set a REAL reminder or alarm that rings at an exact time (sound + on-screen alert + notification, and the user gets a Calendar button so it also works when the app is closed). Use whenever the user says remind me, alarm, wake me, don't let me forget, or gives a time for something. Compute the exact local time from the CURRENT LOCAL TIME given in the prompt (call get_current_datetime if unsure). Never claim a reminder is set without calling this.",parameters:{type:"object",properties:{text:{type:"string",description:"What to remind about, in the user's language, short"},when:{type:"string",description:"Local date and time as 'YYYY-MM-DD HH:MM' (24h)"},minutes:{type:"number",description:"Alternative to when: minutes from now"},kind:{type:"string",enum:["reminder","alarm"],description:"alarm for wake-up style requests"}},required:["text"]}}},
+  {type:"function",function:{name:"set_timer",description:"Start a REAL countdown timer that rings when it ends. Use for 'set a timer for 10 minutes', cooking, workouts, focus sessions.",parameters:{type:"object",properties:{minutes:{type:"number"},seconds:{type:"number"},hours:{type:"number"},label:{type:"string",description:"Optional label, e.g. 'pasta'"}}}}},
+  {type:"function",function:{name:"phone_action",description:"Do something on the user's phone by showing a one-tap button (iOS requires the user's tap to leave the app). type: open_app{name: whatsapp|telegram|instagram|youtube|spotify|maps|music|messages|phone|mail|facetime|calendar|reminders|notes|shortcuts|files|twitter|linkedin|snapchat|settings} · open_url{url} · call{number} · sms{number,text} · mail{to,subject,text} · map{query} · directions{to} · whatsapp{number,text} · telegram{username} · search_web{query} · shortcut{name,input} · copy{text} · share{text,url} · calendar_event{title,start:'YYYY-MM-DD HH:MM'} · list_reminders · cancel{query}.",parameters:{type:"object",properties:{type:{type:"string"},name:{type:"string"},url:{type:"string"},number:{type:"string"},to:{type:"string"},text:{type:"string"},subject:{type:"string"},query:{type:"string"},username:{type:"string"},input:{type:"string"},title:{type:"string"},start:{type:"string"}},required:["type"]}}},
   {type:"function",function:{name:"app_do",description:"Operate the Phraortes app itself: open or close panels (tasks, memory, plans, files, canvas, templates, pomodoro, exam, lab, chat map, account/settings, personas, pinned, search, sidebar/history), start a new chat, switch/rename/pin/delete chats, change theme, accent colour, AI core, custom persona, Aura persona/mode, open the data file picker, photo solver, prefill the message box, close everything, read the app state. Use it whenever the user asks to open, close, switch or change something in the app. Call action:'help' to list every action id. Examples: {action:'open_tasks'}, {action:'theme',args:{mode:'dark'}}, {action:'switch_chat',args:{query:'physics'}}, {action:'close_all'}.",parameters:{type:"object",properties:{action:{type:"string",description:"Action id, e.g. open_tasks, close_memory, new_chat, switch_chat, theme, core, close_all, state, help"},args:{type:"object",description:"Optional arguments, e.g. {query:'...'} {name:'...'} {mode:'dark'} {color:'gold'} {plan:'pro'} {text:'...'}"}},required:["action"]}}},
 ];
 // Every tool call gets a hard client-side timeout too — belt-and-suspenders alongside the
@@ -3117,6 +3121,10 @@ async function execTool(name,argsStr){
       save();updateFilesBadge();
       return `Saved ${args.name} (${(args.content||"").length} chars) to Workspace.`;
     }
+    if(name==="set_reminder"||name==="set_timer"||name==="phone_action"){
+      if(!window.PHR_HANDS)return "Error: the reminder/phone engine is not loaded yet. Ask the user to reload the app.";
+      return await PHR_HANDS.tool(name,args);
+    }
     if(name==="app_do"){
       if(!window.PHR_AGENT)return "App control is not available.";
       return await PHR_AGENT.do(args.action,args.args);
@@ -3165,6 +3173,9 @@ function announceTool(elId,toolCalls){
       else if(tc.function.name==="recall_memory")label="Checking memory...";
       else if(tc.function.name==="start_task")label="Starting a task...";
       else if(tc.function.name==="app_do")label="Operating the app...";
+      else if(tc.function.name==="set_reminder")label="Setting your reminder...";
+      else if(tc.function.name==="set_timer")label="Starting the timer...";
+      else if(tc.function.name==="phone_action")label="Preparing the action...";
       else if(tc.function.name==="forget_memory")label="Updating memory...";
     }catch(e){}
     actStep(elId,label);
