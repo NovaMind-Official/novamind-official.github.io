@@ -57,7 +57,7 @@
     function paint() {
       var d = steps.filter(function (s) { return s.s === "x"; }).length;
       list.innerHTML = steps.map(function (s, i) { return '<div class="ag-st ' + s.s + '" data-i="' + i + '"><span class="ag-ic">' + (s.s === "x" ? "✓" : s.s === "f" ? "✕" : s.s === "r" ? "" : num(root, i + 1)) + '</span><div class="ag-tx">' + inline(s.t) + (s.n ? '<span class="ag-nt">' + inline(s.n) + "</span>" : "") + "</div></div>"; }).join("");
-      meter.style.width = Math.round(d / steps.length * 100) + "%"; fin.hidden = d !== steps.length;
+      meter.style.width = Math.round(d / steps.length * 100) + "%"; fin.hidden = d !== steps.length; if (d === steps.length && !fin._n) { fin._n = 1; try { window.PHR_BRAIN && PHR_BRAIN.missionDone(P.top.title) } catch (_) { } }
       var running = steps.some(function (s) { return s.s === "r"; });
       bar.innerHTML = (auto || running ? '<button class="phr-w-btn" data-a="stop">' + t.stop + "</button>" : (d < steps.length ? '<button class="phr-w-btn" data-a="one">' + t.run + '</button><button class="phr-w-btn gold" data-a="all">' + t.all + "</button>" : "")) + '<span class="ag-sp"></span><span style="font:600 12px monospace;opacity:.6;direction:ltr">' + num(root, d) + "/" + num(root, steps.length) + "</span>" + (d ? '<button class="phr-w-btn" data-a="reset">' + t.again + "</button>" : "");
     }

@@ -44,6 +44,13 @@
       case "sun": m(arc(0, 0, .45 * s, .45 * s, 0, TAU, 48), { f: 1 }); for (i = 0; i < 8; i++) { a = i * TAU / 8; m([[.65 * s * Math.cos(a), .65 * s * Math.sin(a)], [.98 * s * Math.cos(a), .98 * s * Math.sin(a)]]) } break;
       case "tree": m(arc(0, -.3 * s, .62 * s, .62 * s, 0, TAU, 56), { f: 1 }); m(poly([[-.12 * s, .32 * s], [-.12 * s, .95 * s], [.12 * s, .95 * s], [.12 * s, .32 * s]], 0)); break;
       case "smiley": R = .85 * s; m(arc(0, 0, R, R, 0, TAU, 64), { f: 1 }); m(arc(-.3 * s, -.25 * s, .09 * s, .09 * s, 0, TAU, 16)); m(arc(.3 * s, -.25 * s, .09 * s, .09 * s, 0, TAU, 16)); m(arc(0, .05 * s, .5 * s, .5 * s, .15 * Math.PI, .85 * Math.PI, 28)); break;
+      case "plot": (function () {
+        var f = o.fn, N = 160, x0 = o.x0 == null ? -4 : o.x0, x1 = o.x1 == null ? 4 : o.x1, pts = [], ys = [], i, y, yy, cap, ymax = 0;
+        for (i = 0; i <= N; i++) { var xv = x0 + (x1 - x0) * i / N; try { y = f(xv) } catch (e) { y = NaN } ys.push([xv, y]); if (isFinite(y) && Math.abs(y) < 1e6) ymax = Math.max(ymax, Math.abs(y)) }
+        cap = Math.max(1, Math.min(ymax, 8)); var X = 1.3 * s, sx = 2 * X / (x1 - x0), sy = 1.3 * s / cap, ox = -(x0 + x1) / 2 * sx;
+        m([[-1.4 * s, 0], [1.4 * s, 0]]); m(head(-1.4 * s, 0, 1.4 * s, 0, .13 * s)); m([[0, 1.4 * s], [0, -1.4 * s]]); m(head(0, 1.4 * s, 0, -1.4 * s, .13 * s));
+        var cur = []; ys.forEach(function (q) { var v = q[1]; if (isFinite(v) && Math.abs(v) <= cap * 1.05) cur.push([q[0] * sx + ox, -v * sy]); else { if (cur.length > 1) m(cur); cur = [] } }); if (cur.length > 1) m(cur);
+      })(); break;
       case "path": (o.strokes || []).forEach(function (st) { m(st.map(function (q) { return [(q[0] - 50) / 100 * 2.6 * s, (q[1] - 50) / 100 * 2.6 * s] })) }); break;
       case "free": (o.pts || []).length && m(o.pts); break;
       default: m([[-1 * s, 0], [1 * s, 0]]);
@@ -74,7 +81,7 @@
     c.stroke(); return tip;
   }
   function drawShape(c, sh, prog) {
-    var g = geoOf(sh), px = sh.fx * S.W, py = sh.fy * S.H, col = sh.col, lw = Math.max(2.4, sh.sc * Math.min(S.W, S.H) * .05), tip = null;
+    var g = geoOf(sh), px = sh.fx * S.W, py = sh.fy * S.H, col = sh.col, lw = Math.min(4.2, Math.max(2.4, sh.sc * Math.min(S.W, S.H) * .05)), tip = null;
     c.save(); c.translate(px, py); c.lineCap = "round"; c.lineJoin = "round"; c.lineWidth = lw; c.strokeStyle = col; c.fillStyle = col;
     if (sh.k === "text") {
       var fs = Math.max(16, sh.sc * Math.min(S.W, S.H) * .62), rtl = /[؀-ۿ]/.test(sh.o.txt);
@@ -193,7 +200,7 @@
       return open().then(function () {
         if (spec.clear) { clear(); }
         if (!spec.k) return;
-        var m = Math.min(S.W, S.H), base = spec.k === "text" ? .22 : .17, sh = { k: spec.k, o: { dir: spec.dir, txt: spec.txt, strokes: spec.strokes }, sc: base * (spec.size || 1), col: spec.col || PAL.white, fill: !!spec.fill, fx: .5, fy: .5, _k: "" };
+        var m = Math.min(S.W, S.H), base = spec.k === "text" ? .22 : .17, sh = { k: spec.k, o: { dir: spec.dir, txt: spec.txt, strokes: spec.strokes, fn: spec.fn }, sc: base * (spec.size || 1), col: spec.col || PAL.white, fill: !!spec.fill, fx: .5, fy: .5, _k: "" };
         place(sh, spec.pos); return animate(sh);
       });
     });
@@ -218,6 +225,30 @@
   var RX_BOARD = /تخته|بورد|whiteboard|\bboard\b/, RX_OPEN = /باز|open|show|نشون|نشان|بیار|launch|بیاور|فعال|start/, RX_CLOSE = /ببند|close|hide|بستن|خاموش/, RX_VERB = /بکش|رسم|draw|sketch|بساز|بذار|بزار|add|make|بنویس|write|type|بکشی|ترسیم|اضافه/;
   var RX_SPLIT = /\s*,\s*|(?:^|\s)(?:and then|after that|then|next|و سپس|سپس|بعد از اون|بعد از آن|و بعد|بعدش|بعد)(?=\s|$)\s*/;
 
+  function posOf(st) { return /(وسط|مرکز|center|centre|middle)/.test(st) ? "center" : /(زیر|پایین|below|under|beneath|down)/.test(st) ? "below" : /(کنار|راست|next to|beside|right)/.test(st) ? "right" : /(چپ|left)/.test(st) ? "left" : /(بالا|above|over|top)/.test(st) ? "above" : null }
+  function modOf(st) {
+    if (!S.shapes.length) return null; var r = { a: "mod" }, any = false;
+    if (/(بزرگ(?:تر)?ش|بزرگش|make it (?:bigger|larger)|bigger|larger|enlarge|بزرگتر)/.test(st)) { r.f = 1.35; any = true }
+    else if (/(کوچ(?:یک|یک‌تر|ک)(?:تر)?ش|کوچیکش|کوچکش|make it smaller|smaller|shrink|کوچیکتر)/.test(st)) { r.f = 1 / 1.35; any = true }
+    COLORS.some(function (c) { if (c[0].test(st) && /(ش |ش$|it|رنگش|رنگ)/.test(st + " ")) { r.col = PAL[c[1]]; any = true; return true } });
+    if (/(پرش کن|توپرش|fill it|filled)/.test(st)) { r.fill = true; any = true }
+    if (/(حذفش|پاکش|delete it|remove it|erase it)/.test(st)) { r.del = true; any = true }
+    return any ? r : null;
+  }
+  var SAFE = { sin: 1, cos: 1, tan: 1, asin: 1, acos: 1, atan: 1, sqrt: 1, abs: 1, ln: 1, log: 1, exp: 1, floor: 1, ceil: 1, pi: 1, e: 1 };
+  function compileExpr(e) {
+    e = String(e || "").toLowerCase().replace(/ایکس/g, "x").replace(/به توان/g, "^").replace(/مربع/g, "^2").replace(/مکعب/g, "^3").replace(/کسینوس/g, "cos").replace(/سینوس/g, "sin").replace(/تانژانت/g, "tan").replace(/رادیکال/g, "sqrt").replace(/منهای|minus/g, "-").replace(/به ?علاوه|بعلاوه|plus/g, "+").replace(/ضربدر|times/g, "*").replace(/تقسیم بر|over|divided by/g, "/").replace(/squared/g, "^2").replace(/cubed/g, "^3")
+      .replace(/^(?:y|f\(x\))\s*=\s*/, "").replace(/\s+/g, "").replace(/\^/g, "**").replace(/(\d)(x|\(|sin|cos|tan|sqrt|abs|ln|log|exp|pi)/g, "$1*$2").replace(/x(\d|\(|x|sin|cos|tan)/g, "x*$1").replace(/\)(\d|x|\()/g, ")*$1").replace(/ln\(/g, "log(").replace(/\bpi\b/g, "PI");
+    if (!/x/.test(e) || e.length > 60 || !/^[0-9x+\-*/().a-zA-Z]+$/.test(e)) return null;
+    var ids = e.match(/[a-zA-Z]+/g) || []; for (var i = 0; i < ids.length; i++) { var w = ids[i].toLowerCase(); if (w !== "x" && w !== "pi" && !SAFE[w]) return null }
+    try { var f = new Function("x", "var sin=Math.sin,cos=Math.cos,tan=Math.tan,asin=Math.asin,acos=Math.acos,atan=Math.atan,sqrt=Math.sqrt,abs=Math.abs,log=Math.log,exp=Math.exp,floor=Math.floor,ceil=Math.ceil,PI=Math.PI,e=Math.E;return " + e); var t = f(1.3); if (typeof t !== "number") return null; return f } catch (err) { return null }
+  }
+  function extractPlots(raw) {
+    var plots = [], out = String(raw).replace(/(?:plot|graph|sketch|draw|نمودار|منحنی|تابع)(?: of| the| for)?(?: function| curve| تابع)?\s*((?:y|f\(x\))?\s*=?\s*[^,،;؛]*?)(?=\s*(?:,|،|;|؛|then\b|and then|بعد|سپس|$))/gi, function (all, ex) {
+      ex = String(ex).replace(/\s*(?:رو|را)?\s*(?:روی تخته|توی تخته)?\s*(?:بکش|رسم کن|رسم|بزن)\s*$/, "").replace(/\s*(?:on the board|please|for me)\s*$/i, ""); var rest = "", cm = /\s(?:in |with |next |under |below |above |and |beside |روی |با رنگ|قرمز|آبی|سبز|زرد|بنفش|طلایی|کنارش|زیرش|بالاش)/.exec(ex + " "); if (cm) { rest = ex.slice(cm.index); ex = ex.slice(0, cm.index) } var f = compileExpr(ex); if (!f) return all; plots.push(f); return " plotexpr" + (plots.length - 1) + " " + rest + " ";
+    });
+    return { text: out, plots: plots };
+  }
   function parseStep(st, ctx) {
     var out = [], fa = /[؀-ۿ]/.test(st), toks = st.split(" ");
     if (RX_BOARD.test(st) && RX_CLOSE.test(st)) return [{ a: "close" }];
@@ -229,7 +260,9 @@
     if (/^(undo|برگرد)$|یه قدم برگرد/.test(st)) return [{ a: "undo" }];
     if (/(ذخیره|save|دانلود|download)/.test(st) && (RX_BOARD.test(st) || /(عکس|تصویر|image|picture|نقاشی)/.test(st) || ctx.open)) return [{ a: "save" }];
     /* text */
-    var tm = /(?:بنویس|write|type)\s+(.+)$/.exec(st); if (tm && !shapeOf(tm[1].split(" ")[0])) { var col0 = null; return [{ a: "draw", k: "text", txt: tm[1].replace(/^(?:روی تخته|on the board)\s*/, "").trim(), col: col0 }] }
+    var pm = /plotexpr(\d)/.exec(st); if (pm && ctx.plots[+pm[1]]) { var pc = null; COLORS.some(function (c) { if (c[0].test(st)) { pc = PAL[c[1]]; return true } }); return [{ a: "draw", k: "plot", fn: ctx.plots[+pm[1]], col: pc, size: 1.15, pos: posOf(st) }] }
+    var tm = /(?:بنویس|write|type)\s+(.+)$/.exec(st); if (tm && !shapeOf(tm[1].split(" ")[0])) { var tp = posOf(st), tx = tm[1].replace(/^(?:روی تخته|on the board)\s*/, "").replace(/\s+(?:زیرش|کنارش|بالاش|below it|next to it|under it)$/, "").trim(); return [{ a: "draw", k: "text", txt: tx, pos: tp }] }
+    var md = modOf(st); if (md) return [md];
     var found = [], i, n = 1;
     for (i = 0; i < toks.length; i++) {
       var k = shapeOf(toks[i]); if (!k) continue; var cnt = 1, prev = toks[i - 1] && toks[i - 1] === "تا" ? toks[i - 2] : toks[i - 1];
@@ -246,8 +279,8 @@
     return out;
   }
   function parse(text) {
-    var t = norm(text), steps = t.split(RX_SPLIT).filter(Boolean), acts = [], ctx = { open: S.open };
-    var board = RX_BOARD.test(t), verb = RX_VERB.test(t);
+    var ex = extractPlots(text), t = norm(ex.text), steps = t.split(RX_SPLIT).filter(Boolean), acts = [], ctx = { open: S.open, plots: ex.plots };
+    var board = RX_BOARD.test(t), verb = RX_VERB.test(t) || ex.plots.length > 0;
     steps.forEach(function (st) { parseStep(st, ctx).forEach(function (a) { acts.push(a); if (a.a === "open") ctx.open = true; if (a.a === "close") ctx.open = false }) });
     if (!acts.length) return null;
     /* gate: don't hijack ordinary questions */
@@ -265,6 +298,7 @@
       else if (a.a === "close") enqueue(function () { close() });
       else if (a.a === "clear") enqueue(function () { return open().then(clear) });
       else if (a.a === "undo") enqueue(function () { undo() });
+      else if (a.a === "mod") enqueue(function () { var l = S.shapes[S.shapes.length - 1]; if (!l) return; if (a.del) { S.shapes.pop() } else { if (a.f) l.sc *= a.f; if (a.col) l.col = a.col; if (a.fill) l.fill = true; l._k = "" } render() });
       else if (a.a === "save") enqueue(function () { save() });
       else if (a.a === "draw") addShape(a);
     });
@@ -283,9 +317,10 @@
     args = args || {}; var n = 0;
     if (args.clear) { enqueue(function () { return open().then(clear) }) }
     (args.steps || []).forEach(function (s) {
-      var k = String(s.shape || "").toLowerCase(), k2 = shapeOf(k) || (/^(path|draw|custom)$/.test(k) ? "path" : (/^text$/.test(k) ? "text" : null)); if (!k2) return;
+      var k = String(s.shape || "").toLowerCase(), fnc = null; if (k === "plot" || k === "graph") { fnc = compileExpr(s.expression || s.expr || ""); if (!fnc) return }
+      var k2 = fnc ? "plot" : shapeOf(k) || (/^(path|draw|custom)$/.test(k) ? "path" : (/^text$/.test(k) ? "text" : null)); if (!k2) return;
       var col = s.color ? (PAL[String(s.color).toLowerCase()] || (/^#[0-9a-f]{3,8}$/i.test(s.color) ? s.color : null)) : null;
-      addShape({ k: k2, col: col, size: +s.size || 1, fill: !!s.fill, dir: s.direction === "vertical" ? "v" : s.direction === "diagonal" ? "d" : "h", pos: s.position || null, txt: s.text, strokes: s.strokes }); n++;
+      addShape({ k: k2, fn: fnc, col: col, size: +s.size || (fnc ? 1.15 : 1), fill: !!s.fill, dir: s.direction === "vertical" ? "v" : s.direction === "diagonal" ? "d" : "h", pos: s.position || null, txt: s.text, strokes: s.strokes }); n++;
     });
     if (!n && !args.clear) return enqueue(function () { return open() }), "Whiteboard opened.";
     return "Drawing " + n + " item(s) on the whiteboard now, one by one.";
@@ -303,7 +338,7 @@
     A.prompt = function (text) {
       var b = oP(text);
       if (/تخته|بورد|whiteboard|board|draw|sketch|بکش|رسم|نقاشی/i.test(String(text || "")) || S.open)
-        b += "\n\nWHITEBOARD: you have a live drawing board. Call board_draw to draw on it step by step (animated). shape ∈ line, arrow, circle, ellipse, square, rect, triangle, diamond, pentagon, hexagon, star, heart, cube, sphere, cylinder, cone, pyramid, axes, sine, spiral, house, sun, tree, smiley, text, or path. For anything else (rocket, car, cat, a diagram…) use shape \"path\" with \"strokes\": a list of polylines, each a list of [x,y] points on a 0–100 grid (y down), composed from several strokes. position ∈ below, right, left, above, center (relative to the previous shape).";
+        b += "\n\nWHITEBOARD: you have a live drawing board. Call board_draw to draw on it step by step (animated). shape ∈ line, arrow, circle, ellipse, square, rect, triangle, diamond, pentagon, hexagon, star, heart, cube, sphere, cylinder, cone, pyramid, axes, sine, spiral, house, sun, tree, smiley, text, or path, or plot (give \"expression\": e.g. x^2, sin(x), 0.5*x+1). For anything else (rocket, car, cat, a diagram…) use shape \"path\" with \"strokes\": a list of polylines, each a list of [x,y] points on a 0–100 grid (y down), composed from several strokes. position ∈ below, right, left, above, center (relative to the previous shape).";
       return b;
     };
     return true;

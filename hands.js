@@ -449,5 +449,5 @@
   load(); if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { paintDock(); }); else paintDock();
   setInterval(tick, 1000); setTimeout(tick, 800);
 
-  window.PHR_HANDS = { parse: parse, when: when, run: run, tool: tool, list: list, cancel: cancel, ring: ring, ack: ackRing, _norm: norm, _dur: duration, _clock: clock };
+  window.PHR_HANDS = { card: card, parse: parse, when: when, run: run, tool: tool, list: list, cancel: cancel, ring: ring, ack: ackRing, _norm: norm, _dur: duration, _clock: clock };
 })();
