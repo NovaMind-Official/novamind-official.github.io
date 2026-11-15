@@ -94,7 +94,7 @@
     logEl = root.querySelector("#cn-log"); stEl = root.querySelector("#cn-st"); bigEl = root.querySelector("#cn-big"); micEl = root.querySelector("#cn-mc");
     upEl = root.querySelector("#cn-up"); liveEl = root.querySelector("#cn-live"); dockLine = root.querySelector("#cn-dl"); inp = root.querySelector("#cn-in");
     vizC = root.querySelector("#cn-cv"); vctx = vizC.getContext("2d");
-    var CH = ["open the board", "draw a circle", "set a timer for 5 minutes", "remember my gym is at 7", "what do you remember", "my routines", "open photos", "plot y = x^2", "close console"];
+    var CH = ["capture this", "make an image of a lion at sunset", "open the board", "draw a circle", "set a timer for 5 minutes", "remember my gym is at 7", "what do you remember", "my routines", "open photos", "plot y = x^2", "close console"];
     var ch = root.querySelector("#cn-chips");
     CH.forEach(function (c) { var b = D.createElement("button"); b.type = "button"; b.textContent = c; b.onclick = function () { run(c) }; ch.appendChild(b) });
     root.querySelector("#cn-x").onclick = function (e) { e.stopPropagation(); close() };
@@ -139,6 +139,8 @@
     if (/timer|alarm|remind|تایمر|زنگ|یادآور/.test(s)) return ["HANDS", "hands.timer"];
     if (/remember|recall|forget|what do you remember|یادت باشه|یادته|فراموش/.test(s)) return ["BRAIN", "brain.memory"];
     if (/routine|habit|every (day|morning|night)|روتین|هر روز/.test(s)) return ["BRAIN", "brain.routine"];
+    if (/^(capture|scan)|اسکن|کپچر/.test(s)) return ["DEVICE", "capture.action"];
+    if (/(make|generate|create|imagine).*(image|picture|photo|logo|poster|wallpaper)|عکس.*بساز/.test(s)) return ["LLM", "image.studio"];
     if (/photo|picture|file|camera|عکس|فایل|دوربین/.test(s)) return ["DEVICE", "device.pick"];
     if (/mission|research for me|background|ماموریت|مأموریت/.test(s)) return ["MISSION", "mission.run"];
     return ["LLM", "model.chat"];

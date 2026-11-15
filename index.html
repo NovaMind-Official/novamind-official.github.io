@@ -66,6 +66,8 @@
 <script src="board.js" defer></script>
 <script src="brain.js" defer></script>
 <script src="console.js" defer></script>
+<script src="imagine.js" defer></script>
+<script src="capture.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -4404,6 +4406,7 @@ const _phrCode=function(code,lang){
   if(!/^[\w+#.\-]{1,24}$/.test(lang))lang=""; // lang is interpolated into attributes/handlers of trusted markup — allow only safe characters
   const raw=typeof code==="object"?(code.text||""):(code||"");
   const str=String(raw);const lines=str.split("\n").length;const l=(lang||"code").toLowerCase();const enc=safeEnc(str);
+  if(l==="capture"&&window.PHR_CAPTURE)return PHR_CAPTURE.html(str);if((l==="imagine"||l==="image")&&window.PHR_IMG&&/"prompt"/.test(str))return PHR_IMG.html(str);
   { const _k=window.PHRW&&PHRW.kindOf(l); if(_k)return PHRW.html(_k,str,!!window.PHR_STREAMING); } // study artifacts (graph / sim / solution / quiz / flashcards)
   if(l==="svg"&&str.trim().startsWith("<svg")){
     return`<div class="design-card code-block-wrapper">
@@ -4700,8 +4703,8 @@ async function send(){
   const nowDay=new Date().toDateString();
   if(lastDay!==nowDay)chatBox.insertAdjacentHTML("beforeend",dateDividerHTML(Date.now()));
   addUI(dispHtml||"[Media]","user","u-"+idx,txt);addUI("","ai","a-"+idx,"");
-  const isImg=/^\/imagine/i.test(txt)||(/(عکس|تصویر|image|pic|photo)/i.test(txt)&&/(بساز|خلق|تولید|render|generate|create|draw)/i.test(txt));
-  if(isImg){animImgLoader("a-"+idx,chat,dispHtml,txt,idx);return}
+  const isImg=/^\/imagine/i.test(txt)||(!window.PHR_IMG&&/(عکس|تصویر|image|pic|photo)/i.test(txt)&&/(بساز|خلق|تولید|render|generate|create|draw)/i.test(txt));
+  if(isImg){if(window.PHR_IMG&&PHR_IMG.direct)PHR_IMG.direct("a-"+idx,chat,dispHtml,txt,idx);else animImgLoader("a-"+idx,chat,dispHtml,txt,idx);return}
   document.getElementById("a-"+idx).innerHTML=`<div class="dynamic-loader"><div class="dot-matrix"><span></span><span></span><span></span></div></div>`;
   const isCodeQuery=/(code|bug|debug|python|javascript|html|css|react|api|sql|function|algorithm|باگ|کد|پایتون|دیباگ|برنامه|الگوریتم)/i.test(txt);
   const loaderType=activeModel==="2.7"?"think":isCodeQuery||activeModel==="2.6"?"code":activeModel==="2.5"?"think":"chat";

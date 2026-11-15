@@ -171,7 +171,14 @@
     return L(t, "Tap Allow.", "روی اجازه بزن.");
   }
 
-  W.PHR_BRAIN = { memory: memory, routine: routine, device: device, missionDone: missionDone, notify: notify, routines: routines, recall: recall };
+  function pick(instr, title) {
+    pending = instr || null; var o = pickerUI(), F = fa(title || instr || "");
+    o.querySelector("#br-t").textContent = title || (F ? "چی بیارم؟" : "What should I bring in?");
+    o.querySelector("#br-s").textContent = F ? "یه لمس تو انتخاب می‌کنه، بقیه‌ش با منه." : "One tap from you picks it; I handle the rest.";
+    o.querySelector("#br-l1").textContent = F ? "کتابخانه‌ی عکس" : "Photo library"; o.querySelector("#br-l2").textContent = F ? "عکس بگیر" : "Take a photo"; o.querySelector("#br-l3").textContent = F ? "فایل‌ها" : "Files";
+    o.classList.add("on"); return true;
+  }
+  W.PHR_BRAIN = { pick: pick, memory: memory, routine: routine, device: device, missionDone: missionDone, notify: notify, routines: routines, recall: recall };
 
   /* ───────── hook into the agent ───────── */
   function handle(t) { var r; try { return notifyCmd(t) || routine(t) || device(t) || memory(t) } catch (e) { return false } }
