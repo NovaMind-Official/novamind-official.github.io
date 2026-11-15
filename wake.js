@@ -5,7 +5,7 @@
   var W = window, D = document;
   var SR = W.SpeechRecognition || W.webkitSpeechRecognition;
   var LS = function (k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} return null; };
-  var st = { on: false, mode: "off", rec: null, speaking: false, lang: LS("phr_wake_lang") || (/^fa/i.test(D.documentElement.lang || navigator.language || "") ? "fa-IR" : "en-US"), fails: 0, lock: null, cmdBuf: "", cmdTimer: 0, gen: 0 };
+  var st = { on: false, mode: "off", rec: null, speaking: false, lang: LS("phr_wake_lang") || "en-US", fails: 0, lock: null, cmdBuf: "", cmdTimer: 0, gen: 0 };
 
   /* ---------- wake-word matching ---------- */
   var KNOWN = ["phraortes", "fraortes", "phraotes", "fraortis", "frortes", "fraoortes", "fraorties", "phraortis"];
@@ -17,24 +17,26 @@
     for (i = 1; i <= m; i++) for (j = 1; j <= n; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
     return d[m][n];
   }
+  function skel(w) { return String(w || "").toLowerCase().replace(/ph/g, "f").replace(/[^a-z]/g, "").replace(/[aeiouyhw]/g, "").replace(/(.)\1+/g, "$1") }
+  var GREET = /^(hey|hay|hi|hei|ok|okay|hello|yo|a|they|hate|hay)$/;
+  function aliases() { var a = (LS("phr_wake_alias") || "").toLowerCase().split(/[,،;]/).map(function (x) { return x.trim() }).filter(Boolean); return a }
   /* returns {hit:true, rest:"text after wake word"} or null */
   function matchWake(text) {
     var raw = String(text || "").toLowerCase().replace(/[.!?؟،,]/g, " ").replace(/\s+/g, " ").trim();
     if (!raw) return null;
     var fm = FA.exec(raw);
     if (fm) return { hit: true, rest: raw.slice(fm.index + fm[0].length).trim() };
-    var toks = raw.split(" "), pos = 0;
-    for (var i = 0; i < toks.length; i++) {
-      var t = toks[i].replace(/[^a-z]/g, "");
-      if (t.length >= 6 && t.length <= 11) {
-        for (var k = 0; k < KNOWN.length; k++) {
-          if (lev(t, KNOWN[k]) <= 2) return { hit: true, rest: toks.slice(i + 1).join(" ").trim() };
-        }
-      }
-      /* split mis-hearings: "for aortis", "fray ortis" */
-      if (i + 1 < toks.length) {
-        var j2 = (toks[i] + toks[i + 1]).replace(/[^a-z]/g, "");
-        if (j2.length >= 6 && j2.length <= 11) for (var q = 0; q < KNOWN.length; q++) if (lev(j2, KNOWN[q]) <= 2) return { hit: true, rest: toks.slice(i + 2).join(" ").trim() };
+    var toks = raw.split(" "), al = aliases(), i, n, k, t, hit;
+    for (i = 0; i < toks.length; i++) {
+      var greet = i > 0 && GREET.test(toks[i - 1]) || /^(hey|hay|ok|okay)$/.test(toks[i]);
+      for (n = 1; n <= 3 && i + n <= toks.length; n++) {
+        t = toks.slice(i, i + n).join("").replace(/[^a-z]/g, "");
+        if (t.length < 4 || t.length > 14) continue;
+        hit = false;
+        for (k = 0; k < KNOWN.length && !hit; k++) if (lev(t, KNOWN[k]) <= (greet ? 2 : 1)) hit = true;
+        if (!hit) { var sk = skel(t); if (sk.length >= 3) { var d = lev(sk, "frts"); if ((d === 0 && (greet || t.length >= 8)) || (d <= 1 && greet) || (d <= 2 && greet && sk.length >= 4)) hit = true } }
+        if (!hit) for (k = 0; k < al.length; k++) { var a = al[k].replace(/[^a-z؀-ۿ]/g, ""); if (a && (t === a || (a.length > 4 && lev(t, a) <= 1))) hit = true }
+        if (hit) return { hit: true, rest: toks.slice(i + n).join(" ").trim() };
       }
     }
     return null;
@@ -58,17 +60,18 @@
   }
 
   /* ---------- UI ---------- */
-  var chip, cap;
+  var dot, cap;
   function css() {
     if (D.getElementById("wk-css")) return;
     var s = D.createElement("style"); s.id = "wk-css";
     s.textContent =
-      "#wk-chip{position:fixed;left:12px;bottom:calc(86px + env(safe-area-inset-bottom));z-index:9400;display:flex;align-items:center;gap:8px;padding:9px 14px 9px 11px;border-radius:999px;font:600 12.5px/1 -apple-system,system-ui,sans-serif;color:#f3e3b4;background:rgba(18,15,10,.82);border:1px solid rgba(212,168,75,.38);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 6px 22px rgba(0,0,0,.35);cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:manipulation}" +
-      "#wk-chip .d{width:9px;height:9px;border-radius:50%;background:#6b6455;flex:none;transition:background .2s}" +
-      "#wk-chip[data-m=wake] .d{background:#d4a84b;animation:wkp 2s ease-in-out infinite}" +
-      "#wk-chip[data-m=cmd] .d{background:#6fe3a0;animation:wkp .7s ease-in-out infinite}" +
-      "#wk-chip[data-m=think] .d{background:#8ab4ff;animation:wkp .9s ease-in-out infinite}" +
-      "#wk-chip[data-m=say] .d{background:#e48cff;animation:wkp 1.1s ease-in-out infinite}" +
+      "#wk-dot{position:fixed;top:calc(env(safe-area-inset-top) + 7px);left:50%;margin-left:-4px;width:8px;height:8px;border-radius:50%;z-index:9400;pointer-events:none;background:#6b6455;opacity:0;transition:opacity .3s,background .2s}" +
+      "#wk-dot.on{opacity:.9}" +
+      "#wk-dot[data-m=wake]{background:#d4a84b;animation:wkp 2.4s ease-in-out infinite}" +
+      "#wk-dot[data-m=cmd]{background:#6fe3a0;animation:wkp .7s ease-in-out infinite}" +
+      "#wk-dot[data-m=think]{background:#8ab4ff;animation:wkp .9s ease-in-out infinite}" +
+      "#wk-dot[data-m=say]{background:#e48cff;animation:wkp 1.1s ease-in-out infinite}" +
+      "#wk-dot[data-m=armed]{background:#6b6455}" +
       "@keyframes wkp{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.7);opacity:.55}}" +
       "#wk-lang{margin-inline-start:2px;padding:3px 7px;border-radius:8px;background:rgba(212,168,75,.16);font-size:10.5px;letter-spacing:.4px}" +
       "#wk-cap{position:fixed;left:12px;right:12px;bottom:calc(132px + env(safe-area-inset-bottom));z-index:9399;text-align:center;pointer-events:none;opacity:0;transform:translateY(6px);transition:.25s}" +
@@ -82,16 +85,13 @@
   function fa() { return st.lang === "fa-IR"; }
   function label() {
     var M = fa()
-      ? { off: "هی فراورتس", wake: "بگو «هی فراورتس»", cmd: "می‌شنوم…", think: "دارم فکر می‌کنم", say: "دارم جواب می‌دم" }
+      ? { off: "", wake: "بگو «هی فراورتس»", cmd: "می‌شنوم…", think: "دارم فکر می‌کنم", say: "دارم جواب می‌دم" }
       : { off: "Hey Phraortes", wake: "Say “Hey Phraortes”", cmd: "Listening…", think: "Thinking…", say: "Speaking…" };
     return M[st.mode] || M.off;
   }
   function paint() {
-    if (!chip) return;
-    chip.setAttribute("data-m", st.mode);
-    chip.querySelector(".t").textContent = label();
-    chip.querySelector("#wk-lang").textContent = fa() ? "FA" : "EN";
-    chip.querySelector("#wk-lang").style.display = st.on ? "none" : "";
+    if (!dot) return;
+    dot.setAttribute("data-m", st.mode); dot.classList.toggle("on", st.mode !== "off");
   }
   function say(txt, ms) {
     if (!cap) return;
@@ -117,7 +117,7 @@
   function startRec() {
     if (!st.on || st.speaking || !SR || D.hidden) return;
     if (W.__auraActive) { return }                    /* Aura owns the mic */
-    if (st.rec) return;
+    if (st.rec || st.paused) return;
     var r = new SR(), g = ++st.gen;
     r.lang = st.lang; r.continuous = true; r.interimResults = true; r.maxAlternatives = 1;
     r.onresult = function (e) {
@@ -130,14 +130,14 @@
     };
     r.onerror = function (e) {
       if (g !== st.gen) return;
-      if (e.error === "not-allowed" || e.error === "service-not-allowed") { say(fa() ? "اجازه میکروفون داده نشد. از تنظیمات سافاری فعالش کن." : "Microphone permission denied. Enable it in Safari settings.", 5000); off(); return }
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") { say(fa() ? "اجازه میکروفون داده نشد. از تنظیمات سافاری فعالش کن." : "Microphone permission denied. Enable it in Safari settings.", 5000); off(true); arm(); return }
       st.fails++;
     };
     r.onend = function () {
       if (g !== st.gen) return;
       st.rec = null;
       if (!st.on || st.speaking) return;
-      if (st.fails > 6) { say(fa() ? "شنیدن قطع شد؛ دوباره لمس کن." : "Listening stopped — tap to resume.", 4000); off(); return }
+      if (st.fails > 6) { say(fa() ? "شنیدن قطع شد؛ یه جا روی صفحه لمس کن." : "Listening stopped — tap anywhere to resume.", 4000); off(true); arm(); return }
       setTimeout(startRec, st.fails ? 600 : 120);
     };
     st.rec = r;
@@ -147,8 +147,10 @@
   /* ---------- hearing logic ---------- */
   function onHear(txt, fin) {
     if (st.mode === "wake") {
+      var hd = D.getElementById("wake-heard"); if (hd) hd.textContent = txt;
       var m = matchWake(txt);
-      if (!m) return;
+      if (!m) { if (fin) say("“" + txt + "”", 1300); return }
+      if (STOP.test(m.rest)) { setEnabled(false); return }
       chime(true); mode("cmd"); st.cmdBuf = "";
       say(fa() ? "بفرما…" : "Yes?", 0);
       /* restart recognition so the wake phrase isn't re-read in the command */
@@ -177,6 +179,7 @@
     clearTimeout(st.cmdTimer);
     cmd = String(cmd || "").trim();
     if (!cmd) return backToWake();
+    if (STOP.test(cmd)) { setEnabled(false); return }
     mode("think"); say(cmd, 0); stopRec(); st.gen++;
     var handled = false, reply = "";
     try {
@@ -234,6 +237,7 @@
     } catch (e) { end() }
   }
 
+  var STOP = /^(?:stop listening|turn off|go to sleep|goodbye|bye|گوش نده|خاموش شو|خاموش|برو بخواب|خداحافظ)/i;
   /* ---------- on / off ---------- */
   function on() {
     if (!SR) { say(fa() ? "این مرورگر شنیدن صدا رو پشتیبانی نمی‌کنه. سافاری رو امتحان کن." : "Speech recognition isn't supported in this browser. Try Safari.", 5000); return }
@@ -244,30 +248,44 @@
     say(fa() ? "آماده‌ام. بگو «هی فراورتس»." : "Ready. Say “Hey Phraortes”.", 3200);
     stopRec(); startRec();
   }
-  function off() {
+  function off(keep) {
     st.on = false; clearTimeout(st.cmdTimer); stopRec(); st.gen++; lock(false);
     try { speechSynthesis.cancel() } catch (e) {}
-    st.speaking = false; mode("off"); LS("phr_wake_on", "0");
+    st.speaking = false; mode("off"); if (!keep) LS("phr_wake_on", "0");
   }
-  W.PHR_WAKE = { on: on, off: off, match: matchWake, state: function () { return { on: st.on, mode: st.mode, lang: st.lang } } };
+  /* persisted switch (Settings → Hey Phraortes). No on-screen button: after a reload the first touch anywhere starts listening. */
+  var armed = false;
+  function arm() {
+    if (armed || st.on || LS("phr_wake_on") !== "1") return; armed = true; mode("armed");
+    var go = function () { D.removeEventListener("pointerdown", go, true); D.removeEventListener("touchend", go, true); armed = false; if (LS("phr_wake_on") === "1" && !st.on) on(); };
+    D.addEventListener("pointerdown", go, true); D.addEventListener("touchend", go, true);
+    say(fa() ? "یه بار روی صفحه لمس کن تا گوش بدم." : "Tap anywhere once and I'll start listening.", 4200);
+  }
+  function setEnabled(v) {
+    if (v) { LS("phr_wake_on", "1"); on() }
+    else { off(); say(fa() ? "گوش‌دادن خاموش شد." : "Stopped listening.", 1800); speak(fa() ? "خاموش شد." : "Okay, stopped.", function () { }) }
+    var t = D.getElementById("wake-toggle"); if (t) t.checked = !!v; paintRow();
+  }
+  function pause() { if (!st.on) return; st.paused = true; clearTimeout(st.cmdTimer); stopRec(); st.gen++; mode("armed") }
+  function resume() { if (!st.on || !st.paused) return; st.paused = false; mode("wake"); setTimeout(startRec, 600) }
+  function paintRow() { var e = D.getElementById("ac2-ag-st"); if (e) e.textContent = LS("phr_wake_on") === "1" ? "On" : "Off"; var t = D.getElementById("wake-toggle"); if (t) t.checked = LS("phr_wake_on") === "1" }
+  function setAlias(a) { LS("phr_wake_alias", String(a || "")) }
+  function setLang(l) { st.lang = l; LS("phr_wake_lang", l); if (st.on) { stopRec(); st.gen++; setTimeout(startRec, 150) } }
+  W.PHR_WAKE = { paintRow: paintRow, pause: pause, resume: resume, setAlias: setAlias, on: on, off: off, setEnabled: setEnabled, setLang: setLang, match: matchWake, enabled: function () { return LS("phr_wake_on") === "1" }, lang: function () { return st.lang }, state: function () { return { on: st.on, mode: st.mode, lang: st.lang } } };
 
   function build() {
     css();
-    chip = D.createElement("div"); chip.id = "wk-chip"; chip.setAttribute("role", "button"); chip.setAttribute("aria-label", "Hey Phraortes hands-free");
-    chip.innerHTML = '<span class="d"></span><span class="t"></span><span id="wk-lang"></span>';
+    dot = D.createElement("div"); dot.id = "wk-dot"; dot.setAttribute("aria-hidden", "true");
     cap = D.createElement("div"); cap.id = "wk-cap"; cap.innerHTML = "<span></span>";
-    D.body.appendChild(cap); D.body.appendChild(chip);
-    var press = 0, longT = 0;
-    chip.addEventListener("click", function (e) {
-      if (e.target.id === "wk-lang") { st.lang = fa() ? "en-US" : "fa-IR"; LS("phr_wake_lang", st.lang); paint(); say(fa() ? "زبان شنیدن: فارسی" : "Listening language: English", 1800); return }
-      if (st.on) { off(); say(fa() ? "خاموش شد." : "Hands-free off.", 1500) } else { LS("phr_wake_on", "1"); on() }
-    });
-    paint();
+    D.body.appendChild(cap); D.body.appendChild(dot);
+    var t = D.getElementById("wake-toggle"); if (t) t.checked = LS("phr_wake_on") === "1";
+    var l = D.getElementById("wake-lang"); if (l) l.value = st.lang; var al = D.getElementById("wake-alias"); if (al) al.value = LS("phr_wake_alias") || "";
+    paint(); arm();
     /* ?listen=1 (Siri Shortcut / home-screen link): one big tap to start */
     if (/[?&]listen=1/.test(location.search)) {
       var b = D.createElement("div"); b.id = "wk-boot";
       b.innerHTML = '<button type="button">' + (fa() ? "لمس کن تا گوش بدم" : "Tap to start listening") + "<small>" + (fa() ? "بعدش فقط بگو «هی فراورتس»" : "then just say “Hey Phraortes”") + "</small></button>";
-      b.firstChild.addEventListener("click", function () { b.remove(); on() });
+      b.firstChild.addEventListener("click", function () { b.remove(); LS("phr_wake_on", "1"); on() });
       D.body.appendChild(b);
     }
   }

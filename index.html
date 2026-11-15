@@ -346,7 +346,7 @@ body.sovereign-mode .ai-core-glyph{color:#E8C468}
 .toggle-row:last-child{border-bottom:none}
 .toggle-row-label{font-size:14px;font-weight:500}
 .toggle-row-sub{font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px}
-.switch{position:relative;display:inline-block;width:44px;height:24px}
+.switch{flex:none;position:relative;display:inline-block;width:44px;height:24px}
 .switch input{opacity:0;width:0;height:0}
 .slider{position:absolute;cursor:pointer;inset:0;background:rgba(255,255,255,0.1);transition:.4s;border-radius:24px;border:1px solid var(--brd)}
 .slider:before{position:absolute;content:"";height:16px;width:16px;left:3px;bottom:3px;background:white;transition:.4s;border-radius:50%}
@@ -2162,12 +2162,20 @@ body.light-theme #mm-scrim{background:rgba(60,45,10,.14)}
         <div style="color:#ff453a;padding:11px;border-radius:10px;cursor:pointer;font-size:14px;transition:0.2s;display:flex;align-items:center;gap:10px" onclick="handleLogout()" onmouseover="this.style.background='rgba(255,69,58,0.08)'" onmouseout="this.style.background='none'">🚪 <span>Logout</span></div>
       </div>
     </div>
+    <!-- AGENT -->
+    <div id="actab-agent" style="display:none">
+      <div class="ac-section" id="ac-agent-card">
+        <div class="ac-section-title">Agent · Hey Phraortes</div>
+        <div class="toggle-row"><div><div class="toggle-row-label">Wake by voice</div><div class="toggle-row-sub">Turn it on, then just say “Hey Phraortes” and give an order. Works while the app is open. After opening the app, tap the screen once.</div></div><label class="switch"><input type="checkbox" id="wake-toggle" onchange="window.PHR_WAKE&&PHR_WAKE.setEnabled(this.checked)"><span class="slider"></span></label></div>
+        <div class="toggle-row"><div><div class="toggle-row-label">Listening language</div><div class="toggle-row-sub">The language you speak in</div></div><select id="wake-lang" onchange="window.PHR_WAKE&&PHR_WAKE.setLang(this.value)" style="background:rgba(255,255,255,.07);color:inherit;border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:8px 10px;font:inherit"><option value="en-US">English</option><option value="fa-IR">فارسی</option></select></div>
+        <div class="toggle-row"><div><div class="toggle-row-label">Extra wake word (optional)</div><div class="toggle-row-sub">If it never reacts, say the name and look at “Last heard” below, then type what it wrote here.</div></div><input id="wake-alias" placeholder="e.g. fray ortis" onchange="window.PHR_WAKE&&PHR_WAKE.setAlias(this.value)" style="width:120px;background:rgba(255,255,255,.07);color:inherit;border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:8px 10px;font:inherit"></div>
+        <div style="padding:2px 4px 6px;font-size:12px;opacity:.6">Last heard: <span id="wake-heard" style="color:#e8c468">—</span></div>
+      </div>
+    </div>
     <!-- SETTINGS -->
     <div id="actab-settings" style="display:none">
       <div class="ac-section">
         <div class="ac-section-title">Appearance & Experience</div>
-        <div class="toggle-row"><div><div class="toggle-row-label">Hey Phraortes (hands-free)</div><div class="toggle-row-sub">Say “Phraortes” and give an order. Works while the app is open. Tap once after opening the app.</div></div><label class="switch"><input type="checkbox" id="wake-toggle" onchange="window.PHR_WAKE&&PHR_WAKE.setEnabled(this.checked)"><span class="slider"></span></label></div>
-        <div class="toggle-row"><div><div class="toggle-row-label">Listening language</div><div class="toggle-row-sub">The language you speak your orders in</div></div><select id="wake-lang" onchange="window.PHR_WAKE&&PHR_WAKE.setLang(this.value)" style="background:var(--surface2,#1c1a15);color:inherit;border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:8px 10px;font:inherit"><option value="fa-IR">فارسی</option><option value="en-US">English</option></select></div>
         <div class="toggle-row"><div><div class="toggle-row-label">Dark / Light Theme</div><div class="toggle-row-sub">Switch between dark and light mode</div></div><label class="switch"><input type="checkbox" id="theme-toggle" onchange="toggleTheme()"><span class="slider"></span></label></div>
         <div class="toggle-row" style="display:block"><div class="toggle-row-label">Accent color</div><div class="toggle-row-sub">Auto follows the mood of your conversation</div><div class="acc-row" id="acc-row"></div></div>
         <div class="toggle-row"><div><div class="toggle-row-label">Luxury Soundscapes</div><div class="toggle-row-sub">UI audio feedback on interactions</div></div><label class="switch"><input type="checkbox" id="sound-toggle" onchange="localStorage.setItem('phraortes_sound',this.checked?'1':'0')"><span class="slider"></span></label></div>
@@ -3981,7 +3989,7 @@ function switchAcTab(tab,btn){
   const body=document.querySelector(".ac-page-body");
   if(body)body.classList.add("smoke-out");
   setTimeout(()=>{
-    ["profile","usage","settings","billing","notifications"].forEach(t=>{const el=document.getElementById("actab-"+t);if(el)el.style.display=t===tab?"block":"none"});
+    ["profile","usage","agent","settings","billing","notifications"].forEach(t=>{const el=document.getElementById("actab-"+t);if(el)el.style.display=t===tab?"block":"none"});
     document.querySelectorAll(".ac-tab-btn").forEach(b=>b.classList.remove("active"));
     if(btn)btn.classList.add("active");
     if(tab==="profile")renderWeeklyStats();
@@ -4660,7 +4668,7 @@ async function send(){
     cancelEdit();
   }
   if(!txt&&!attachedFiles.length)return;
-  if(txt&&!attachedFiles.length&&!editMsgId&&window.PHR_AGENT&&PHR_AGENT.typed){let _r=false;try{_r=PHR_AGENT.typed(txt)}catch(_e){}if(_r){uiInput.value="";uiInput.style.height="44px";try{localStorage.removeItem("draft_"+curId)}catch(_e){}showToast(typeof _r==="string"?_r:"Done","success");return}}
+  if(txt&&!attachedFiles.length&&!editMsgId&&window.PHR_AGENT&&PHR_AGENT.typed){let _r=false;try{_r=PHR_AGENT.typed(txt)}catch(_e){}if(_r){uiInput.value="";uiInput.style.height="44px";try{localStorage.removeItem("draft_"+curId)}catch(_e){}if(window.__auraActive&&window.__auraWaiting){try{auraSpeak(typeof _r==="string"?_r:"Done.")}catch(_e){}}showToast(typeof _r==="string"?_r:"Done","success");return}}
   try{window.PHR_learn&&PHR_learn.note(txt)}catch(e){}
   if(capLeft(activeModel)===0){const lo=activeModel;showToast(`${MODEL_NAMES[lo]} daily limit reached (${capLimit(lo)}). Pick another core or come back after midnight.`,"error");if(activePlan!=="ultimate")try{openPremium()}catch(_e){}return}
   if(activePlan==="free"){
@@ -6110,7 +6118,7 @@ const AURA_MODES=[
   {id:"interview",en:"Interview",fa:"تمرین مصاحبه",style:"Act as an interviewer: ask one question, listen, give brief feedback, then ask the next."}
 ];
 let auraRecognition=null,auraFails=0,auraIdle=0,auraLog=[],auraT0=0,auraTimer=0,auraTok=0,auraAudio=null;
-let auraLang=navigator.language||"en-US"; // follows the device: no language setting, the AI itself answers in whatever language you speak
+let auraLang=(()=>{try{return localStorage.getItem("phraortes_aura_lang")||navigator.language||"en-US"}catch(e){return navigator.language||"en-US"}})();const AURA_LANGS=["en-US","fa-IR","ar-SA","tr-TR","es-ES","fr-FR","de-DE","hi-IN","ru-RU","zh-CN","ja-JP"]; // follows the device: no language setting, the AI itself answers in whatever language you speak
 let auraPid=localStorage.getItem("phraortes_aura_persona")||"nova",auraMode=localStorage.getItem("phraortes_aura_mode")||"tutor",auraPtt=localStorage.getItem("phraortes_aura_ptt")==="1";
 const AU={raf:0,state:"idle",lvl:0,kick:0,cv:null,ctx:null,rip:[],dust:[],cur:null,last:0,rt:0};
 const auraFa=()=>(auraLang||"").toLowerCase().startsWith("fa");
@@ -6134,7 +6142,7 @@ const auraP=()=>AURA_PERSONAS.find(p=>p.id===auraPid)||AURA_PERSONAS[0];
 .au-spacer{flex:1;min-height:150px;position:relative;z-index:1}
 .au-bottom{position:relative;z-index:3;padding:0 16px calc(env(safe-area-inset-bottom) + 18px);display:flex;flex-direction:column;align-items:center;gap:12px}
 .au-status{display:flex;align-items:center;gap:8px;font:600 12.5px 'Space Grotesk','Vazirmatn',sans-serif;letter-spacing:.08em;color:var(--c1);opacity:.95}.au-status i{width:7px;height:7px;border-radius:50%;background:var(--c1);box-shadow:0 0 12px var(--c1);animation:auDot 1.5s ease-in-out infinite}@keyframes auDot{50%{opacity:.35;transform:scale(.7)}}
-.au-cap{width:100%;max-width:560px;max-height:27vh;overflow-y:auto;text-align:center;font-size:19px;line-height:1.6;font-weight:500;padding:2px 6px;scrollbar-width:none;-webkit-mask-image:linear-gradient(transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(transparent,#000 12%,#000 88%,transparent)}.au-cap::-webkit-scrollbar{display:none}
+.au-cap{width:100%;max-width:560px;max-height:23vh;overflow-y:auto;text-align:center;font-size:17.5px;line-height:1.6;font-weight:500;padding:2px 6px;scrollbar-width:none;-webkit-mask-image:linear-gradient(transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(transparent,#000 12%,#000 88%,transparent)}.au-cap::-webkit-scrollbar{display:none}
 .au-cap .w{opacity:.32;transition:opacity .25s,color .25s}.au-cap .w.on{opacity:1}.au-cap .w.cur{color:var(--c1)}
 .au-cap.me{font-style:italic;color:rgba(255,255,255,.62);font-size:17px}.au-cap.hint{font-size:15px;color:rgba(255,255,255,.55)}
 .au-modes{display:flex;gap:7px;overflow-x:auto;max-width:100%;scrollbar-width:none;padding:2px 2px}.au-modes::-webkit-scrollbar{display:none}
@@ -6162,7 +6170,7 @@ function auraTheme(instant){
 function auraBuildChips(){
   const fa=auraFa(),pe=document.getElementById("au-personas"),mo=document.getElementById("au-modes");if(!pe||!mo)return;
   pe.innerHTML=AURA_PERSONAS.map(p=>`<button class="au-chip${p.id===auraPid?" on":""}" style="--d:${p.c[0]}" data-p="${p.id}"><i></i>${fa?p.fa:p.name}</button>`).join("");
-  mo.innerHTML=AURA_MODES.map(m=>`<button class="au-mode${m.id===auraMode?" on":""}" data-m="${m.id}">${fa?m.fa:m.en}</button>`).join("");
+  mo.innerHTML=AURA_MODES.map(m=>`<button class="au-mode${m.id===auraMode?" on":""}" data-m="${m.id}">${fa?m.fa:m.en}</button>`).join("")+`<button class="au-mode" data-l="1" title="Listening language">🌐 ${(auraLang||"auto").split("-")[0].toUpperCase()}</button>`;
   const pt=document.getElementById("au-ptt");if(pt){pt.classList.toggle("au-ptt-on",auraPtt);pt.innerHTML=auraPtt?'<svg viewBox="0 0 24 24"><path d="M9 11V5a3 3 0 0 1 6 0v6M5 11h14v3a7 7 0 0 1-14 0z"/></svg>':'<svg viewBox="0 0 24 24"><path d="M4 12h2M8 8v8M12 4v16M16 8v8M20 12h-2"/></svg>';pt.title=auraPtt?(fa?"فشار برای گفتن":"Push to talk"):(fa?"دست‌آزاد":"Hands-free")}
 }
 function auraHaptic(t){try{haptic(t||"light")}catch(e){}}
@@ -6221,6 +6229,7 @@ document.addEventListener("visibilitychange",()=>{if(!window.__auraActive)return
 document.addEventListener("click",e=>{
   const sc=document.getElementById("aura-screen");if(!sc||!sc.contains(e.target))return;
   const pc=e.target.closest("[data-p]");if(pc){auraPid=pc.dataset.p;localStorage.setItem("phraortes_aura_persona",auraPid);auraTheme();auraBuildChips();auraHaptic("light");auraSetCaption(auraP().hi[auraFa()?1:0],"hint");return}
+  const lc=e.target.closest("[data-l]");if(lc){const i=AURA_LANGS.findIndex(x=>x.split("-")[0]===(auraLang||"").split("-")[0]);auraLang=AURA_LANGS[(i+1)%AURA_LANGS.length];try{localStorage.setItem("phraortes_aura_lang",auraLang)}catch(_e){}auraBuildChips();auraHaptic("light");if(AU.state==="listening"){auraStopRec();auraListenTurn(true)}return}
   const mc=e.target.closest("[data-m]");if(mc){auraMode=mc.dataset.m;localStorage.setItem("phraortes_aura_mode",auraMode);auraBuildChips();auraHaptic("light");return}
   if(e.target.closest("#au-ptt")){auraPtt=!auraPtt;localStorage.setItem("phraortes_aura_ptt",auraPtt?"1":"0");auraBuildChips();auraHaptic("light");if(!auraPtt&&AU.state==="needtap")auraMain();return}
   if(e.target.closest("#aura-tap")||e.target.closest("#au-stage")){auraMain();return}
@@ -6247,6 +6256,7 @@ function callAura(){
   if(activePlan!=="ultimate"){openPremium();showToast("Aura Voice requires the Max plan.","error");return}
   if(!(("webkitSpeechRecognition" in window)||("SpeechRecognition" in window))){showToast("Voice isn't supported in this browser. Open Phraortes in Safari.","error");return}
   closeAllDropMenus();
+  try{window.PHR_WAKE&&PHR_WAKE.pause()}catch(e){}
   try{const _u=new SpeechSynthesisUtterance(" ");_u.volume=0;speechSynthesis.speak(_u)}catch(e){} // iOS only allows speech after a direct tap
   window.__auraActive=true;window.__auraWaiting=false;window.__auraTurnGotText=false;window.__auraGen=(window.__auraGen||0)+1;auraFails=0;auraIdle=0;auraLog=[];auraT0=Date.now();
   const sc=document.getElementById("aura-screen");sc.classList.remove("on");sc.style.display="flex";requestAnimationFrame(()=>requestAnimationFrame(()=>sc.classList.add("on")));
@@ -6371,7 +6381,8 @@ function auraHide(){
   setTimeout(()=>{if(!window.__auraActive){sc.style.display="none";document.getElementById("au-sum").classList.remove("show")}},420);
   document.body.style.overflow="";auraStopCanvas();
 }
-function closeAura(quick){
+function closeAura(quick){try{window.PHR_WAKE&&setTimeout(()=>PHR_WAKE.resume(),900)}catch(e){}
+
   const had=auraLog.some(x=>x.w==="me")&&window.__auraActive;
   window.__auraActive=false;window.__auraWaiting=false;auraTok++;auraStopRec();clearInterval(auraTimer);
   try{speechSynthesis.cancel()}catch(e){}if(auraAudio){try{auraAudio.pause()}catch(e){}auraAudio=null}
@@ -7331,10 +7342,11 @@ body.light-theme #account-page[data-view]:not([data-view=hub]) .ac-section,body.
     brush:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17M3.5 12H12"/></svg>',
     card:'<svg viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="3"/><path d="M3 10h18"/></svg>',
     bell:'<svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg>',
+    mic:'<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>',
     out:'<svg viewBox="0 0 24 24"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9"/></svg>',
     gem:'<svg viewBox="0 0 24 24"><path d="M6 4h12l3 5-9 11L3 9z"/><path d="M3 9h18M9 4l3 16M15 4l-3 16"/></svg>'};
   const $=s=>document.querySelector(s);
-  const TITLES={profile:"Profile",usage:"Usage",settings:"Appearance",billing:"Billing",notifications:"Notifications"};
+  const TITLES={profile:"Profile",usage:"Usage",agent:"Agent",settings:"Appearance",billing:"Billing",notifications:"Notifications"};
   const METAL={free:["#e4e7ec","#8d939e","#23262c"],starter:["#f0b987","#8e5b2c","#2a1708"],pro:["#cdbdff","#5a49b0","#150f33"],ultimate:["#f8e6a8","#b88a2b","#2a1c04"]};
   const NAMES={free:"Free",starter:"Plus",pro:"Pro",ultimate:"Max"};
   function dayKey(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
@@ -7370,6 +7382,7 @@ body.light-theme #account-page[data-view]:not([data-view=hub]) .ac-section,body.
     <div class="ac2-list">
       ${row("user","#4C8DFF","Profile","profile")}
       ${row("bars","#34C759","Usage","usage")}
+      ${row("mic","#E8B84A","Agent · Hey Phraortes","agent",'<span id="ac2-ag-st" style="margin-left:auto;margin-right:6px;opacity:.55;font-size:13px">Off</span>')}
       ${row("brush","#AF52DE","Appearance and experience","settings")}
       ${row("card","#E8B84A","Billing","billing")}
       ${row("bell","#FF453A","Notifications","notifications")}
@@ -7378,13 +7391,13 @@ body.light-theme #account-page[data-view]:not([data-view=hub]) .ac-section,body.
       <button class="ac2-row" onclick="openPremium();closeAccountPage()"><span class="ac2-ic" style="background:linear-gradient(145deg,#E8B84A,#8a5a14)">${ICON.gem}</span>Upgrade your plan</button>
       <button class="ac2-row d" onclick="handleLogout()"><span class="ac2-ic" style="background:linear-gradient(145deg,#FF5F56,#a3201a)">${ICON.out}</span>Log out</button>
     </div>`;
-    body.insertBefore(hub,body.firstChild);
+    body.insertBefore(hub,body.firstChild);setTimeout(()=>{try{PHR_WAKE.paintRow()}catch(e){}},300);
     $("#ac2-co").appendChild($("#account-companion"));
     pg.dataset.view="hub";
     /* navigation */
     let cur="hub";
     window.acOpen=function(tab){cur=tab;pg.dataset.view=tab;
-      ["profile","usage","settings","billing","notifications"].forEach(t=>{const el=document.getElementById("actab-"+t);if(el)el.style.display=t===tab?"block":"none"});
+      ["profile","usage","agent","settings","billing","notifications"].forEach(t=>{const el=document.getElementById("actab-"+t);if(el)el.style.display=t===tab?"block":"none"});
       $("#ac2-t").textContent=TITLES[tab]||"";
       if(tab==="profile")try{renderWeeklyStats()}catch(e){}
       if(tab==="usage")try{renderUsageTab()}catch(e){}
@@ -7417,7 +7430,7 @@ body.light-theme #account-page[data-view]:not([data-view=hub]) .ac-section,body.
     /* data */
     const CIRC=r=>2*Math.PI*r;
     function ring(id,r,f){const e=document.getElementById(id);if(!e)return;const c=CIRC(r);e.style.strokeDasharray=c;e.style.strokeDashoffset=c*(1-Math.max(0,Math.min(1,f)))}
-    function refresh(){
+    function refresh(){try{PHR_WAKE.paintRow()}catch(e){}
       try{updateAcPlanBadge()}catch(e){}
       const nm=($("#ac-user-name-big")?.textContent||"").trim(),signed=nm&&!/not signed in/i.test(nm);
       const h=new Date().getHours();
