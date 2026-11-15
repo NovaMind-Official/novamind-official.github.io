@@ -7,6 +7,8 @@
   var LS = function (k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} return null; };
   var st = { on: false, mode: "off", rec: null, speaking: false, lang: LS("phr_wake_lang") || "en-US", fails: 0, lock: null, cmdBuf: "", cmdTimer: 0, gen: 0 };
 
+  function con(t, a, b) { try { W.PHR_CON && W.PHR_CON.ev(t, a, b) } catch (e) {} }
+
   /* ---------- wake-word matching ---------- */
   var KNOWN = ["phraortes", "fraortes", "phraotes", "fraortis", "frortes", "fraoortes", "fraorties", "phraortis"];
   var FA = /(?:ف|پ)ر[اآائ]?[وؤ]?ر[تط][ئی]?[سز]|فرائورتس|فراورتس|فرورتس|فراتورس|فرااورتس|فرائورتز|فرایورتس|فرورتیس|فراورتیس/;
@@ -98,7 +100,7 @@
     cap.firstChild.textContent = txt; cap.classList.add("show");
     clearTimeout(say.t); if (ms !== 0) say.t = setTimeout(function () { cap.classList.remove("show") }, ms || 3200);
   }
-  function mode(m) { st.mode = m; paint(); }
+  function mode(m) { st.mode = m; paint(); con("mode", m); }
 
   /* ---------- screen wake lock ---------- */
   function lock(on) {
@@ -151,7 +153,7 @@
       var m = matchWake(txt);
       if (!m) { if (fin) say("“" + txt + "”", 1300); return }
       if (STOP.test(m.rest)) { setEnabled(false); return }
-      chime(true); mode("cmd"); st.cmdBuf = "";
+      chime(true); mode("cmd"); st.cmdBuf = ""; if (LS("phr_con_auto") !== "0") con("wake");
       say(fa() ? "بفرما…" : "Yes?", 0);
       /* restart recognition so the wake phrase isn't re-read in the command */
       stopRec(); st.gen++;
@@ -161,7 +163,7 @@
       return;
     }
     if (st.mode === "cmd") {
-      st.cmdBuf = txt; say(txt, 0);
+      st.cmdBuf = txt; say(txt, 0); con("hear", txt, fin);
       armCmdTimeout(fin ? 900 : 1700);
     }
   }
@@ -172,32 +174,43 @@
       if (st.cmdBuf) finishCmd(st.cmdBuf); else { chime(false); say(fa() ? "چیزی نشنیدم." : "Didn't catch that.", 1800); backToWake() }
     }, ms);
   }
-  function backToWake() { clearTimeout(st.cmdTimer); st.cmdBuf = ""; if (!st.on) return; mode("wake"); stopRec(); st.gen++; setTimeout(startRec, 150) }
+  function backToWake() { clearTimeout(st.cmdTimer); st.cmdBuf = ""; if (!st.on) { st.manual = false; mode("off"); return } mode("wake"); stopRec(); st.gen++; setTimeout(startRec, 150) }
 
   /* ---------- run command ---------- */
   function finishCmd(cmd) {
     clearTimeout(st.cmdTimer);
     cmd = String(cmd || "").trim();
     if (!cmd) return backToWake();
-    if (STOP.test(cmd)) { setEnabled(false); return }
+    if (STOP.test(cmd)) { con("cmd", cmd); con("done", "listening off"); setEnabled(false); return }
+    con("cmd", cmd);
+    if (/^(?:close|hide|dismiss)\s+(?:the\s+)?console|کنسول.*(?:ببند|بسته)/i.test(cmd)) { try { W.PHR_CON && W.PHR_CON.close() } catch (e) {} return backToWake() }
     mode("think"); say(cmd, 0); stopRec(); st.gen++;
+    /* the chat sits behind the Account page / sheets: bring it forward so the work is visible */
+    try { if (D.getElementById("account-page") && D.getElementById("account-page").classList.contains("show") && typeof W.closeAccountPage === "function") W.closeAccountPage() } catch (e) {}
+    try { var _t = D.querySelector("#toast,.toast"); if (_t) _t.textContent = "" } catch (e) {}
     var handled = false, reply = "";
     try {
       var A = W.PHR_AGENT;
       if (A && A.typed) { var r = A.typed(cmd); if (r) { handled = true; reply = typeof r === "string" ? r : (fa() ? "انجام شد." : "Done.") } }
     } catch (e) {}
-    if (handled) { return speak(reply, backToWake) }
-    if (typeof W.PHR_sendText !== "function" || W.PHR_busy && W.PHR_busy()) { speak(fa() ? "الان مشغولم، چند لحظه دیگه." : "I'm busy right now, try again in a moment.", backToWake); return }
-    var before = D.querySelectorAll(".msg.ai").length;
-    W.PHR_sendText(cmd);
+    if (handled) { con("done", reply); return speak(reply, backToWake) }
+    if (typeof W.PHR_sendText !== "function" || W.PHR_busy && W.PHR_busy()) { con("err", "agent busy"); speak(fa() ? "الان مشغولم، چند لحظه دیگه." : "I'm busy right now, try again in a moment.", backToWake); return }
+    var before = D.querySelectorAll(".msg.ai").length, allBefore = D.querySelectorAll(".msg").length;
+    var sent = W.PHR_sendText(cmd);
+    if (sent === false) { con("err", "send failed"); speak(fa() ? "ارسال نشد." : "I couldn't send that.", backToWake); return }
+    setTimeout(function () {
+      if (!st.on || st.mode !== "think") return;
+      var busyNow = W.PHR_busy && W.PHR_busy(), grew = D.querySelectorAll(".msg").length > allBefore;
+      if (!busyNow && !grew) { con("err", "message not sent — plan or model limit?"); speak(fa() ? "پیام ارسال نشد؛ احتمالاً سقف پلن یا محدودیت مدل است." : "The message wasn't sent. You may have hit your plan or model limit.", backToWake) }
+    }, 2500);
     var t0 = Date.now(), seen = false;
     (function poll() {
-      if (!st.on) return;
+      if (!st.on && !st.manual) return;
       var busy = W.PHR_busy && W.PHR_busy();
       if (busy) seen = true;
       var done = (seen && !busy) || (!seen && Date.now() - t0 > 4000 && D.querySelectorAll(".msg.ai").length > before && !busy);
-      if (done) { setTimeout(function () { speak(lastAnswer(), backToWake) }, 350); return }
-      if (Date.now() - t0 > 120000) { speak(fa() ? "خیلی طول کشید." : "That took too long.", backToWake); return }
+      if (done) { setTimeout(function () { var ans = lastAnswer(); con("answer", ans); speak(ans, backToWake) }, 350); return }
+      if (Date.now() - t0 > 120000) { con("err", "timeout"); speak(fa() ? "خیلی طول کشید." : "That took too long.", backToWake); return }
       setTimeout(poll, 400);
     })();
   }
@@ -221,6 +234,8 @@
   }
   function speak(text, done) {
     var raw = clean(text).slice(0, 700), fin = false;
+    con("say", raw);
+    if (st.manual && !st.on) { return done && done() }
     var end = function () { if (fin) return; fin = true; st.speaking = false; clearInterval(keep); chime(false); done && done() };
     if (!raw || !W.speechSynthesis) { return end() }
     st.speaking = true; mode("say"); say(raw.length > 140 ? raw.slice(0, 137) + "…" : raw, 0);
@@ -268,10 +283,11 @@
   }
   function pause() { if (!st.on) return; st.paused = true; clearTimeout(st.cmdTimer); stopRec(); st.gen++; mode("armed") }
   function resume() { if (!st.on || !st.paused) return; st.paused = false; mode("wake"); setTimeout(startRec, 600) }
-  function paintRow() { var e = D.getElementById("ac2-ag-st"); if (e) e.textContent = LS("phr_wake_on") === "1" ? "On" : "Off"; var t = D.getElementById("wake-toggle"); if (t) t.checked = LS("phr_wake_on") === "1" }
+  function paintRow() { var ca = D.getElementById("con-auto"); if (ca) ca.checked = LS("phr_con_auto") !== "0"; var e = D.getElementById("ac2-ag-st"); if (e) e.textContent = LS("phr_wake_on") === "1" ? "On" : "Off"; var t = D.getElementById("wake-toggle"); if (t) t.checked = LS("phr_wake_on") === "1" }
   function setAlias(a) { LS("phr_wake_alias", String(a || "")) }
   function setLang(l) { st.lang = l; LS("phr_wake_lang", l); if (st.on) { stopRec(); st.gen++; setTimeout(startRec, 150) } }
-  W.PHR_WAKE = { paintRow: paintRow, pause: pause, resume: resume, setAlias: setAlias, on: on, off: off, setEnabled: setEnabled, setLang: setLang, match: matchWake, enabled: function () { return LS("phr_wake_on") === "1" }, lang: function () { return st.lang }, state: function () { return { on: st.on, mode: st.mode, lang: st.lang } } };
+  function run(cmd) { if (!st.on) st.manual = true; finishCmd(cmd) }
+  W.PHR_WAKE = { run: run, paintRow: paintRow, pause: pause, resume: resume, setAlias: setAlias, on: on, off: off, setEnabled: setEnabled, setLang: setLang, match: matchWake, enabled: function () { return LS("phr_wake_on") === "1" }, lang: function () { return st.lang }, state: function () { return { on: st.on, mode: st.mode, lang: st.lang } } };
 
   function build() {
     css();

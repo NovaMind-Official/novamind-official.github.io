@@ -65,6 +65,7 @@
 <script src="wake.js" defer></script>
 <script src="board.js" defer></script>
 <script src="brain.js" defer></script>
+<script src="console.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -751,8 +752,8 @@ footer{width:100%;padding:8px 5% 26px;background:linear-gradient(to top,rgba(0,0
 .code-file-card{margin:16px 0;display:flex;align-items:center;gap:13px;padding:14px 16px;border-radius:16px;border:1px solid rgba(255,255,255,0.09);background:linear-gradient(135deg,rgba(255,255,255,0.035),rgba(255,255,255,0.01));cursor:pointer;transition:0.2s;max-width:420px}
 .design-card-canvas{padding:24px;display:flex;align-items:center;justify-content:center;background:repeating-conic-gradient(rgba(255,255,255,0.04) 0% 25%,transparent 0% 50%) 50%/16px 16px;min-height:120px}
 .design-card-canvas svg{max-width:100%;max-height:420px;width:auto;height:auto}
-.code-fullscreen .design-card-canvas{min-height:calc(100vh - 60px)}
-.code-fullscreen .design-card-canvas svg{max-height:calc(100vh - 120px)}
+.code-fullscreen .design-card-canvas{min-height:calc(100dvh - 90px - env(safe-area-inset-top));padding:12px}
+.code-fullscreen .design-card-canvas svg{width:100%;height:auto;max-width:100%;max-height:calc(100dvh - 130px - env(safe-area-inset-top))}
 .code-file-card:hover{border-color:var(--lc);transform:translateY(-1px);box-shadow:0 10px 28px rgba(0,0,0,0.35)}
 .code-file-card:active{transform:scale(0.98)}
 .cfc-icon{width:38px;height:38px;border-radius:11px;background:color-mix(in srgb,var(--lc) 18%,transparent);color:var(--lc);display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -770,7 +771,10 @@ body.light-theme .cfc-name{color:#2b2313}
 .code-tool-btn:hover{background:rgba(201,162,39,0.14);color:#E8C468;border-color:rgba(201,162,39,0.3)}
 .code-block-wrapper pre{margin:0;padding:18px;overflow-x:auto;background:transparent !important;font-size:13px;-webkit-user-select:text;user-select:text}
 .code-block-wrapper pre code{-webkit-user-select:text;user-select:text}
-.code-fullscreen{position:fixed;inset:0;z-index:90000;border-radius:0;margin:0;max-width:100%;height:100vh;overflow-y:auto}
+.code-fullscreen{position:fixed;inset:0;z-index:2147483000;border-radius:0!important;margin:0!important;max-width:100%;width:100%;height:100vh;height:100dvh;overflow-y:auto;background:#07070b!important;border:0!important;box-shadow:none!important;animation:none!important;transform:none!important;padding-bottom:env(safe-area-inset-bottom)}
+.code-fullscreen>.code-header{position:sticky;top:0;z-index:3;padding-top:calc(10px + env(safe-area-inset-top));background:#0b0b10}
+body.light-theme .code-fullscreen{background:#f7f3e8!important}
+body.light-theme .code-fullscreen>.code-header{background:#efe9d8}
 .code-fullscreen pre{min-height:100%}
 .code-run-output{border-top:1px solid rgba(255,255,255,0.08);background:rgba(0,0,0,0.35)}
 .code-run-console{padding:12px 16px;font-family:"Fira Code",monospace;font-size:12px;line-height:1.7;max-height:200px;overflow-y:auto;color:rgba(255,255,255,0.8)}
@@ -2169,6 +2173,8 @@ body.light-theme #mm-scrim{background:rgba(60,45,10,.14)}
         <div class="toggle-row"><div><div class="toggle-row-label">Wake by voice</div><div class="toggle-row-sub">Turn it on, then just say “Hey Phraortes” and give an order. Works while the app is open. After opening the app, tap the screen once.</div></div><label class="switch"><input type="checkbox" id="wake-toggle" onchange="window.PHR_WAKE&&PHR_WAKE.setEnabled(this.checked)"><span class="slider"></span></label></div>
         <div class="toggle-row"><div><div class="toggle-row-label">Listening language</div><div class="toggle-row-sub">The language you speak in</div></div><select id="wake-lang" onchange="window.PHR_WAKE&&PHR_WAKE.setLang(this.value)" style="background:rgba(255,255,255,.07);color:inherit;border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:8px 10px;font:inherit"><option value="en-US">English</option><option value="fa-IR">فارسی</option></select></div>
         <div class="toggle-row"><div><div class="toggle-row-label">Extra wake word (optional)</div><div class="toggle-row-sub">If it never reacts, say the name and look at “Last heard” below, then type what it wrote here.</div></div><input id="wake-alias" placeholder="e.g. fray ortis" onchange="window.PHR_WAKE&&PHR_WAKE.setAlias(this.value)" style="width:120px;background:rgba(255,255,255,.07);color:inherit;border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:8px 10px;font:inherit"></div>
+        <div class="toggle-row"><div><div class="toggle-row-label">Agent console</div><div class="toggle-row-sub">A full-screen terminal cockpit that opens when you call the agent.</div></div><button type="button" onclick="closeAccountPage&&closeAccountPage();setTimeout(function(){PHR_CON&&PHR_CON.open()},350)" style="flex:none;padding:9px 14px;border-radius:12px;border:1px solid rgba(111,227,160,.4);background:rgba(111,227,160,.1);color:#9ff0c3;font:600 12px ui-monospace,Menlo,monospace">Open</button></div>
+        <div class="toggle-row"><div><div class="toggle-row-label">Open console on wake</div><div class="toggle-row-sub">Show the console whenever you say “Hey Phraortes”.</div></div><label class="switch"><input type="checkbox" id="con-auto" onchange="localStorage.setItem('phr_con_auto',this.checked?'1':'0')"><span class="slider"></span></label></div>
         <div style="padding:2px 4px 6px;font-size:12px;opacity:.6">Last heard: <span id="wake-heard" style="color:#e8c468">—</span></div>
       </div>
     </div>
@@ -6098,7 +6104,17 @@ function openSourceDrawer(encSrc,query){
   document.getElementById("global-source-drawer").classList.add("show");
 }
 function closeSourceDrawer(){document.getElementById("global-source-drawer").classList.remove("show")}
-function toggleFsCode(btn){const w=btn.closest(".code-block-wrapper");if(w.classList.contains("code-fullscreen")){w.classList.remove("code-fullscreen");document.body.style.overflow=""}else{w.classList.add("code-fullscreen");document.body.style.overflow="hidden"}}
+function toggleFsCode(btn){const w=btn.closest(".code-block-wrapper");if(!w)return;
+  if(w.classList.contains("code-fullscreen")){w.classList.remove("code-fullscreen");btn.textContent="\u26F6 Full";
+    const ph=w._phPlace;if(ph&&ph.parentNode){ph.parentNode.insertBefore(w,ph);ph.remove()}w._phPlace=null;
+    document.body.style.overflow="";if(w._phEsc){document.removeEventListener("keydown",w._phEsc);w._phEsc=null}return}
+  /* move the card out of the chat to <body>: ancestors with transform/filter/backdrop would otherwise trap position:fixed and the chat would bleed through */
+  const ph=document.createElement("div");ph.style.display="none";w.parentNode.insertBefore(ph,w);w._phPlace=ph;
+  document.body.appendChild(w);w.classList.add("code-fullscreen");btn.textContent="\u2715 Close";
+  const sv=w.querySelector(".design-card-canvas svg");
+  if(sv&&!sv.getAttribute("viewBox")){const a=parseFloat(sv.getAttribute("width")),b=parseFloat(sv.getAttribute("height"));if(a>0&&b>0)sv.setAttribute("viewBox","0 0 "+a+" "+b)}
+  document.body.style.overflow="hidden";w.scrollTop=0;
+  w._phEsc=function(e){if(e.key==="Escape")toggleFsCode(btn)};document.addEventListener("keydown",w._phEsc)}
 // ═══ AURA LIVE VOICE — immersive call screen ═══
 // Voices: each persona has a system-voice preference (iOS built-in voices, mostly English). To plug in a real TTS API later, define
 //   window.PHR_TTS = async (text, {lang, persona, rate}) => url | Blob | HTMLAudioElement | null
