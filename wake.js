@@ -5,7 +5,7 @@
   var W = window, D = document;
   var SR = W.SpeechRecognition || W.webkitSpeechRecognition;
   var LS = function (k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} return null; };
-  var st = { on: false, mode: "off", rec: null, speaking: false, lang: LS("phr_wake_lang") || "en-US", fails: 0, lock: null, cmdBuf: "", cmdTimer: 0, gen: 0 };
+  var st = { on: false, mode: "off", rec: null, speaking: false, lang: "en-US", fails: 0, lock: null, cmdBuf: "", cmdTimer: 0, gen: 0 };
 
   function con(t, a, b) { try { W.PHR_CON && W.PHR_CON.ev(t, a, b) } catch (e) {} }
 

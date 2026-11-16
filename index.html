@@ -68,6 +68,8 @@
 <script src="console.js" defer></script>
 <script src="imagine.js" defer></script>
 <script src="capture.js" defer></script>
+<script src="agentpanel.js" defer></script>
+<script src="look.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -2173,7 +2175,6 @@ body.light-theme #mm-scrim{background:rgba(60,45,10,.14)}
       <div class="ac-section" id="ac-agent-card">
         <div class="ac-section-title">Agent · Hey Phraortes</div>
         <div class="toggle-row"><div><div class="toggle-row-label">Wake by voice</div><div class="toggle-row-sub">Turn it on, then just say “Hey Phraortes” and give an order. Works while the app is open. After opening the app, tap the screen once.</div></div><label class="switch"><input type="checkbox" id="wake-toggle" onchange="window.PHR_WAKE&&PHR_WAKE.setEnabled(this.checked)"><span class="slider"></span></label></div>
-        <div class="toggle-row"><div><div class="toggle-row-label">Listening language</div><div class="toggle-row-sub">The language you speak in</div></div><select id="wake-lang" onchange="window.PHR_WAKE&&PHR_WAKE.setLang(this.value)" style="background:rgba(255,255,255,.07);color:inherit;border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:8px 10px;font:inherit"><option value="en-US">English</option><option value="fa-IR">فارسی</option></select></div>
         <div class="toggle-row"><div><div class="toggle-row-label">Extra wake word (optional)</div><div class="toggle-row-sub">If it never reacts, say the name and look at “Last heard” below, then type what it wrote here.</div></div><input id="wake-alias" placeholder="e.g. fray ortis" onchange="window.PHR_WAKE&&PHR_WAKE.setAlias(this.value)" style="width:120px;background:rgba(255,255,255,.07);color:inherit;border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:8px 10px;font:inherit"></div>
         <div class="toggle-row"><div><div class="toggle-row-label">Agent console</div><div class="toggle-row-sub">A full-screen terminal cockpit that opens when you call the agent.</div></div><button type="button" onclick="closeAccountPage&&closeAccountPage();setTimeout(function(){PHR_CON&&PHR_CON.open()},350)" style="flex:none;padding:9px 14px;border-radius:12px;border:1px solid rgba(111,227,160,.4);background:rgba(111,227,160,.1);color:#9ff0c3;font:600 12px ui-monospace,Menlo,monospace">Open</button></div>
         <div class="toggle-row"><div><div class="toggle-row-label">Open console on wake</div><div class="toggle-row-sub">Show the console whenever you say “Hey Phraortes”.</div></div><label class="switch"><input type="checkbox" id="con-auto" onchange="localStorage.setItem('phr_con_auto',this.checked?'1':'0')"><span class="slider"></span></label></div>
@@ -6189,7 +6190,7 @@ function auraTheme(instant){
 function auraBuildChips(){
   const fa=auraFa(),pe=document.getElementById("au-personas"),mo=document.getElementById("au-modes");if(!pe||!mo)return;
   pe.innerHTML=AURA_PERSONAS.map(p=>`<button class="au-chip${p.id===auraPid?" on":""}" style="--d:${p.c[0]}" data-p="${p.id}"><i></i>${fa?p.fa:p.name}</button>`).join("");
-  mo.innerHTML=AURA_MODES.map(m=>`<button class="au-mode${m.id===auraMode?" on":""}" data-m="${m.id}">${fa?m.fa:m.en}</button>`).join("")+`<button class="au-mode" data-l="1" title="Listening language">🌐 ${(auraLang||"auto").split("-")[0].toUpperCase()}</button>`;
+  mo.innerHTML=AURA_MODES.map(m=>`<button class="au-mode${m.id===auraMode?" on":""}" data-m="${m.id}">${fa?m.fa:m.en}</button>`).join("");
   const pt=document.getElementById("au-ptt");if(pt){pt.classList.toggle("au-ptt-on",auraPtt);pt.innerHTML=auraPtt?'<svg viewBox="0 0 24 24"><path d="M9 11V5a3 3 0 0 1 6 0v6M5 11h14v3a7 7 0 0 1-14 0z"/></svg>':'<svg viewBox="0 0 24 24"><path d="M4 12h2M8 8v8M12 4v16M16 8v8M20 12h-2"/></svg>';pt.title=auraPtt?(fa?"فشار برای گفتن":"Push to talk"):(fa?"دست‌آزاد":"Hands-free")}
 }
 function auraHaptic(t){try{haptic(t||"light")}catch(e){}}
@@ -7365,7 +7366,7 @@ body.light-theme #account-page[data-view]:not([data-view=hub]) .ac-section,body.
     out:'<svg viewBox="0 0 24 24"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9"/></svg>',
     gem:'<svg viewBox="0 0 24 24"><path d="M6 4h12l3 5-9 11L3 9z"/><path d="M3 9h18M9 4l3 16M15 4l-3 16"/></svg>'};
   const $=s=>document.querySelector(s);
-  const TITLES={profile:"Profile",usage:"Usage",agent:"Agent",settings:"Appearance",billing:"Billing",notifications:"Notifications"};
+  const TITLES={profile:"Profile",usage:"Usage",agent:"Voice and wake",settings:"Appearance",billing:"Billing",notifications:"Notifications"};
   const METAL={free:["#e4e7ec","#8d939e","#23262c"],starter:["#f0b987","#8e5b2c","#2a1708"],pro:["#cdbdff","#5a49b0","#150f33"],ultimate:["#f8e6a8","#b88a2b","#2a1c04"]};
   const NAMES={free:"Free",starter:"Plus",pro:"Pro",ultimate:"Max"};
   function dayKey(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
@@ -7401,7 +7402,7 @@ body.light-theme #account-page[data-view]:not([data-view=hub]) .ac-section,body.
     <div class="ac2-list">
       ${row("user","#4C8DFF","Profile","profile")}
       ${row("bars","#34C759","Usage","usage")}
-      ${row("mic","#E8B84A","Agent · Hey Phraortes","agent",'<span id="ac2-ag-st" style="margin-left:auto;margin-right:6px;opacity:.55;font-size:13px">Off</span>')}
+      ${row("mic","#E8B84A","Voice and wake settings","agent",'<span id="ac2-ag-st" style="margin-left:auto;margin-right:6px;opacity:.55;font-size:13px">Off</span>')}
       ${row("brush","#AF52DE","Appearance and experience","settings")}
       ${row("card","#E8B84A","Billing","billing")}
       ${row("bell","#FF453A","Notifications","notifications")}
