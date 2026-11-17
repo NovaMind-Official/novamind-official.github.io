@@ -283,7 +283,7 @@
   }
   function pause() { if (!st.on) return; st.paused = true; clearTimeout(st.cmdTimer); stopRec(); st.gen++; mode("armed") }
   function resume() { if (!st.on || !st.paused) return; st.paused = false; mode("wake"); setTimeout(startRec, 600) }
-  function paintRow() { var ca = D.getElementById("con-auto"); if (ca) ca.checked = LS("phr_con_auto") !== "0"; var e = D.getElementById("ac2-ag-st"); if (e) e.textContent = LS("phr_wake_on") === "1" ? "On" : "Off"; var t = D.getElementById("wake-toggle"); if (t) t.checked = LS("phr_wake_on") === "1" }
+  function paintRow() { var ik = D.getElementById("img-key"); if (ik && !ik.value) ik.value = LS("phr_img_key") || ""; var ca = D.getElementById("con-auto"); if (ca) ca.checked = LS("phr_con_auto") !== "0"; var e = D.getElementById("ac2-ag-st"); if (e) e.textContent = LS("phr_wake_on") === "1" ? "On" : "Off"; var t = D.getElementById("wake-toggle"); if (t) t.checked = LS("phr_wake_on") === "1" }
   function setAlias(a) { LS("phr_wake_alias", String(a || "")) }
   function setLang(l) { st.lang = l; LS("phr_wake_lang", l); if (st.on) { stopRec(); st.gen++; setTimeout(startRec, 150) } }
   function run(cmd) { if (!st.on) st.manual = true; finishCmd(cmd) }

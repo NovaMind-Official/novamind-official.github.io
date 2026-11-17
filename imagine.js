@@ -5,18 +5,18 @@
   "use strict";
   var W = window, D = document;
   var STYLES = {
-    auto: ["Auto", ""],
+    auto: ["Auto", ", highly detailed, sharp focus, professional quality, 4k"],
     photo: ["Photo", ", ultra realistic photograph, natural lighting, 85mm lens, shallow depth of field, sharp focus, high detail"],
     cinematic: ["Cinematic", ", cinematic still, dramatic lighting, anamorphic lens, film grain, rich color grading"],
     anime: ["Anime", ", anime illustration, clean line art, vibrant colors, studio quality"],
-    "3d": ["3D", ", 3D render, soft studio lighting, global illumination, highly detailed, octane render"],
+    "3d": ["3D", ", professional 3D render, Pixar-quality, soft studio lighting, global illumination, subsurface scattering, ultra detailed, octane render, 8k"],
     illustration: ["Illustration", ", digital illustration, detailed, rich colors, concept art, trending on artstation"],
     watercolor: ["Watercolor", ", watercolor painting, soft washes, textured paper, delicate details"],
     logo: ["Logo", ", minimal vector logo, flat design, clean geometric shapes, white background"],
     pixel: ["Pixel", ", pixel art, 16-bit, crisp pixels, limited palette"],
     sketch: ["Sketch", ", pencil sketch, hand drawn, cross hatching, paper texture"]
   };
-  var RATIOS = { "1:1": [1024, 1024], "4:5": [896, 1120], "3:2": [1152, 768], "16:9": [1280, 720], "9:16": [720, 1280] };
+  var RATIOS = { "1:1": [1152, 1152], "4:5": [1024, 1280], "3:2": [1344, 896], "16:9": [1536, 864], "9:16": [864, 1536] };
   var ST = {}, uid = 0;
 
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] }) }
@@ -57,6 +57,7 @@
     D.head.appendChild(s);
   }
 
+  function LSget(k) { try { return localStorage.getItem(k) } catch (e) { return null } }
   function parse(src) {
     var t = String(src || "").trim(), j = null;
     try { j = JSON.parse(t) } catch (e) {
@@ -120,7 +121,15 @@
       cell.classList.add("bad"); cell.querySelector(".st").textContent = "FAILED · TAP ↻ TO TRY AGAIN";
     };
     cell.appendChild(img);
-    img.src = url(st.s, seed, MODELS[attempt] || "");
+    var key = (LSget("phr_img_key") || "").trim();
+    if (key) {
+      /* optional personal API key: unlocks the watermark-free endpoint; falls back to the free one if anything fails */
+      var full = st.s.prompt + STYLES[st.s.style][1], r = RATIOS[st.s.aspect];
+      fetch("https://gen.pollinations.ai/image/" + encodeURIComponent(full) + "?width=" + r[0] + "&height=" + r[1] + "&seed=" + seed + "&model=flux&nologo=true", { headers: { Authorization: "Bearer " + key } })
+        .then(function (res) { if (!res.ok) throw 0; return res.blob() })
+        .then(function (bl) { if (cell._ver === ver) img.src = URL.createObjectURL(bl) })
+        .catch(function () { if (cell._ver === ver) img.src = url(st.s, seed, MODELS[attempt] || "") });
+    } else img.src = url(st.s, seed, MODELS[attempt] || "");
   }
   function cardOf(el) { var c = root(el); return c ? { c: c, id: c.dataset.id, st: ST[c.dataset.id] } : null }
 
@@ -160,7 +169,7 @@
       try { finishTurn(aiId, renderMD(fence), fence, chat, dispHtml, txt, idx) } catch (e) { if (typeof W.animImgLoader === "function") W.animImgLoader(aiId, chat, dispHtml, txt, idx) }
     },
     prompt: function () {
-      return "\n\nIMAGE CREATION: you CAN create images. When the user asks you to make, generate, draw (as a picture), design or illustrate an image, photo, poster, wallpaper, avatar, logo or artwork, reply with one short friendly line in THEIR language, then exactly one fenced block: ```imagine\n{\"prompt\":\"<rich ENGLISH description: subject, setting, composition, lighting, mood, lens/medium, colours, details; 40-90 words; no text inside the image unless asked>\",\"style\":\"auto|photo|cinematic|anime|3d|illustration|watercolor|logo|pixel|sketch\",\"aspect\":\"1:1|4:5|3:2|16:9|9:16\"}\n```. Pick the style and aspect that fit the request (wallpaper for phone = 9:16, banner = 16:9, avatar = 1:1). Always translate the idea to English in the prompt, whatever language the user wrote. Never say you cannot create images. For a logo or flat vector, use style logo. Do not describe the picture again after the block.";
+      return "\n\nIMAGE CREATION: you CAN create images. When the user asks you to make, generate, draw (as a picture), design or illustrate an image, photo, poster, wallpaper, avatar, logo or artwork, reply with one short friendly line in THEIR language, then exactly one fenced block: ```imagine\n{\"prompt\":\"<rich ENGLISH description: subject, setting, composition, lighting, mood, lens/medium, colours, details; 40-90 words; no text inside the image unless asked>\",\"style\":\"auto|photo|cinematic|anime|3d|illustration|watercolor|logo|pixel|sketch\",\"aspect\":\"1:1|4:5|3:2|16:9|9:16\"}\n```. Pick the style and aspect that fit the request (wallpaper for phone = 9:16, banner = 16:9, avatar = 1:1). Always translate the idea to English in the prompt, whatever language the user wrote. This OVERRIDES any rule about SVG: whenever the user asks you to draw, paint, illustrate, sketch or render a subject (a house, animal, person, character, scene, object, art, \"نقاشی\"), produce this image block, never SVG and never a childish drawing. For draw/paint requests choose style 3d (or cinematic/photo/illustration when the user implies it) and write a premium prompt: precise subject, materials, camera angle, professional lighting, depth, background, colour palette, \"ultra detailed, sharp focus, 4k\". Never say you cannot create images. For a logo or flat vector, use style logo. Do not describe the picture again after the block.";
     }
   };
   function toast(t) { try { if (typeof W.showToast === "function") W.showToast(t, "info") } catch (e) { } }
