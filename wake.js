@@ -73,7 +73,7 @@
       "#wk-dot[data-m=cmd]{background:#6fe3a0;animation:wkp .7s ease-in-out infinite}" +
       "#wk-dot[data-m=think]{background:#8ab4ff;animation:wkp .9s ease-in-out infinite}" +
       "#wk-dot[data-m=say]{background:#e48cff;animation:wkp 1.1s ease-in-out infinite}" +
-      "#wk-dot[data-m=armed]{background:#6b6455}" +
+      "#wk-dot[data-m=armed]{background:#8a806a}#wk-dot::after{content:\"\";position:absolute;inset:-16px}" +
       "@keyframes wkp{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.7);opacity:.55}}" +
       "#wk-lang{margin-inline-start:2px;padding:3px 7px;border-radius:8px;background:rgba(212,168,75,.16);font-size:10.5px;letter-spacing:.4px}" +
       "#wk-cap{position:fixed;left:12px;right:12px;bottom:calc(132px + env(safe-area-inset-bottom));z-index:9399;text-align:center;pointer-events:none;opacity:0;transform:translateY(6px);transition:.25s}" +
@@ -100,6 +100,7 @@
     cap.firstChild.textContent = txt; cap.classList.add("show");
     clearTimeout(say.t); if (ms !== 0) say.t = setTimeout(function () { cap.classList.remove("show") }, ms || 3200);
   }
+  function hideCap() { clearTimeout(say.t); if (cap) cap.classList.remove("show") }
   function mode(m) { st.mode = m; paint(); con("mode", m); }
 
   /* ---------- screen wake lock ---------- */
@@ -139,7 +140,7 @@
       if (g !== st.gen) return;
       st.rec = null;
       if (!st.on || st.speaking) return;
-      if (st.fails > 6) { say(fa() ? "شنیدن قطع شد؛ یه جا روی صفحه لمس کن." : "Listening stopped — tap anywhere to resume.", 4000); off(true); arm(); return }
+      if (st.fails > 6) { say(fa() ? "شنیدن قطع شد؛ نقطهٔ بالای صفحه را لمس کن." : "Listening stopped — tap the dot at the top to resume.", 4000); off(true); arm(); return }
       setTimeout(startRec, st.fails ? 600 : 120);
     };
     st.rec = r;
@@ -236,7 +237,7 @@
     var raw = clean(text).slice(0, 700), fin = false;
     con("say", raw);
     if (st.manual && !st.on) { return done && done() }
-    var end = function () { if (fin) return; fin = true; st.speaking = false; clearInterval(keep); chime(false); done && done() };
+    var end = function () { if (fin) return; fin = true; st.speaking = false; clearInterval(keep); chime(false); if (!st.on) hideCap(); done && done() };
     if (!raw || !W.speechSynthesis) { return end() }
     st.speaking = true; mode("say"); say(raw.length > 140 ? raw.slice(0, 137) + "…" : raw, 0);
     stopRec(); st.gen++;
@@ -266,19 +267,19 @@
   function off(keep) {
     st.on = false; clearTimeout(st.cmdTimer); stopRec(); st.gen++; lock(false);
     try { speechSynthesis.cancel() } catch (e) {}
-    st.speaking = false; mode("off"); if (!keep) LS("phr_wake_on", "0");
+    st.speaking = false; mode("off"); hideCap(); armed = false; if (dot) { dot.onclick = null; dot.style.pointerEvents = "" } if (!keep) LS("phr_wake_on", "0");
   }
   /* persisted switch (Settings → Hey Phraortes). No on-screen button: after a reload the first touch anywhere starts listening. */
   var armed = false;
   function arm() {
     if (armed || st.on || LS("phr_wake_on") !== "1") return; armed = true; mode("armed");
-    var go = function () { D.removeEventListener("pointerdown", go, true); D.removeEventListener("touchend", go, true); armed = false; if (LS("phr_wake_on") === "1" && !st.on) on(); };
-    D.addEventListener("pointerdown", go, true); D.addEventListener("touchend", go, true);
-    say(fa() ? "یه بار روی صفحه لمس کن تا گوش بدم." : "Tap anywhere once and I'll start listening.", 4200);
+    dot.style.pointerEvents = "auto";
+    dot.onclick = function (ev) { ev.stopPropagation(); dot.onclick = null; dot.style.pointerEvents = ""; armed = false; if (LS("phr_wake_on") === "1" && !st.on) on(); };
+    say(fa() ? "برای شروع گوش دادن، نقطهٔ بالای صفحه را لمس کن." : "Tap the small dot at the top to start listening.", 4200);
   }
   function setEnabled(v) {
     if (v) { LS("phr_wake_on", "1"); on() }
-    else { off(); say(fa() ? "گوش‌دادن خاموش شد." : "Stopped listening.", 1800); speak(fa() ? "خاموش شد." : "Okay, stopped.", function () { }) }
+    else { off(); say(fa() ? "گوش‌دادن خاموش شد." : "Stopped listening.", 1800); }
     var t = D.getElementById("wake-toggle"); if (t) t.checked = !!v; paintRow();
   }
   function pause() { if (!st.on) return; st.paused = true; clearTimeout(st.cmdTimer); stopRec(); st.gen++; mode("armed") }

@@ -24,6 +24,7 @@
     card: ic('<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 10h18M7 15h4"/>'),
     bars: ic('<path d="M5 20V11M12 20V4M19 20v-6"/>'),
     key: ic('<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/>'),
+    palette: ic('<circle cx="12" cy="12" r="9"/><circle cx="8.5" cy="10" r="1.2"/><circle cx="12" cy="7.5" r="1.2"/><circle cx="15.5" cy="10" r="1.2"/><path d="M12 21a2.5 2.5 0 010-5h2"/>'),
     bell: ic('<path d="M6 16V11a6 6 0 0112 0v5l2 2H4z"/><path d="M10 21h4"/>')
   };
   /* id, title, icon, colour, keywords, opener */
@@ -32,6 +33,7 @@
     { id: "security", t: "Sign-in & security", i: "shield", c: "#2fa596", k: "google login password sign out logout secure", open: function () { W.acOpen("security") } },
     { id: "privacy", t: "Privacy", i: "lock", c: "#8a70d6", k: "memory data backup export restore activity shadow delete", open: function () { W.acOpen("privacy") } },
     { id: "agent", t: "Agent", i: "mic", c: "#3dae7b", k: "voice wake word routines habits shadow pre-mortem console memory", open: function () { W.acOpen("agent") } },
+    { id: "themes", t: "Themes", i: "palette", c: "#e0795a", k: "theme themes colour color accent dark ember ocean aurora rank level", open: function () { W.PHR_LOOK && W.PHR_LOOK.open("themes") } },
     { id: "look", t: "Appearance", i: "brush", c: "#c96a9d", k: "theme colour color accent dark light text motion rank look", open: function () { W.acOpen("settings") } },
     { id: "plan", t: "Plan", i: "card", c: "#d6aa45", k: "billing upgrade pro plus max pay subscription", open: function () { W.acOpen("billing") } },
     { id: "usage", t: "Usage", i: "bars", c: "#4f87d9", k: "limit messages tokens quota left", open: function () { W.acOpen("usage") } },
@@ -46,7 +48,8 @@
         case "security": return signed ? "Google" : "Not signed in";
         case "privacy": return W.PHR_SHADOW && W.PHR_SHADOW.enabled() ? "Shadow on" : "Private";
         case "agent": return W.PHR_WAKE && W.PHR_WAKE.enabled() ? "Listening" : "Off";
-        case "look": return (D.body.dataset.theme || "obsidian").replace(/^./, function (c) { return c.toUpperCase() });
+        case "themes": var tn = D.body.dataset.theme || "obsidian", th = W.PHR_LOOK && W.PHR_LOOK.themes.filter(function (x) { return x[0] === tn })[0]; return th ? th[1] : tn;
+        case "look": return "Text, motion";
         case "plan": return PN[planId()] || "Free";
         case "usage": var l = $("#ac2-left"), ll = $("#ac2-leftl"); return l ? (l.textContent + " " + (ll ? ll.textContent : "")).trim() : "";
         case "keys": var n = W.PHR_KEYS ? W.PHR_KEYS.all().length : 0; return n ? n + (n === 1 ? " key" : " keys") : "None yet";
@@ -61,6 +64,13 @@
     var rise = ""; for (var i = 1; i <= 9; i++) rise += "#account-page[data-view]:not([data-view=hub]) .ac-page-body>div[id^=actab-]>*:nth-child(" + i + "){animation-delay:" + (60 + i * 55) + "ms}";
     var s = D.createElement("style"); s.id = "x3-css";
     s.textContent = [
+      "#ac2-bar{background:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;pointer-events:none;height:54px;min-height:54px;padding:9px 14px 0!important;box-sizing:border-box}",
+      "#ac2-bar .t{display:none!important}",
+      "#ac2-bar .x,#ac2-bar .b,.lk-bar>button{pointer-events:auto;display:grid;place-items:center;width:36px;height:36px;padding:0!important;border-radius:50%;border:.5px solid rgba(255,255,255,.2);background:rgba(30,26,20,.55);-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4);color:#f4efe4;font-size:0;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35);transition:transform .2s,background .2s}",
+      "#ac2-bar .x:active,#ac2-bar .b:active,.lk-bar>button:active{transform:scale(.9);background:rgba(60,52,40,.7)}",
+      "#ac2-bar .x svg,#ac2-bar .b svg,.lk-bar>button svg{width:16px;height:16px;display:block}",
+      "#ac2-bar .b{display:none}#account-page[data-view]:not([data-view=hub]) #ac2-bar .b{display:grid}",
+      ".lk-bar{background:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;pointer-events:none;height:54px;box-sizing:border-box}.lk-bar h3{display:none}",
       "#ac2-hub>.ac2-hero,#ac2-hub>.ac2-grid,#ac2-hub>.ac2-list,#ac2-hub>#ax-sec{display:none!important}",
       "#x3{padding:6px 0 30px;font-family:-apple-system,system-ui,sans-serif}",
       ".x3-top{display:flex;align-items:center;gap:13px}",
@@ -138,7 +148,7 @@
       var ks = W.PHR_KEYS ? W.PHR_KEYS.all().slice().sort(function (a, b) { return (b.n || 0) - (a.n || 0) }).slice(0, 6) : [];
       kc.innerHTML = ks.map(function (k, i) { return '<button type="button" class="x3-chip" data-k="' + i + '">' + esc(k.k) + "</button>" }).join("") + '<button type="button" class="x3-chip n" data-new="1">' + (ks.length ? "+ key" : "+ Create a key") + "</button>";
       [].forEach.call(kc.querySelectorAll("[data-k]"), function (b) { b.onclick = function () { var k = ks[+b.dataset.k]; if (!k) return; hap("medium"); try { W.closeAccountPage() } catch (e) { } setTimeout(function () { W.PHR_KEYS.run(k.k) }, 450) } });
-      var nb = kc.querySelector("[data-new]"); if (nb) nb.onclick = function () { SECT[7].open() };
+      var nb = kc.querySelector("[data-new]"); if (nb) nb.onclick = function () { SECT.filter(function (x) { return x.id === "keys" })[0].open() };
     }
     /* today */
     var dy = $("#x3-day"); if (dy) {
@@ -225,11 +235,16 @@
   };
 
   /* ───────── wiring ───────── */
+  function barIcons() {
+    var x = $("#ac2-bar .x"); if (x && !x.querySelector("svg")) x.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+    var b = $("#ac2-bar .b"); if (b) { var sv = b.querySelector("svg"); if (sv) b.innerHTML = sv.outerHTML }
+    [].forEach.call(D.querySelectorAll(".lk-bar>button"), function (q) { var sv = q.querySelector("svg"); if (sv && q.childNodes.length > 1) q.innerHTML = sv.outerHTML });
+  }
   function wire() {
     var oa = W.acOpen, ob = W.acBack, op = W.openAccountPage;
     if (typeof oa !== "function" || !$("#ac2-hub")) return false;
     if (oa.__x3) return true;
-    css(); build(); pageHost("security"); pageHost("privacy");
+    css(); barIcons(); setInterval(barIcons, 1500); build(); pageHost("security"); pageHost("privacy");
     W.acOpen = function (tab) {
       var mine = tab === "security" || tab === "privacy";
       ["security", "privacy"].forEach(function (t) { var e = D.getElementById("actab-" + t); if (e) e.style.display = "none" });

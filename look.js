@@ -21,8 +21,25 @@
     ["tokyo", "Neon Tokyo", "Night district", "#0a0614", "#4a0d5e", "#06304a", "#ff2ea6", ["level", 5]],
     ["glacier", "Glacier", "Pro edition", "#050a10", "#244a66", "#0a1c2a", "#9fd8ff", ["plan", "pro"]],
     ["sovereign", "Sovereign", "Max edition", "#07060a", "#4a3608", "#150e02", "#f5d27a", ["plan", "ultimate"]],
-    ["dune", "Desert Dune", "Dry sand", "#120d07", "#4d3512", "#1f1507", "#e7b76b", ["level", 8]]
+    ["dune", "Desert Dune", "Dry sand", "#120d07", "#4d3512", "#1f1507", "#e7b76b", ["level", 8]],
+    ["forest", "Forest", "Deep canopy", "#040d07", "#0f4a2a", "#04170d", "#5fd38d", null],
+    ["moss", "Moss", "Soft earth", "#0a0f06", "#3a4a12", "#131a05", "#b5d36a", null],
+    ["lagoon", "Lagoon", "Tropical shallows", "#03100f", "#0a5a5a", "#052a3a", "#2ee6d0", null],
+    ["sakura", "Sakura", "Spring petals", "#150a0f", "#5c1f3d", "#2a0d1c", "#ffb3d1", null],
+    ["sunset", "Sunset", "Golden hour", "#140806", "#7a2a12", "#2b0f3a", "#ff9a5a", null],
+    ["copper", "Copper", "Burnished metal", "#120905", "#5a2f14", "#22110a", "#d98a56", null],
+    ["wine", "Merlot", "Deep red wine", "#12050a", "#5a0f2a", "#200510", "#ff5d7e", null],
+    ["mocha", "Mocha", "Warm coffee", "#0f0a07", "#43291a", "#1a110b", "#d2a679", null],
+    ["laser", "Laser Blue", "Electric edge", "#02061a", "#0b2a8a", "#04103a", "#4d7cff", null],
+    ["midnight", "Midnight", "Blue-black calm", "#04060e", "#141c3a", "#090d1c", "#8aa4ff", null],
+    ["slate", "Slate", "Quiet steel", "#0a0c0f", "#2a3340", "#0f1318", "#9fb4c9", null],
+    ["vapor", "Vaporwave", "Retro dream", "#0c0618", "#4b1a7a", "#0a2a5a", "#ff7be5", ["level", 4]],
+    ["cyber", "Cyber Yellow", "Hazard tape", "#0a0a03", "#3d3a05", "#141403", "#ffe14d", ["level", 6]],
+    ["nebula", "Nebula", "Deep space", "#07040f", "#3a1a6a", "#0d0a2a", "#c58bff", ["level", 10]],
+    ["platinum", "Platinum", "Pro edition", "#0a0a0c", "#3a3a44", "#121216", "#e6e8ee", ["plan", "pro"]],
+    ["emerald", "Emerald", "Max edition", "#031009", "#0a4a30", "#04180f", "#4ee8a2", ["plan", "ultimate"]]
   ];
+  var CATS = [["Signature", ["obsidian", "sovereign", "royal", "quartz", "platinum", "emerald"]], ["Nature", ["aurora", "ocean", "glacier", "forest", "moss", "lagoon", "dune", "sakura"]], ["Warm", ["ember", "sunset", "copper", "wine", "mocha"]], ["Neon", ["matrix", "tokyo", "vapor", "cyber", "laser", "nebula"]], ["Calm", ["ink", "midnight", "slate"]]];
   var ACC = [["mint", "Mint", "#6ee7b7"], ["coral", "Coral", "#ff6f61"], ["ice", "Ice", "#a5f3fc"], ["lime", "Lime", "#bef264"], ["crimson", "Crimson", "#ef4444"], ["teal", "Teal", "#14b8a6"]];
   var PLAN_RANK = { free: 0, starter: 1, pro: 2, ultimate: 3 };
 
@@ -113,13 +130,14 @@
   function buildPane() { if (pane) return; css(); pane = D.createElement("div"); pane.id = "th-pane"; pane.innerHTML = '<div class="lk-bar"><button type="button" onclick="PHR_LOOK.back()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>Account</button><h3 id="lk-t"></h3></div><div class="lk-in" id="lk-in"></div>'; D.body.appendChild(pane) }
   function viewThemes() {
     var cur = D.body.getAttribute("data-theme") || "obsidian", ca = D.body.getAttribute("data-accent") || "auto";
-    var cards = T.map(function (t) {
+    var card = function (t) {
       var un = unlocked(t), on = t[0] === cur;
       var bg = t[3] || "#0f0a06", g1 = t[4] || "#2a1608", g2 = t[5] || "#140a04";
       return '<button type="button" class="lk-th' + (on ? " on" : "") + (un ? "" : " lock") + '" style="--c:' + t[6] + ';--bg:' + bg + ';--g1:' + g1 + ';--g2:' + g2 + '" onclick="PHR_LOOK.pick(\'' + t[0] + '\')"><span class="lk-tag">' + (on ? "ACTIVE" : un ? lockText(t) : "🔒 " + lockText(t)) + '</span><div class="lk-pv"><i></i><i></i><i></i><u></u></div><div class="lk-nm"><b>' + esc(t[1]) + "</b><small>" + esc(t[2]) + "</small></div></button>";
-    }).join("");
+    };
+    var cards = CATS.map(function (c) { return '<div class="lk-sec lk-cat">' + c[0] + '</div><div class="lk-grid">' + c[1].map(function (id) { var t = T.filter(function (x) { return x[0] === id })[0]; return t ? card(t) : "" }).join("") + "</div>" }).join("");
     var accs = '<button type="button" class="auto' + (ca === "auto" ? " on" : "") + '" aria-label="Auto" onclick="PHR_LOOK.acc(\'auto\')"></button>' + (ACCS() || []).filter(function (a) { return a[0] !== "auto" }).map(function (a) { return '<button type="button" class="' + (ca === a[0] ? "on" : "") + '" style="--c:' + a[2] + '" aria-label="' + esc(a[1]) + '" onclick="PHR_LOOK.acc(\'' + a[0] + '\')"></button>' }).join("");
-    return '<div class="lk-sec" style="margin-top:6px">Themes · ' + T.filter(unlocked).length + "/" + T.length + ' unlocked</div><div class="lk-grid">' + cards + '</div><div class="lk-sec">Accent colour</div><div class="lk-acc">' + accs + '</div><div class="lk-sec">Unlock more</div><div style="font:500 13px/1.6 -apple-system,system-ui,sans-serif;color:rgba(255,255,255,.55)">Use the agent to level up and unlock Terminal, Neon Tokyo and Desert Dune. Glacier comes with Pro and Sovereign with Max.</div>';
+    return '<div class="lk-sec" style="margin-top:6px">Themes · ' + T.filter(unlocked).length + "/" + T.length + ' unlocked</div>' + cards + '<div class="lk-sec">Accent colour</div><div class="lk-acc">' + accs + '</div><div class="lk-sec">Unlock more</div><div style="font:500 13px/1.6 -apple-system,system-ui,sans-serif;color:rgba(255,255,255,.55)">Use the agent to level up and unlock Terminal, Neon Tokyo, Vaporwave, Cyber Yellow, Nebula and more. Glacier and Platinum come with Pro, Sovereign and Emerald with Max.</div>';
   }
 
   /* ───────── ranks ───────── */
