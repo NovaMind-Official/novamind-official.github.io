@@ -70,6 +70,10 @@
 <script src="capture.js" defer></script>
 <script src="agentpanel.js" defer></script>
 <script src="look.js" defer></script>
+<script src="keys.js" defer></script>
+<script src="premortem.js" defer></script>
+<script src="shadow.js" defer></script>
+<script src="acct2.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -4408,7 +4412,7 @@ const _phrCode=function(code,lang){
   if(!/^[\w+#.\-]{1,24}$/.test(lang))lang=""; // lang is interpolated into attributes/handlers of trusted markup — allow only safe characters
   const raw=typeof code==="object"?(code.text||""):(code||"");
   const str=String(raw);const lines=str.split("\n").length;const l=(lang||"code").toLowerCase();const enc=safeEnc(str);
-  if(l==="capture"&&window.PHR_CAPTURE)return PHR_CAPTURE.html(str);if((l==="imagine"||l==="image")&&window.PHR_IMG&&/"prompt"/.test(str))return PHR_IMG.html(str);
+  if(l==="capture"&&window.PHR_CAPTURE)return PHR_CAPTURE.html(str);if(l==="premortem"&&window.PHR_PM)return PHR_PM.html(str);if((l==="imagine"||l==="image")&&window.PHR_IMG&&/"prompt"/.test(str))return PHR_IMG.html(str);
   { const _k=window.PHRW&&PHRW.kindOf(l); if(_k)return PHRW.html(_k,str,!!window.PHR_STREAMING); } // study artifacts (graph / sim / solution / quiz / flashcards)
   if(l==="svg"&&str.trim().startsWith("<svg")){
     return`<div class="design-card code-block-wrapper">

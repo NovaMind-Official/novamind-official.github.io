@@ -24,6 +24,7 @@
   /* ───────── activity log ───────── */
   function log() { try { return JSON.parse(LS(KEY) || "[]") } catch (e) { return [] } }
   function push(c, ok, src) {
+    if (LS("phr_act_off") === "1") return;
     c = String(c || "").trim(); if (c.length < 2) return;
     var a = log(), l = a[a.length - 1], now = Date.now();
     if (l && l.c === c && now - l.t < 4000) { if (ok !== undefined && ok !== null) l.ok = ok ? 1 : 0; LS(KEY, JSON.stringify(a)); return }
@@ -216,9 +217,10 @@
     }).join("") + '</div><div style="text-align:center;margin-top:16px"><button class="ax-b r" onclick="PHR_AX.clear()">Clear activity</button></div>';
   }
   function render() {
-    var el = $("#ax-in"), T = { dash: "Agent", routines: "Routines", activity: "Activity" };
-    $("#ax-t").textContent = T[cur] || "";
-    el.innerHTML = cur === "dash" ? viewDash() : cur === "routines" ? viewRoutines() : viewActivity();
+    var el = $("#ax-in"), T = { dash: "Agent", routines: "Routines", activity: "Activity" }, X = (W.PHR_AX && W.PHR_AX.views || {})[cur];
+    $("#ax-t").textContent = X ? X.title : (T[cur] || "");
+    el.innerHTML = X ? X.render() : cur === "dash" ? viewDash() : cur === "routines" ? viewRoutines() : viewActivity();
+    if (X && X.after) { try { X.after(el) } catch (e) { } }
     setTimeout(function () {
       [].forEach.call(el.querySelectorAll("[data-h]"), function (i) { i.style.height = Math.max(4, +i.dataset.h) + "px" });
       [].forEach.call(el.querySelectorAll("[data-w]"), function (i) { i.style.width = i.dataset.w + "%" });
@@ -244,7 +246,8 @@
     hide: function (i) { var h = habits()[i]; if (!h) return; var d = dismissed(); d.push(h.id); LS("phr_habit_dis", JSON.stringify(d)); render(); refresh() },
     habits: habits,
     clear: function () { LS(KEY, "[]"); render(); refresh() },
-    refresh: refresh, log: push, stats: stats
+    refresh: refresh, log: push, stats: stats,
+    views: {}, rerender: function () { if (pane && pane.classList.contains("on")) render() }, toast: toast
   };
 
   /* keep the hub card fresh whenever the Account page opens or returns to the hub */
