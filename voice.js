@@ -52,9 +52,13 @@
     if (cache[ck]) return Promise.resolve(mk(cache[ck]));
     var c = new AbortController(), t = setTimeout(function () { c.abort() }, 15000);
     return fetch(BASE + "/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, signal: c.signal, body: JSON.stringify({ text: text, model: v.m, voice: v.sp, lang: v.lang }) })
-      .then(function (r) { clearTimeout(t); var ct = r.headers.get("content-type") || ""; if (!r.ok || ct.indexOf("audio") < 0) throw new Error("tts " + r.status); return r.blob() })
-      .then(function (b) { var keys = Object.keys(cache); if (keys.length > 30) delete cache[keys[0]]; cache[ck] = b; return mk(b) })
-      .catch(function () { clearTimeout(t); down = Date.now() + 5 * 60 * 1000; if (!warned) { warned = true; try { W.showToast && W.showToast("Online voices are unavailable right now. Using this device's voice.", "info") } catch (e) { } } return null });
+      .then(function (r) { clearTimeout(t); var ct = r.headers.get("content-type") || ""; if (!r.ok || ct.indexOf("audio") < 0) { return r.text().then(function (tx) { throw new Error("HTTP " + r.status + (tx ? " · " + tx.replace(/\s+/g, " ").slice(0, 70) : "")) }) } return r.blob() })
+      .then(function (b) { var keys = Object.keys(cache); if (keys.length > 30) delete cache[keys[0]]; cache[ck] = b; down = 0; return mk(b) })
+      .catch(function (e) {
+        clearTimeout(t); down = Date.now() + 5 * 60 * 1000; S.err = String((e && e.message) || e);
+        if (o.loud || !warned) { warned = true; try { W.showToast && W.showToast("Online voice failed — " + S.err, "info") } catch (x) { } }
+        return null;
+      });
   }
   function mk(b) { var a = new Audio(URL.createObjectURL(b)); a.playbackRate = S.rate; return a }
   function play(a, end) {
@@ -82,7 +86,7 @@
     var v = find(id);
     if (v) {
       var line = v.m === "aura" ? "Hi, I'm " + v.n + ". This is how I sound." : { es: "Hola, así suena mi voz.", fr: "Bonjour, voici ma voix.", zh: "你好,这是我的声音。", ja: "こんにちは、これが私の声です。", ko: "안녕하세요, 제 목소리예요." }[v.lang];
-      down = 0; fetchAudio(line, { voice: v }).then(function (a) { if (a) play(a) });
+      down = 0; fetchAudio(line, { voice: v, loud: true }).then(function (a) { if (a) play(a) });
       return;
     }
     if (id === "auto") { speakDevice("Hi, this is how I sound.", null); return }
