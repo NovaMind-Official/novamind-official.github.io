@@ -241,16 +241,27 @@
     if (!raw || !W.speechSynthesis) { return end() }
     st.speaking = true; mode("say"); say(raw.length > 140 ? raw.slice(0, 137) + "…" : raw, 0);
     stopRec(); st.gen++;
-    var keep = 0;
-    try {
-      speechSynthesis.cancel();
-      var u = new SpeechSynthesisUtterance(raw), L = /[؀-ۿ]/.test(raw) ? "fa-IR" : "en-US";
-      u.lang = L; var v = pickVoice(L); if (v) u.voice = v; u.rate = 1.02;
-      u.onend = u.onerror = function () { setTimeout(end, 250) };
-      speechSynthesis.speak(u);
-      keep = setInterval(function () { if (!speechSynthesis.speaking) { end() } }, 1500);
-      setTimeout(end, 45000);
-    } catch (e) { end() }
+    var keep = 0, L = /[؀-ۿ]/.test(raw) ? "fa-IR" : "en-US";
+    function sys() {
+      try {
+        speechSynthesis.cancel();
+        var u = new SpeechSynthesisUtterance(raw);
+        u.lang = L; var v = (W.PHR_VOICE && PHR_VOICE.pickDevice(L)) || pickVoice(L); if (v) { u.voice = v; u.lang = v.lang } u.rate = 1.02 * (W.PHR_VOICE ? PHR_VOICE.rate() : 1);
+        u.onend = u.onerror = function () { setTimeout(end, 250) };
+        speechSynthesis.speak(u);
+        keep = setInterval(function () { if (!speechSynthesis.speaking) { end() } }, 1500);
+        setTimeout(end, 45000);
+      } catch (e) { end() }
+    }
+    if (W.PHR_VOICE && PHR_VOICE.wants(raw, L)) {
+      PHR_VOICE.fetch(raw, { lang: L }).then(function (a) {
+        if (fin) return;
+        if (!a) return sys();
+        if (!st.speaking) return;
+        PHR_VOICE.play(a, function () { setTimeout(end, 250) });
+        setTimeout(end, 60000);
+      });
+    } else sys();
   }
 
   var STOP = /^(?:stop listening|turn off|go to sleep|goodbye|bye|گوش نده|خاموش شو|خاموش|برو بخواب|خداحافظ)/i;
@@ -266,7 +277,7 @@
   }
   function off(keep) {
     st.on = false; clearTimeout(st.cmdTimer); stopRec(); st.gen++; lock(false);
-    try { speechSynthesis.cancel() } catch (e) {}
+    try { speechSynthesis.cancel() } catch (e) {} try { W.PHR_VOICE && PHR_VOICE.stop() } catch (e) {}
     st.speaking = false; mode("off"); hideCap(); armed = false; if (dot) { dot.onclick = null; dot.style.pointerEvents = "" } if (!keep) LS("phr_wake_on", "0");
   }
   /* persisted switch (Settings → Hey Phraortes). No on-screen button: after a reload the first touch anywhere starts listening. */

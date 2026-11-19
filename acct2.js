@@ -25,6 +25,7 @@
     bars: ic('<path d="M5 20V11M12 20V4M19 20v-6"/>'),
     key: ic('<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/>'),
     palette: ic('<circle cx="12" cy="12" r="9"/><circle cx="8.5" cy="10" r="1.2"/><circle cx="12" cy="7.5" r="1.2"/><circle cx="15.5" cy="10" r="1.2"/><path d="M12 21a2.5 2.5 0 010-5h2"/>'),
+    wave: ic('<path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2"/>'),
     bell: ic('<path d="M6 16V11a6 6 0 0112 0v5l2 2H4z"/><path d="M10 21h4"/>')
   };
   /* id, title, icon, colour, keywords, opener */
@@ -34,6 +35,7 @@
     { id: "privacy", t: "Privacy", i: "lock", c: "#8a70d6", k: "memory data backup export restore activity shadow delete", open: function () { W.acOpen("privacy") } },
     { id: "agent", t: "Agent", i: "mic", c: "#3dae7b", k: "voice wake word routines habits shadow pre-mortem console memory", open: function () { W.acOpen("agent") } },
     { id: "themes", t: "Themes", i: "palette", c: "#e0795a", k: "theme themes colour color accent dark ember ocean aurora rank level", open: function () { W.PHR_LOOK && W.PHR_LOOK.open("themes") } },
+    { id: "voice", t: "Voice", i: "wave", c: "#5aa0c9", k: "voice speech tts speak sound call agent aura luna orion", open: function () { W.PHR_VOICE && W.PHR_VOICE.open() } },
     { id: "look", t: "Appearance", i: "brush", c: "#c96a9d", k: "theme colour color accent dark light text motion rank look", open: function () { W.acOpen("settings") } },
     { id: "plan", t: "Plan", i: "card", c: "#d6aa45", k: "billing upgrade pro plus max pay subscription", open: function () { W.acOpen("billing") } },
     { id: "usage", t: "Usage", i: "bars", c: "#4f87d9", k: "limit messages tokens quota left", open: function () { W.acOpen("usage") } },
@@ -50,6 +52,7 @@
         case "agent": return W.PHR_WAKE && W.PHR_WAKE.enabled() ? "Listening" : "Off";
         case "themes": var tn = D.body.dataset.theme || "obsidian", th = W.PHR_LOOK && W.PHR_LOOK.themes.filter(function (x) { return x[0] === tn })[0]; return th ? th[1] : tn;
         case "look": return "Text, motion";
+        case "voice": return W.PHR_VOICE ? W.PHR_VOICE.label() : "Automatic";
         case "plan": return PN[planId()] || "Free";
         case "usage": var l = $("#ac2-left"), ll = $("#ac2-leftl"); return l ? (l.textContent + " " + (ll ? ll.textContent : "")).trim() : "";
         case "keys": var n = W.PHR_KEYS ? W.PHR_KEYS.all().length : 0; return n ? n + (n === 1 ? " key" : " keys") : "None yet";

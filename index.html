@@ -73,6 +73,7 @@
 <script src="keys.js" defer></script>
 <script src="premortem.js" defer></script>
 <script src="shadow.js" defer></script>
+<script src="voice.js"></script>
 <script src="acct2.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
@@ -5615,6 +5616,7 @@ function spVoicesFor(lang){
   return all.filter(v=>(v.lang||"").toLowerCase().replace("_","-").startsWith(pre)).sort((a,b)=>spScore(b)-spScore(a));
 }
 function spPickVoice(lang){
+  {const _pv=window.PHR_VOICE&&PHR_VOICE.pickDevice(lang);if(_pv)return _pv}
   const list=spVoicesFor(lang).filter(v=>spScore(v)>-100);if(!list.length)return null;
   let saved="";try{saved=localStorage.getItem("phraortes_voice_"+lang.split("-")[0])||""}catch(e){}
   return list.find(v=>v.name===saved)||list[0];
@@ -5667,6 +5669,14 @@ function spSpeak(){
   try{speechSynthesis.cancel()}catch(e){}
   setTimeout(()=>{
     if(tok!==SP.tok||!SP.active||SP.paused)return;
+    if(window.PHR_VOICE){PHR_VOICE.stop();if(PHR_VOICE.wants(SP.chunks[SP.i],SP.lang)){
+      const _i=SP.i;PHR_VOICE.fetch(SP.chunks[_i],{lang:SP.lang}).then(a=>{
+        if(tok!==SP.tok||!SP.active||SP.paused)return;
+        if(!a){SP.__dev=true;return spSpeak()}
+        SP.voiceName=PHR_VOICE.label();spUpdate();
+        PHR_VOICE.play(a,()=>{if(tok!==SP.tok)return;SP.i++;spUpdate();spSpeak()});
+        const nx=SP.chunks[_i+1];if(nx)PHR_VOICE.fetch(nx,{lang:SP.lang});
+      });return}}
     const u=new SpeechSynthesisUtterance(SP.chunks[SP.i]);
     const v=spPickVoice(SP.lang);if(v){u.voice=v;SP.voiceName=v.name}
     u.lang=v?v.lang:(SP.lang==="fa"?"fa-IR":"en-US");u.rate=SP.rate;u.pitch=1;
@@ -5678,7 +5688,7 @@ function spSpeak(){
 }
 function spTogglePause(){
   if(!SP.active)return;SP.paused=!SP.paused;haptic("light");
-  if(SP.paused){SP.tok++;try{speechSynthesis.cancel()}catch(e){}spUpdate()}else{spUpdate();spSpeak()}
+  if(SP.paused){SP.tok++;try{speechSynthesis.cancel()}catch(e){}window.PHR_VOICE&&PHR_VOICE.stop();spUpdate()}else{spUpdate();spSpeak()}
 }
 function spCycleRate(){
   const r=[0.9,1,1.15,1.3];SP.rate=r[(r.indexOf(SP.rate)+1)%r.length];
@@ -5709,7 +5719,7 @@ function toggleSpeech(textId,btnId){
   spSpeak();
 }
 function stopSpeech(){
-  SP.tok++;SP.active=false;SP.paused=false;try{speechSynthesis.cancel()}catch(e){}
+  SP.tok++;SP.active=false;SP.paused=false;try{speechSynthesis.cancel()}catch(e){}window.PHR_VOICE&&PHR_VOICE.stop();
   const bid=SP.btnId;SP.btnId=null;
   if(bid)resetSpeech(bid);
   const b=document.getElementById("speech-bar");if(b)b.classList.remove("show","paused");
@@ -6344,6 +6354,7 @@ function auraStripForSpeech(raw){
 }
 function auraScriptLang(t){const T=[[/[\u0600-\u06FF]/,"fa-IR"],[/[\u0400-\u04FF]/,"ru-RU"],[/[\u3040-\u30FF]/,"ja-JP"],[/[\uAC00-\uD7AF]/,"ko-KR"],[/[\u4E00-\u9FFF]/,"zh-CN"],[/[\u0900-\u097F]/,"hi-IN"],[/[\u0590-\u05FF]/,"he-IL"]];for(const[r,l]of T)if(r.test(t))return l;const d=(auraLang||"en-US");return/^(fa|ru|ja|ko|zh|hi|he)/i.test(d)?"en-US":d}
 function auraPickVoice(lang,p){
+  const _pv=window.PHR_VOICE&&PHR_VOICE.pickDevice(lang);if(_pv)return _pv;
   let vs=[];try{vs=speechSynthesis.getVoices()||[]}catch(e){}
   const base=lang.split("-")[0],cand=vs.filter(v=>v.lang&&(v.lang===lang||v.lang.startsWith(base)));
   for(const n of (p.tts.pick||[])){const v=cand.find(v=>v.name.toLowerCase().includes(n));if(v)return v}
@@ -6366,7 +6377,7 @@ function auraSpeak(rawText){
   const kar=auraKaraoke(spoken);
   let moved=false,fb=0;
   const next=()=>{if(moved||tok!==auraTok||gen!==window.__auraGen)return;moved=true;clearInterval(fb);kar.done();if(window.__auraActive){AU.kick=0;auraListenTurn()}};
-  const lang=auraScriptLang(spoken),rate=p.tts.rate;
+  const lang=auraScriptLang(spoken),rate=p.tts.rate*(window.PHR_VOICE?PHR_VOICE.rate():1);
   const estMs=Math.min(60000,3000+spoken.length*(95/rate));
   const startFallback=()=>{const t0=Date.now();fb=setInterval(()=>{if(tok!==auraTok){clearInterval(fb);return}kar.hi(Math.min(spoken.length-1,Math.floor((Date.now()-t0)/estMs*spoken.length)))},120)};
   const useSystem=()=>{
