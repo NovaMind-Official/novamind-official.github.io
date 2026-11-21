@@ -75,6 +75,8 @@
 <script src="premortem.js" defer></script>
 <script src="council.js" defer></script>
 <script src="exportfile.js" defer></script>
+<script src="toolsmenu.js" defer></script>
+<script src="smart.js" defer></script>
 <script src="shadow.js" defer></script>
 <script src="voice.js"></script>
 <script src="acct2.js" defer></script>
@@ -1542,7 +1544,7 @@ footer{padding-bottom:max(22px,calc(env(safe-area-inset-bottom,0px) + 8px))}
 
 /* ═══════════ v2 · HEADER "MORE" MENU ═══════════ */
 /* search / what's new / pinned moved out of the crowded header into one native-style popover; files + account stay put */
-#hdr-more-btn{position:relative}
+#hdr-more-btn{display:none!important}
 #hdr-more-btn.has-dot::after{content:"";position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:var(--p);box-shadow:0 0 0 2px var(--bg,#0f0a06)}
 #hdr-menu.drop-menu{left:auto;right:12px;bottom:auto;top:calc(54px + env(safe-area-inset-top,0px));width:min(250px,calc(100vw - 24px));padding:6px;gap:2px;border-radius:20px}
 #hdr-menu .btn-icon{position:relative;width:100%;justify-content:flex-start;gap:12px;padding:10px 10px;border-radius:14px;font-size:14.5px;font-weight:500;color:rgba(255,255,255,0.92);transition:background .15s}
@@ -3505,24 +3507,26 @@ function toggleFolderCollapse(id){
 
 // ═══ WHAT'S NEW — illustrated changelog ═══
 const WHATS_NEW=[
-  {id:"agent-tools",date:"This week",title:"Phraortes can now act, not just chat",desc:"Real-time web search, live weather, crypto prices, reading full web pages, and its own file Workspace — all as genuine tool calls, with a live step-by-step trace so you watch it work.",
-    svg:`<svg viewBox="0 0 56 56"><rect width="56" height="56" rx="14" fill="#C9722E"/><circle cx="28" cy="28" r="14" fill="none" stroke="#F5EEDD" stroke-width="2.2"/><circle cx="28" cy="28" r="3" fill="#F5EEDD"/><line x1="28" y1="14" x2="28" y2="18" stroke="#F5EEDD" stroke-width="2.2" stroke-linecap="round"/><line x1="28" y1="38" x2="28" y2="42" stroke="#F5EEDD" stroke-width="2.2" stroke-linecap="round"/><line x1="14" y1="28" x2="18" y2="28" stroke="#F5EEDD" stroke-width="2.2" stroke-linecap="round"/><line x1="38" y1="28" x2="42" y2="28" stroke="#F5EEDD" stroke-width="2.2" stroke-linecap="round"/></svg>`},
-  {id:"design-gen",date:"This week",title:"Live design generation, right in chat",desc:"Ask for a logo, poster, banner, or QR code — a real, professional visual renders instantly, downloadable as SVG or PNG. No separate design tool needed.",
-    svg:`<svg viewBox="0 0 56 56"><rect width="56" height="56" rx="14" fill="#E8934A"/><rect x="14" y="14" width="28" height="28" rx="4" fill="none" stroke="#1a1206" stroke-width="2.2"/><circle cx="22" cy="23" r="3" fill="#1a1206"/><path d="M14 34l8-8 6 6 8-10 6 6" fill="none" stroke="#1a1206" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`},
-  {id:"personas",date:"This week",title:"Build your own custom assistants",desc:"Give Phraortes a new personality and instructions — an accountant, a language tutor, a strict code reviewer — save it, and switch between your assistants anytime.",
-    svg:`<svg viewBox="0 0 56 56"><rect width="56" height="56" rx="14" fill="#8B5A8C"/><circle cx="28" cy="22" r="8" fill="#F5EEDD"/><path d="M14 44v-2a14 14 0 0 1 28 0v2" fill="none" stroke="#F5EEDD" stroke-width="2.2" stroke-linecap="round"/></svg>`},
-  {id:"excel",date:"This week",title:"Real Excel & CSV understanding",desc:"Upload a spreadsheet and Phraortes actually parses every sheet — rows, columns, and all — instead of seeing a blind file. Built for real work, not just chat.",
-    svg:`<svg viewBox="0 0 56 56"><rect width="56" height="56" rx="14" fill="#4A6741"/><rect x="15" y="14" width="26" height="28" rx="3" fill="none" stroke="#F5EEDD" stroke-width="2"/><line x1="15" y1="22" x2="41" y2="22" stroke="#F5EEDD" stroke-width="1.6"/><line x1="15" y1="30" x2="41" y2="30" stroke="#F5EEDD" stroke-width="1.6"/><line x1="25" y1="14" x2="25" y2="42" stroke="#F5EEDD" stroke-width="1.6"/></svg>`},
-  {id:"folders-personal",date:"This week",title:"Folders, chat icons & real memory",desc:"Organize sessions into color-coded folders, give any chat its own icon, and Phraortes now actively remembers — and recalls — real facts about you across every conversation.",
-    svg:`<svg viewBox="0 0 56 56"><rect width="56" height="56" rx="14" fill="#2E8B7A"/><path d="M14 20a2 2 0 0 1 2-2h8l3 3h13a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H16a2 2 0 0 1-2-2z" fill="#F5EEDD"/></svg>`},
+  {id:"smart-agent",date:"Nov 21",title:"A smarter, safer agent",desc:"It now acts first and only asks when it must, shows a confirm card before anything risky, offers Undo after changes and reminders, and checks back on plans you mention (\"Did you change the price?\").",
+    svg:`<svg viewBox="0 0 56 56"><rect width="56" height="56" rx="14" fill="#7c5cdc"/><path d="M16 30l8 8 16-18" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M40 14v8h-8" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/></svg>`},
+  {id:"council",date:"Nov 20",title:"The Council: four minds, one verdict",desc:"Type “council: your question”. Four minds with opposed views answer on a round table, then a judge shows where they truly disagree and what to do next.",
+    svg:`<svg viewBox="0 0 56 56"><rect width="56" height="56" rx="14" fill="#E8C468"/><circle cx="28" cy="28" r="6" fill="#1a1205"/><circle cx="28" cy="13" r="4" fill="#1a1205"/><circle cx="43" cy="28" r="4" fill="#1a1205"/><circle cx="28" cy="43" r="4" fill="#1a1205"/><circle cx="13" cy="28" r="4" fill="#1a1205"/></svg>`},
+  {id:"save-file",date:"Nov 20",title:"Save any answer as a file",desc:"Open the ⋯ menu under an answer and choose Save as file. Get Word, Excel (from tables), PDF or Markdown in one tap. Built on your device, nothing uploaded.",
+    svg:`<svg viewBox="0 0 56 56"><rect width="56" height="56" rx="14" fill="#4a86ff"/><path d="M20 12h12l8 8v24H20z" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M32 12v8h8M28 28v9M24 34l4 4 4-4" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`},
+  {id:"tools-v3",date:"Nov 20",title:"A faster tools menu",desc:"Search every tool, jump back to your recent ones, filter by category, and reach chat search and pinned messages from the same place.",
+    svg:`<svg viewBox="0 0 56 56"><rect width="56" height="56" rx="14" fill="#3fbf7f"/><circle cx="25" cy="25" r="9" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M32 32l9 9" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`},
+  {id:"agent-dot",date:"Nov 19",title:"The agent only listens when you say so",desc:"Tap the small dot or use the wake word. Touching the screen no longer starts it, and the caption disappears when you turn it off.",
+    svg:`<svg viewBox="0 0 56 56"><rect width="56" height="56" rx="14" fill="#2fa596"/><circle cx="28" cy="28" r="5" fill="#fff"/><circle cx="28" cy="28" r="12" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".6"/><circle cx="28" cy="28" r="19" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".3"/></svg>`},
+  {id:"themes-28",date:"Nov 19",title:"28 themes in their own menu",desc:"Forest, Sakura, Sunset, Midnight, Vapor, Cyber, Nebula and more. Open Account, then Themes. Some unlock with your level or plan.",
+    svg:`<svg viewBox="0 0 56 56"><rect width="56" height="56" rx="14" fill="#e0795a"/><circle cx="28" cy="28" r="15" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="22" cy="24" r="2.4" fill="#fff"/><circle cx="29" cy="21" r="2.4" fill="#fff"/><circle cx="35" cy="26" r="2.4" fill="#fff"/></svg>`},
 ];
+
 function checkWhatsNew(){
   const lastSeen=localStorage.getItem("phraortes_whatsnew_seen");
   const hasUnseen=lastSeen!==WHATS_NEW[0].id;
   const dot=document.getElementById("whats-new-dot");
   if(dot)dot.style.display=hasUnseen?"block":"none";
   if(hasUnseen){
-    setTimeout(()=>openWhatsNew(true),1400); // small delay so it doesn't collide with initial load
   }
 }
 function openWhatsNew(isAuto){

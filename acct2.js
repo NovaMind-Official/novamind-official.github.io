@@ -25,12 +25,14 @@
     bars: ic('<path d="M5 20V11M12 20V4M19 20v-6"/>'),
     key: ic('<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/>'),
     palette: ic('<circle cx="12" cy="12" r="9"/><circle cx="8.5" cy="10" r="1.2"/><circle cx="12" cy="7.5" r="1.2"/><circle cx="15.5" cy="10" r="1.2"/><path d="M12 21a2.5 2.5 0 010-5h2"/>'),
+    spark: ic('<path d="M12 3l2 5.5L19.5 10 14 12l-2 5.5L10 12 4.5 10 10 8.5z"/><path d="M19 16v4M17 18h4"/>'),
     wave: ic('<path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2"/>'),
     bell: ic('<path d="M6 16V11a6 6 0 0112 0v5l2 2H4z"/><path d="M10 21h4"/>')
   };
   /* id, title, icon, colour, keywords, opener */
   var SECT = [
     { id: "account", t: "Account", i: "user", c: "#4a78c9", k: "profile name email avatar", open: function () { W.acOpen("profile") } },
+    { id: "new", t: "What's new", i: "spark", c: "#e8c468", k: "new features updates changelog latest release", open: function () { try { W.openWhatsNew(false) } catch (e) { } } },
     { id: "security", t: "Sign-in & security", i: "shield", c: "#2fa596", k: "google login password sign out logout secure", open: function () { W.acOpen("security") } },
     { id: "privacy", t: "Privacy", i: "lock", c: "#8a70d6", k: "memory data backup export restore activity shadow delete", open: function () { W.acOpen("privacy") } },
     { id: "agent", t: "Agent", i: "mic", c: "#3dae7b", k: "voice wake word routines habits shadow pre-mortem console memory", open: function () { W.acOpen("agent") } },
@@ -47,6 +49,7 @@
       var nm = ($("#ac-user-name-big") || {}).textContent || "", signed = nm && !/not signed in/i.test(nm);
       switch (id) {
         case "account": return signed ? nm.split(" ")[0] : "Guest";
+        case "new": try { return localStorage.getItem("phraortes_whatsnew_seen") !== WHATS_NEW[0].id ? "NEW" : "Latest" } catch (e) { return "Latest" }
         case "security": return signed ? "Google" : "Not signed in";
         case "privacy": return W.PHR_SHADOW && W.PHR_SHADOW.enabled() ? "Shadow on" : "Private";
         case "agent": return W.PHR_WAKE && W.PHR_WAKE.enabled() ? "Listening" : "Off";
