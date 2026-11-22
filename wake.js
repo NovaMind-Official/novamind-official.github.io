@@ -134,6 +134,9 @@
     r.onerror = function (e) {
       if (g !== st.gen) return;
       if (e.error === "not-allowed" || e.error === "service-not-allowed") { say(fa() ? "اجازه میکروفون داده نشد. از تنظیمات سافاری فعالش کن." : "Microphone permission denied. Enable it in Safari settings.", 5000); off(true); arm(); return }
+      if (e.error === "no-speech" || e.error === "aborted") return;
+      if (e.error === "audio-capture") { say(fa() ? "میکروفون پیدا نشد یا دست برنامهٔ دیگری است." : "No microphone available, or another app is using it.", 5000); off(true); arm(); return }
+      if (e.error === "network") { st.fails += 2; if (st.fails > 4) { say(fa() ? "شنیدن صدا به اینترنت نیاز دارد و وصل نشد. اتصال را بررسی کن (در حالت اپ نصب‌شده روی آیفون ممکن است کار نکند؛ در سافاری باز کن)." : "Speech needs a connection and couldn't reach it. Check your network (an installed home-screen app on iPhone may not support it; open in Safari).", 6000); off(true); arm(); return } }
       st.fails++;
     };
     r.onend = function () {

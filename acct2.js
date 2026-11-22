@@ -261,7 +261,7 @@
         var t = $("#ac2-t"); if (t) t.textContent = tab === "security" ? "Sign-in & security" : "Privacy";
       }
       var s = SECT.filter(function (x) { return x.id === tab || (tab === "profile" && x.id === "account") || (tab === "settings" && x.id === "look") || (tab === "billing" && x.id === "plan") || (tab === "notifications" && x.id === "notif") })[0];
-      if (s) { var pg = $("#account-page"); pg.style.setProperty("--x3a", s.c); pg.dataset.x3 = "1" }
+      /* neutral page: no per-section tint */
       return r;
     };
     W.acOpen.__x3 = 1;
