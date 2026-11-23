@@ -35,6 +35,8 @@
     bell: ic('<path d="M6 16V11a6 6 0 0112 0v5l2 2H4z"/><path d="M10 21h4"/>'),
     mic: ic('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/>'),
     key: ic('<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/>'),
+    mind: ic('<path d="M9 3a4 4 0 00-4 4v1a3 3 0 00-1 5 3.5 3.5 0 004 4.5h2V3zM15 3a4 4 0 014 4v1a3 3 0 011 5 3.5 3.5 0 01-4 4.5h-2V3z"/>'),
+    room: ic('<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/>'),
     spark: ic('<path d="M12 3l2 5.5L19.5 10 14 12l-2 5.5L10 12 4.5 10 10 8.5z"/>'),
     out: ic('<path d="M9 4H6a2 2 0 00-2 2v12a2 2 0 002 2h3M16 8l4 4-4 4M20 12H9"/>'),
     google: ic('<path d="M20 12a8 8 0 11-2.3-5.6M12 12h8"/>'),
@@ -55,16 +57,18 @@
     voice: function () { W.PHR_VOICE && W.PHR_VOICE.open() },
     notif: function () { W.acOpen("notifications") },
     agent: function () { W.acOpen("agent") },
-    keys: function () { W.PHR_AX && W.PHR_AX.open("keys") },
+    minds: function () { W.PHR_SHARE && W.PHR_SHARE.minds() },
+    rooms: function () { W.PHR_SHARE && W.PHR_SHARE.rooms() },
     news: function () { try { W.openWhatsNew(false) } catch (e) { } }
   };
   var GROUPS = [
+    { t: "Create & share", rows: [["minds", "Minds", "mind"], ["rooms", "Rooms", "room"]] },
     { t: "Account", rows: [["profile", "Profile", "user"], ["plan", "Plan", "card"], ["usage", "Usage", "bars"], ["security", "Sign-in & security", "shield"]] },
     { t: "App", rows: [["look", "Appearance", "brush"], ["themes", "Themes", "palette"], ["voice", "Voice", "wave"], ["notif", "Notifications", "bell"]] },
-    { t: "Assistant", rows: [["agent", "Agent", "mic"], ["keys", "Keys", "key"], ["privacy", "Data & privacy", "lock"]] },
+    { t: "Assistant", rows: [["agent", "Agent", "mic"], ["privacy", "Data & privacy", "lock"]] },
     { t: "About", rows: [["news", "What’s new", "spark"]] }
   ];
-  var KEYW = { profile: "name email avatar", plan: "billing upgrade subscription pay pro plus max", usage: "limit messages tokens quota", security: "google login sign out password", look: "dark light text motion size", themes: "theme colour color accent rank level", voice: "speech tts sound call", notif: "alerts reminders push", agent: "wake word routines habits shadow console", keys: "codeword shortcut macro", privacy: "memory backup export delete activity", news: "updates changelog features" };
+  var KEYW = { profile: "name email avatar", plan: "billing upgrade subscription pay pro plus max", usage: "limit messages tokens quota", security: "google login sign out password", look: "dark light text motion size", themes: "theme colour color accent rank level", voice: "speech tts sound call", notif: "alerts reminders push", agent: "wake word routines habits shadow console", minds: "assistant persona share link create agent character", rooms: "group chat team family friends invite ai", privacy: "memory backup export delete activity", news: "updates changelog features" };
 
   function val(id) {
     try {
@@ -77,7 +81,8 @@
         case "themes": var tn = D.body.dataset.theme || "obsidian", th = W.PHR_LOOK && W.PHR_LOOK.themes.filter(function (x) { return x[0] === tn })[0]; return th ? th[1] : "";
         case "voice": return W.PHR_VOICE ? W.PHR_VOICE.label() : "";
         case "agent": return W.PHR_WAKE && W.PHR_WAKE.enabled() ? "Listening" : "Off";
-        case "keys": var n = W.PHR_KEYS ? W.PHR_KEYS.all().length : 0; return n ? String(n) : "";
+        case "minds": var mn = W.PHR_SHARE ? W.PHR_SHARE.count() : 0; return mn ? String(mn) : "New";
+        case "rooms": var ur = W.PHR_SHARE ? W.PHR_SHARE.unread() : 0; return ur ? String(ur) : "";
         case "privacy": return W.PHR_SHADOW && W.PHR_SHADOW.enabled() ? "Shadow on" : "";
         case "news": try { return localStorage.getItem("phraortes_whatsnew_seen") !== WHATS_NEW[0].id ? "New" : "" } catch (e) { return "" }
       }
@@ -91,6 +96,7 @@
     s.textContent = [
       /* hide the old stack, neutral page backgrounds */
       "#x3{display:none!important}",
+      "#account-hub{display:none!important}",
       "#account-page[data-x3][data-view]:not([data-view=hub]){background-image:none!important}",
       "#ac2-bar .t{display:block!important}",
       "#ac2-bar{background:linear-gradient(180deg,var(--bg),transparent)!important;pointer-events:auto;height:auto!important}",
@@ -147,7 +153,7 @@
     var sg = $("#x4-in"); if (sg) sg.style.display = u.signed ? "none" : "flex";
     D.querySelectorAll("#x4 .x4-r[data-id]").forEach(function (r) {
       var id = r.dataset.id; if (id === "out") { r.style.display = u.signed ? "" : "none"; return }
-      var v = r.querySelector(".v"), t = val(id); if (v) { v.textContent = t; v.classList.toggle("new", id === "news" && t === "New") }
+      var v = r.querySelector(".v"), t = val(id); if (v) { v.textContent = t; v.classList.toggle("new", (id === "news" || id === "minds") && t === "New" || (id === "rooms" && !!t)) }
     });
     paintSide();
   }

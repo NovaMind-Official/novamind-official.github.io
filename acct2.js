@@ -211,6 +211,13 @@
     h = D.createElement("div"); h.id = "actab-" + id; h.style.display = "none"; body.appendChild(h); return h;
   }
   function tg(on, fn) { return '<button type="button" class="tg' + (on ? " on" : "") + '" onclick="' + fn + '" aria-pressed="' + (on ? "true" : "false") + '"></button>' }
+  function apiBlock() {
+    var pl = "free"; try { pl = typeof activePlan !== "undefined" ? activePlan : "free" } catch (e) { }
+    var has = pl === "pro" || pl === "ultimate";
+    return '<div class="sec">DEVELOPER API</div><div class="gl"><div class="rw"><div>API access<small>' + (has ? "Included in your plan. Personal API keys for your own apps and scripts will appear here when the API opens." : "Personal API keys for your own apps and scripts. Included with Pro and Max.") + "</small></div>" +
+      (has ? '<span class="bt" style="opacity:.55;pointer-events:none">Soon</span>' : '<button class="bt" onclick="try{openPremium(\'pro\')}catch(e){}">See plans</button>') + "</div>" +
+      '<div class="rw"><div>Your API keys<small>' + (has ? "None yet. Keys are shown once and can be revoked any time." : "Locked on your current plan") + "</small></div></div></div>";
+  }
   function renderSecurity() {
     var h = pageHost("security"); if (!h) return;
     var nm = ($("#ac-user-name-big") || {}).textContent || "", em = ($("#ac-user-email-big") || {}).textContent || "", signed = nm && !/not signed in/i.test(nm);
@@ -219,6 +226,7 @@
       '<div class="rw"><div>Password<small>Not used. Google handles your sign-in</small></div></div></div>' +
       '<div class="sec">THIS DEVICE</div><div class="gl"><div class="rw"><div>Chats and memory<small>Stored on this device only</small></div></div><div class="rw"><div>Sign-in data<small>Kept in this browser until you sign out</small></div></div><div class="rw"><div>What leaves the device<small>Only the message you send to the AI</small></div></div></div>' +
       (signed ? '<button class="full r" onclick="PHR_ACCT2.out()">Sign out of this device</button>' : "") +
+      apiBlock() +
       '<div class="note">Two-step verification and device lists are managed in your Google account settings.</div></div>';
   }
   function renderPrivacy() {
