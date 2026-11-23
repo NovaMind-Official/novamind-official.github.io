@@ -83,6 +83,7 @@
 <script src="acct3.js" defer></script>
 <script src="code2.js" defer></script>
 <script src="share.js" defer></script>
+<script src="fx2.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -4935,10 +4936,11 @@ async function fetchAI(messages,useVision,isCodeQuery,opts){
   const FREE_ANY="openrouter/free";
   let orCandidates;
   if(useVision){orCandidates=["nvidia/nemotron-3.5-super-vl:free","google/gemma-4-31b-it:free","dots-studio/dots-3-note-preview:free","nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",FREE_ANY]}
-  else if(activeModel==="2.7"){orCandidates=["nvidia/nemotron-3-ultra-550b-a55b:free","nvidia/nemotron-3.5-super-vl:free","google/gemma-4-31b-it:free","xingchen-agi/xing4.0-29b-a4b:free",FREE_ANY]}
-  else if(isCodeQuery||activeModel==="2.6"){orCandidates=["google/gemma-4-26b-a4b-it:free","cohere/north-mini-code:free","nvidia/nemotron-3.5-super-vl:free","nvidia/nemotron-3-ultra-550b-a55b:free",FREE_ANY]}
-  else if(activeModel==="2.5"){orCandidates=["nvidia/nemotron-3.5-super-vl:free","google/gemma-4-31b-it:free","nvidia/nemotron-3-ultra-550b-a55b:free","dots-studio/dots-3-note-preview:free",FREE_ANY]}
-  else{orCandidates=["google/gemma-4-26b-a4b-it:free","nvidia/nemotron-3.5-lightning:free","xingchen-agi/xing4.0-29b-a4b:free","recursive/flint-v1.0:free",FREE_ANY]}
+  else if(activeModel==="2.7"){orCandidates=["nvidia/nemotron-3-ultra-550b-a55b:free","baidu/ernie-5.5-flash-preview:free","nvidia/nemotron-3.5-super-vl:free","particle-ai/particle-1:free","google/gemma-4-31b-it:free","xingchen-agi/xing4.0-29b-a4b:free",FREE_ANY]}
+  else if(isCodeQuery||activeModel==="2.6"){orCandidates=["recursive/flint-v1.0:free","particle-ai/particle-1:free","nvidia/nemotron-3-ultra-550b-a55b:free","baidu/ernie-5.5-flash-preview:free","google/gemma-4-26b-a4b-it:free","cohere/north-mini-code:free","nvidia/nemotron-3.5-super-vl:free","nvidia/nemotron-3-ultra-550b-a55b:free",FREE_ANY]}
+  else if(activeModel==="2.5"){orCandidates=["nvidia/nemotron-3.5-super-vl:free","baidu/ernie-5.5-flash-preview:free","nvidia/nemotron-3.5-lightning:free","google/gemma-4-31b-it:free","nvidia/nemotron-3-ultra-550b-a55b:free","dots-studio/dots-3-note-preview:free",FREE_ANY]}
+  else{orCandidates=["nvidia/nemotron-3.5-lightning:free","google/gemma-4-26b-a4b-it:free","inclusionai/ling-3.2-flash:free","xingchen-agi/xing4.0-29b-a4b:free","recursive/flint-v1.0:free",FREE_ANY]}
+  orCandidates=[...new Set(orCandidates)];
   // Tools only make sense for real chat turns (not vision, not utility calls like title/summary generation).
   // Capped at 8 round-trips — enough for a real multi-step task (search → read a page → save a file →
   // answer) while still guaranteeing a confused model can't loop forever.
