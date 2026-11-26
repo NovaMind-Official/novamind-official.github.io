@@ -112,16 +112,101 @@
   }
   D.addEventListener("visibilitychange", function () { if (!D.hidden && st.on) { lock(true); startRec() } });
 
+
+  /* ---------- Whisper engine (works in the installed iPhone app, where Apple speech is blocked) ---------- */
+  var STT_BASE = (function () { try { return WORKER_BASE_URL } catch (e) { return "https://phraortes-api.esmaeilimatin20.workers.dev" } })();
+  var MIC = null, HALL = /^(thank you\.?|thanks for watching\.?|thanks\.?|you\.?|bye\.?|\.+|…|اشتراک|ترجمه.*)$/i;
+  function standalone() { try { return W.navigator.standalone === true || (W.matchMedia && W.matchMedia("(display-mode: standalone)").matches) } catch (e) { return false } }
+  function useWhisper() { var p = LS("phr_stt"); if (p === "native") return !SR; if (p === "whisper") return true; return !SR || standalone() }
+  function wav16(chunks, rate) {
+    var n = 0, i, j; chunks.forEach(function (c) { n += c.length });
+    var all = new Float32Array(n), o = 0; chunks.forEach(function (c) { all.set(c, o); o += c.length });
+    var ratio = rate / 16000, m = Math.floor(n / ratio), pcm = new Int16Array(m);
+    for (i = 0; i < m; i++) { var p = i * ratio, a = Math.floor(p), f = p - a, v = all[a] * (1 - f) + (all[a + 1] || all[a]) * f; v = Math.max(-1, Math.min(1, v)); pcm[i] = v < 0 ? v * 32768 : v * 32767 }
+    var b = new ArrayBuffer(44 + m * 2), d = new DataView(b);
+    function w(off, t) { for (var k = 0; k < t.length; k++) d.setUint8(off + k, t.charCodeAt(k)) }
+    w(0, "RIFF"); d.setUint32(4, 36 + m * 2, true); w(8, "WAVE"); w(12, "fmt "); d.setUint32(16, 16, true); d.setUint16(20, 1, true); d.setUint16(22, 1, true);
+    d.setUint32(24, 16000, true); d.setUint32(28, 32000, true); d.setUint16(32, 2, true); d.setUint16(34, 16, true); w(36, "data"); d.setUint32(40, m * 2, true);
+    for (j = 0; j < m; j++) d.setInt16(44 + j * 2, pcm[j], true);
+    return new Blob([b], { type: "audio/wav" });
+  }
+  function getMic() {
+    if (MIC && MIC.stream && MIC.stream.active) { try { MIC.ctx.state !== "running" && MIC.ctx.resume() } catch (e) {} return Promise.resolve(MIC) }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return Promise.reject({ name: "NotSupported", message: "no mic api" });
+    return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }).then(function (stream) {
+      var Ctx = W.AudioContext || W.webkitAudioContext, ctx = new Ctx();
+      if (ctx.state === "suspended") ctx.resume();
+      var src = ctx.createMediaStreamSource(stream), proc = ctx.createScriptProcessor(2048, 1, 1), sink = ctx.createGain(); sink.gain.value = 0;
+      var M = MIC = { stream: stream, ctx: ctx, src: src, proc: proc, sink: sink, cons: null, nf: .006, pre: [], seg: null, hot: 0, last: 0, t0: 0 };
+      proc.onaudioprocess = function (ev) {
+        var c = M.cons; if (!c || !c._alive) { M.seg = null; M.pre = []; return }
+        var inp = ev.inputBuffer.getChannelData(0), buf = new Float32Array(inp), sum = 0, i, now = Date.now();
+        for (i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+        var rms = Math.sqrt(sum / buf.length), thr = Math.max(.014, M.nf * 3.2), voice = rms > thr;
+        if (!M.seg) {
+          if (!voice) M.nf = M.nf * .985 + rms * .015;
+          M.pre.push(buf); if (M.pre.length > 8) M.pre.shift();
+          M.hot = voice ? M.hot + 1 : 0;
+          if (M.hot >= 2) { M.seg = M.pre.slice(); M.pre = []; M.t0 = now; M.last = now; con("vad", "voice") }
+        } else {
+          M.seg.push(buf); if (voice) M.last = now;
+          if (now - M.last > 800 || now - M.t0 > 9000) {
+            var seg = M.seg, voiced = (M.last - M.t0) / 1000; M.seg = null; M.hot = 0;
+            if (voiced > .3) sendSeg(c, wav16(seg, ctx.sampleRate), voiced);
+          }
+        }
+      };
+      src.connect(proc); proc.connect(sink); sink.connect(ctx.destination);
+      return M;
+    });
+  }
+  function releaseMic() {
+    var M = MIC; MIC = null; if (!M) return;
+    try { M.proc.onaudioprocess = null; M.src.disconnect(); M.proc.disconnect() } catch (e) {}
+    try { M.stream.getTracks().forEach(function (t) { t.stop() }) } catch (e) {}
+    try { M.ctx.close() } catch (e) {}
+  }
+  var inflight = 0;
+  function sendSeg(c, blob, dur) {
+    if (inflight >= 2) return; inflight++;
+    var code = (st.lang || "en-US").split("-")[0];
+    fetch(STT_BASE + "/api/stt?lang=" + code, { method: "POST", headers: { "Content-Type": "audio/wav" }, body: blob })
+      .then(function (r) {
+        if (r.status === 404 || r.status === 405 || r.status === 501) { throw { code: "stt-missing" } }
+        if (r.status === 429) { throw { code: "stt-busy" } }
+        if (!r.ok) throw { code: "stt-fail" };
+        return r.json();
+      })
+      .then(function (j) {
+        inflight--; if (!c._alive) return;
+        var t = String((j && j.text) || "").trim(); if (!t) return;
+        if (dur < 1.8 && HALL.test(t)) return;
+        con("stt", t); c.onresult && c.onresult({ resultIndex: 0, results: [{ 0: { transcript: t }, isFinal: true, length: 1 }] });
+      })
+      .catch(function (e) { inflight--; if (c._alive) c.onerror && c.onerror({ error: (e && e.code) || "network" }) });
+  }
+  function WhisperRec() { this.lang = "en-US"; this.continuous = true; this.interimResults = true; this.maxAlternatives = 1; this.onresult = this.onend = this.onerror = null; this._alive = false }
+  WhisperRec.prototype.start = function () {
+    var self = this; self._alive = true;
+    getMic().then(function (M) { if (!self._alive) return; M.cons = self; M.seg = null; M.pre = []; M.hot = 0 })
+      .catch(function (e) {
+        var den = /NotAllowed|denied|Permission/i.test((e && e.name || "") + (e && e.message || ""));
+        self.onerror && self.onerror({ error: den ? "not-allowed" : "audio-capture" }); self.onend && self.onend();
+      });
+  };
+  WhisperRec.prototype.abort = WhisperRec.prototype.stop = function () { this._alive = false; if (MIC && MIC.cons === this) { MIC.cons = null; MIC.seg = null } };
+  D.addEventListener("visibilitychange", function () { if (!D.hidden && MIC) { try { MIC.ctx.state !== "running" && MIC.ctx.resume() } catch (e) {} } });
+
   /* ---------- recognition ---------- */
   function stopRec() {
     var r = st.rec; st.rec = null;
     if (r) { r.onend = r.onerror = r.onresult = null; try { r.abort() } catch (e) {} }
   }
   function startRec() {
-    if (!st.on || st.speaking || !SR || D.hidden) return;
+    if (!st.on || st.speaking || D.hidden) return;
     if (W.__auraActive) { return }                    /* Aura owns the mic */
     if (st.rec || st.paused) return;
-    var r = new SR(), g = ++st.gen;
+    var wh = useWhisper(), r = wh ? new WhisperRec() : new SR(), g = ++st.gen; r.__wh = wh;
     r.lang = st.lang; r.continuous = true; r.interimResults = true; r.maxAlternatives = 1;
     r.onresult = function (e) {
       if (g !== st.gen) return;
@@ -133,6 +218,12 @@
     };
     r.onerror = function (e) {
       if (g !== st.gen) return;
+      if (!r.__wh && (e.error === "service-not-allowed" || e.error === "network" || e.error === "language-not-supported") && navigator.mediaDevices) {
+        LS("phr_stt", "whisper"); con("err", "native speech blocked → switching to Whisper"); stopRec(); st.gen++; st.fails = 0; setTimeout(startRec, 200); return;
+      }
+      if (e.error === "stt-missing") { say(fa() ? "سرور هنوز برای شنیدن صدا آماده نیست؛ به‌روزرسانی Worker لازم است." : "The server isn't set up for voice yet. The Worker needs the /api/stt update.", 7000); con("err", "worker has no /api/stt"); off(true); arm(); return }
+      if (e.error === "stt-busy") { say(fa() ? "الان شلوغ است؛ چند لحظه بعد دوباره." : "Voice is busy — try again in a moment.", 3500); return }
+      if (e.error === "stt-fail") { st.fails++; if (st.fails > 6) { say(fa() ? "شنیدن صدا خطا داد." : "Voice recognition failed.", 4000); off(true); arm() } return }
       if (e.error === "not-allowed" || e.error === "service-not-allowed") { say(fa() ? "اجازه میکروفون داده نشد. از تنظیمات سافاری فعالش کن." : "Microphone permission denied. Enable it in Safari settings.", 5000); off(true); arm(); return }
       if (e.error === "no-speech" || e.error === "aborted") return;
       if (e.error === "audio-capture") { say(fa() ? "میکروفون پیدا نشد یا دست برنامهٔ دیگری است." : "No microphone available, or another app is using it.", 5000); off(true); arm(); return }
@@ -270,7 +361,7 @@
   var STOP = /^(?:stop listening|turn off|go to sleep|goodbye|bye|گوش نده|خاموش شو|خاموش|برو بخواب|خداحافظ)/i;
   /* ---------- on / off ---------- */
   function on() {
-    if (!SR) { say(fa() ? "این مرورگر شنیدن صدا رو پشتیبانی نمی‌کنه. سافاری رو امتحان کن." : "Speech recognition isn't supported in this browser. Try Safari.", 5000); return }
+    if (!SR && !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) { say(fa() ? "این مرورگر به میکروفون دسترسی نمی‌ده." : "This browser can't reach the microphone.", 5000); return }
     if (W.__auraActive) { say(fa() ? "اول Aura رو ببند." : "Close Aura first.", 2500); return }
     try { if (W.speechSynthesis) { var u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u) } } catch (e) {} /* unlock TTS inside the tap */
     try { AC = AC || new (W.AudioContext || W.webkitAudioContext)(); AC.resume() } catch (e) {}
@@ -279,7 +370,7 @@
     stopRec(); startRec();
   }
   function off(keep) {
-    st.on = false; clearTimeout(st.cmdTimer); stopRec(); st.gen++; lock(false);
+    st.on = false; clearTimeout(st.cmdTimer); stopRec(); st.gen++; lock(false); releaseMic();
     try { speechSynthesis.cancel() } catch (e) {} try { W.PHR_VOICE && PHR_VOICE.stop() } catch (e) {}
     st.speaking = false; mode("off"); hideCap(); armed = false; if (dot) { dot.onclick = null; dot.style.pointerEvents = "" } if (!keep) LS("phr_wake_on", "0");
   }
