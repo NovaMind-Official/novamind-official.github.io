@@ -90,6 +90,8 @@
       } catch (e) {}
       return false;
     }
+    var oP = A.prompt;
+    A.prompt = function (t) { var b = oP.apply(this, arguments); try { if (on("phr_3d", true) && W.PHR_MODEL3D && OBJ.test(t || "") && !NOT.test(t || "")) b += OVR; } catch (e) {} return b; };
     A.typed = function (t) { return handle(t) || oT.apply(this, arguments); };
     A.voice = function (t, q) { var r = handle(t); if (r) { if (q) return r; try { W.auraSetCaption && W.auraSetCaption(r, "hint"); W.auraSpeak && W.auraSpeak(r) } catch (e) {} return true } return oV.apply(this, arguments); };
     return true;
@@ -97,13 +99,14 @@
   (function wait(n) { if (!install() && n < 120) setTimeout(function () { wait(n + 1) }, 150) })(0);
 
   /* ───── 3D routing: give the model the 3D-modeller prompt for object requests ───── */
-  var OBJ = /(\bdraw\b|\bsketch\b|\bdesign\b|\bmodel\b|\brender\b|\b3d\b|\bbuild me\b|بکش|طراحی|نقاشی|سه ?بعدی|مدل\s)/i;
-  var NOT = /(poster|wallpaper|logo|avatar|photo|picture|portrait|banner|icon|ui\b|landing|website|webpage|app screen|پوستر|والپیپر|لوگو|آواتار|عکس|بنر|آیکون|صفحه)/i;
+  var OBJ = /(\bdraw\b|\bsketch\b|\bdesign\b|\bmodel\b|\brender\b|\b3d\b|\b(?:make|create|build|generate|show)\b|بکش|طراحی|نقاشی|سه ?بعدی|مدل|بساز|بسازی|ساختن|درست کن|نشان بده)/i;
+  var NOT = /(poster|wallpaper|logo|avatar|photo|picture|image|pic\b|portrait|banner|icon|\bui\b|landing|website|web ?page|\bapp\b|screen|code|script|game|table|chart|plan|document|doc\b|deck|slides|email|essay|story|song|پوستر|والپیپر|لوگو|آواتار|عکس|تصویر|بنر|آیکون|صفحه|سایت|برنامه|کد|بازی|جدول|نمودار|طرح|سند|ایمیل|داستان)/i;
+  var OVR = "\n\n3D OVERRIDE: for a physical object, vehicle, creature, building or machine (e.g. rocket, car, robot, house) ALWAYS answer with a ```model3d block. NEVER use the ```imagine block or SVG for these, even if an earlier rule says to make images; use imagine only if the user explicitly says image, photo, picture, poster, wallpaper or logo.";
   function wrapGuide() {
     var old = W.stemGuide; if (typeof old !== "function" || old.__a2) return false;
     var w = function (c, txt) {
       var g = ""; try { g = old.apply(this, arguments); } catch (e) { g = ""; }
-      try { if (on("phr_3d", true) && W.PHR_MODEL3D && OBJ.test(txt || "") && !NOT.test(txt || "")) g += "\n\n" + W.PHR_MODEL3D.prompt(); } catch (e) {}
+      try { if (on("phr_3d", true) && W.PHR_MODEL3D && OBJ.test(txt || "") && !NOT.test(txt || "")) g += "\n\n" + W.PHR_MODEL3D.prompt() + OVR; } catch (e) {}
       return g;
     };
     w.__a2 = 1; W.stemGuide = w; return true;
