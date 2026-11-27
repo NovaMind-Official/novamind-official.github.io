@@ -266,8 +266,16 @@
     clearTimeout(st.cmdTimer);
     st.cmdTimer = setTimeout(function () {
       if (st.mode !== "cmd") return;
-      if (st.cmdBuf) finishCmd(st.cmdBuf); else { chime(false); say(fa() ? "چیزی نشنیدم." : "Didn't catch that.", 1800); backToWake() }
+      if (st.cmdBuf) finishCmd(st.cmdBuf); else if (st.follow) { st.follow = false; backToWake() } else { chime(false); say(fa() ? "چیزی نشنیدم." : "Didn't catch that.", 1800); backToWake() }
     }, ms);
+  }
+  var ENDF = /^(?:no|nope|nothing|that'?s (?:all|it)|thanks?|thank you|done|nevermind|never mind|نه|نه ممنون|نه مرسی|همین|همینه|ممنون|مرسی|بس است|فعلا|تمام)[\s.!؟?]*$/i;
+  /* live conversation: after a reply, keep listening a few seconds without the wake word */
+  function followUp() {
+    if (LS("phr_follow") === "0" || !st.on || st.mode === "off") return backToWake();
+    clearTimeout(st.cmdTimer); st.cmdBuf = ""; st.follow = true; mode("cmd"); chime(true);
+    say(fa() ? "ادامه بده…" : "Go on…", 0); stopRec(); st.gen++; setTimeout(startRec, 120);
+    armCmdTimeout(8000);
   }
   function backToWake() { clearTimeout(st.cmdTimer); st.cmdBuf = ""; if (!st.on) { st.manual = false; mode("off"); return } mode("wake"); stopRec(); st.gen++; setTimeout(startRec, 150) }
 
@@ -276,6 +284,8 @@
     clearTimeout(st.cmdTimer);
     cmd = String(cmd || "").trim();
     if (!cmd) return backToWake();
+    if (st.follow && ENDF.test(cmd)) { st.follow = false; con("cmd", cmd); say(fa() ? "باشه." : "Okay.", 1200); return backToWake() }
+    st.follow = false;
     if (STOP.test(cmd)) { con("cmd", cmd); con("done", "listening off"); setEnabled(false); return }
     con("cmd", cmd);
     if (/^(?:close|hide|dismiss)\s+(?:the\s+)?console|کنسول.*(?:ببند|بسته)/i.test(cmd)) { try { W.PHR_CON && W.PHR_CON.close() } catch (e) {} return backToWake() }
@@ -288,7 +298,7 @@
       var A = W.PHR_AGENT;
       if (A && A.typed) { var r = A.typed(cmd); if (r) { handled = true; reply = typeof r === "string" ? r : (fa() ? "انجام شد." : "Done.") } }
     } catch (e) {}
-    if (handled) { con("done", reply); return speak(reply, backToWake) }
+    if (handled) { con("done", reply); return speak(reply, followUp) }
     if (typeof W.PHR_sendText !== "function" || W.PHR_busy && W.PHR_busy()) { con("err", "agent busy"); speak(fa() ? "الان مشغولم، چند لحظه دیگه." : "I'm busy right now, try again in a moment.", backToWake); return }
     var before = D.querySelectorAll(".msg.ai").length, allBefore = D.querySelectorAll(".msg").length;
     var sent = W.PHR_sendText(cmd);
@@ -304,7 +314,7 @@
       var busy = W.PHR_busy && W.PHR_busy();
       if (busy) seen = true;
       var done = (seen && !busy) || (!seen && Date.now() - t0 > 4000 && D.querySelectorAll(".msg.ai").length > before && !busy);
-      if (done) { setTimeout(function () { var ans = lastAnswer(); con("answer", ans); speak(ans, backToWake) }, 350); return }
+      if (done) { setTimeout(function () { var ans = lastAnswer(); con("answer", ans); speak(ans, followUp) }, 350); return }
       if (Date.now() - t0 > 120000) { con("err", "timeout"); speak(fa() ? "خیلی طول کشید." : "That took too long.", backToWake); return }
       setTimeout(poll, 400);
     })();
@@ -393,7 +403,7 @@
   function setAlias(a) { LS("phr_wake_alias", String(a || "")) }
   function setLang(l) { st.lang = l; LS("phr_wake_lang", l); if (st.on) { stopRec(); st.gen++; setTimeout(startRec, 150) } }
   function run(cmd) { if (!st.on) st.manual = true; finishCmd(cmd) }
-  W.PHR_WAKE = { run: run, paintRow: paintRow, pause: pause, resume: resume, setAlias: setAlias, on: on, off: off, setEnabled: setEnabled, setLang: setLang, match: matchWake, enabled: function () { return LS("phr_wake_on") === "1" }, lang: function () { return st.lang }, state: function () { return { on: st.on, mode: st.mode, lang: st.lang } } };
+  W.PHR_WAKE = { followUp: followUp, run: run, paintRow: paintRow, pause: pause, resume: resume, setAlias: setAlias, on: on, off: off, setEnabled: setEnabled, setLang: setLang, match: matchWake, enabled: function () { return LS("phr_wake_on") === "1" }, lang: function () { return st.lang }, state: function () { return { on: st.on, mode: st.mode, lang: st.lang } } };
 
   function build() {
     css();
