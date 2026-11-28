@@ -11,8 +11,8 @@
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function fa() { return /[؀-ۿ]/.test((D.getElementById("ui") || {}).value || "") || /[؀-ۿ]/.test(((D.querySelector(".msg.user:last-of-type") || {}).textContent) || ""); }
   var S = {
-    en: { b: "3D model", auto: "Rotate", wire: "Wire", explode: "Explode", look: "Look", png: "PNG", change: "Change it… e.g. longer nose, four fins, red metallic", go: "Apply", undo: "Undo", copy: "Copy spec", err: "This model could not be built", fix: "Fix with AI", working: "Rebuilding…", nogl: "3D needs WebGL, which this browser does not offer.", parts: "parts", tris: "triangles", ok: "Done", hint: "Drag to rotate · pinch to zoom · double-tap to reset", full: "Full screen" },
-    fa: { b: "مدل سه‌بعدی", auto: "چرخش", wire: "سیمی", explode: "انفجاری", look: "حال‌وهوا", png: "PNG", change: "تغییرش بده… مثلاً دماغه بلندتر، چهار بال، قرمز متالیک", go: "اعمال", undo: "برگردان", copy: "کپی مشخصات", err: "ساخت این مدل ممکن نشد", fix: "رفع با AI", working: "در حال ساخت دوباره…", nogl: "سه‌بعدی به WebGL نیاز دارد که این مرورگر ندارد.", parts: "قطعه", tris: "مثلث", ok: "انجام شد", hint: "بکش تا بچرخد · دو انگشت برای زوم · دوبار لمس برای بازنشانی", full: "تمام‌صفحه" }
+    en: { b: "3D model", auto: "Rotate", wire: "Wire", explode: "Explode", look: "Look", png: "PNG", change: "Change it… e.g. longer nose, four fins, red metallic", go: "Apply", undo: "Undo", copy: "Copy spec", err: "This model could not be built", fix: "Fix with AI", working: "Rebuilding…", nogl: "3D needs WebGL, which this browser does not offer.", parts: "parts", tris: "triangles", ok: "Done", hint: "Drag to rotate · pinch to zoom · double-tap to reset", full: "Full screen", replay: "Replay build", building: "Building" },
+    fa: { b: "مدل سه‌بعدی", auto: "چرخش", wire: "سیمی", explode: "انفجاری", look: "حال‌وهوا", png: "PNG", change: "تغییرش بده… مثلاً دماغه بلندتر، چهار بال، قرمز متالیک", go: "اعمال", undo: "برگردان", copy: "کپی مشخصات", err: "ساخت این مدل ممکن نشد", fix: "رفع با AI", working: "در حال ساخت دوباره…", nogl: "سه‌بعدی به WebGL نیاز دارد که این مرورگر ندارد.", parts: "قطعه", tris: "مثلث", ok: "انجام شد", hint: "بکش تا بچرخد · دو انگشت برای زوم · دوبار لمس برای بازنشانی", full: "تمام‌صفحه", replay: "ساخت دوباره", building: "در حال ساخت" }
   };
   function T(k) { return (S[fa() ? "fa" : "en"][k]) || S.en[k] || k; }
 
@@ -145,14 +145,16 @@
       var glass = !!p.glass, col = hex(p.color, "#c9ccd2");
       return { alb: lin(col), metal: Math.max(0, Math.min(1, num(p.metal, glass ? 0 : .1))), rough: Math.max(.04, Math.min(1, num(p.rough, glass ? .05 : .45))), emis: p.emissive ? lin(hex(p.emissive)).map(function (v) { return v * num(p.glow, 1.6); }) : [0, 0, 0], alpha: glass ? Math.max(.08, num(p.opacity, .35)) : Math.max(.05, Math.min(1, num(p.opacity, 1))), glass: glass ? 1 : 0, bands: (p.bands || []).slice(0, 4).map(function (b) { return { y0: num(b[0], 0), y1: num(b[1], 0), c: lin(hex(b[2], "#d33")) }; }), panels: p.panels ? [num(p.panels.ny, 0), num(p.panels.nth, 0)] : [0, 0], anim: p.anim || "", name: p.n || p.name || "" };
     }
+    var curPi = 0, curNm = "";
     function emit(p, base) {
       if (inst.length >= LIM.inst) return; var G = geo(p), m = mat(p), M = M4.mul(base, xf(p)), n = Math.max(1, Math.min(48, Math.round(num(p.n_array || (p.t === "array" ? p.n : 1), 1)))), cnt = 1;
       var copies = [M];
       if (p.mirror) { var ax = String(p.mirror).toLowerCase(); copies.push(M4.mul(M4.S(ax.indexOf("x") >= 0 ? -1 : 1, ax.indexOf("y") >= 0 ? -1 : 1, ax.indexOf("z") >= 0 ? -1 : 1), M)); }
-      copies.forEach(function (C) { inst.push({ g: G.g, bb: G.bb, M: C, mat: m }); tris += G.g.i.length / 3; });
+      copies.forEach(function (C) { inst.push({ g: G.g, bb: G.bb, M: C, mat: m, pi: curPi, nm: curNm }); tris += G.g.i.length / 3; });
     }
     var parts = (spec.parts || []).slice(0, LIM.parts);
-    parts.forEach(function (p) {
+    parts.forEach(function (p, pi) {
+      curPi = pi; curNm = String(String(p.t || "").toLowerCase() === "array" ? ((p.of && p.of.n) || p.name || "parts") : (p.n || p.name || p.t || "part"));
       if (String(p.t || "").toLowerCase() === "array" || p.array) {
         var of = p.of || p.part || p, n = Math.max(1, Math.min(48, Math.round(num(p.n || (p.array && p.array.n), 4)))), ax = String(p.axis || (p.array && p.array.axis) || "y").toLowerCase(), st = num(p.start, 0) * Math.PI / 180, i;
         var base0 = M4.id();
@@ -163,7 +165,7 @@
     var lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
     inst.forEach(function (it) { var b = it.bb, c = 0; for (; c < 8; c++) { var w = M4.pt(it.M, [c & 1 ? b[1][0] : b[0][0], c & 2 ? b[1][1] : b[0][1], c & 4 ? b[1][2] : b[0][2]]); for (var k = 0; k < 3; k++) { if (w[k] < lo[k]) lo[k] = w[k]; if (w[k] > hi[k]) hi[k] = w[k]; } } it.cen = M4.pt(it.M, [(b[0][0] + b[1][0]) / 2, (b[0][1] + b[1][1]) / 2, (b[0][2] + b[1][2]) / 2]); });
     if (!inst.length) throw new Error("no parts");
-    return { inst: inst, lo: lo, hi: hi, tris: tris };
+    return { inst: inst, lo: lo, hi: hi, tris: tris, nparts: parts.length };
   }
 
   /* ================================================================ shaders */
@@ -214,7 +216,7 @@
     var pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, FS)); gl.bindAttribLocation(pr, 0, "aPos"); gl.bindAttribLocation(pr, 1, "aNor"); gl.linkProgram(pr);
     if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error("link: " + gl.getProgramInfoLog(pr));
     gl.useProgram(pr); var U = {}; ["uVP", "uM", "uN", "uFlip", "uCam", "uAlb", "uMetal", "uRough", "uEmis", "uAlpha", "uGlass", "uFade", "uH", "uTime", "uMode", "uSky", "uHor", "uGnd", "uBandC0", "uBandC1", "uBandC2", "uBandC3", "uBand", "uBandB", "uPanel", "uPanelR", "uFloor", "uFloorC", "uSize"].forEach(function (n) { U[n] = gl.getUniformLocation(pr, n); });
-    var state = { look: opts.look || spec.env || "studio", yaw: .6, pitch: .22, dist: 1, auto: true, wire: false, expl: 0, idle: 0, t0: performance.now(), dead: false }, model = null, bufs = [], floorBuf = null, discBuf = null;
+    var state = { look: opts.look || spec.env || "studio", yaw: .6, pitch: .22, dist: 1, auto: true, wire: false, expl: 0, idle: 0, t0: performance.now(), dead: false, build: null }, model = null, bufs = [], floorBuf = null, discBuf = null;
     function dispose() { bufs.forEach(function (b) { gl.deleteBuffer(b.p); gl.deleteBuffer(b.n); gl.deleteBuffer(b.i); if (b.w) gl.deleteBuffer(b.w); }); bufs = []; }
     function upload(g) { var P = gl.createBuffer(), N = gl.createBuffer(), I = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, P); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(g.p), gl.STATIC_DRAW); gl.bindBuffer(gl.ARRAY_BUFFER, N); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(g.n), gl.STATIC_DRAW); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, I); var big = g.p.length / 3 > 65535; if (big && !u32) throw new Error("mesh too large"); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, big ? new Uint32Array(g.i) : new Uint16Array(g.i), gl.STATIC_DRAW); return { p: P, n: N, i: I, cnt: g.i.length, type: big ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, g: g }; }
     function wireOf(b) { if (b.w) return; var g = b.g, set = {}, ed = [], i; for (i = 0; i < g.i.length; i += 3) for (var k = 0; k < 3; k++) { var a = g.i[i + k], c = g.i[i + (k + 1) % 3], key = a < c ? a + "_" + c : c + "_" + a; if (!set[key]) { set[key] = 1; ed.push(a, c); } } b.w = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, b.w); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, b.type === gl.UNSIGNED_INT ? new Uint32Array(ed) : new Uint16Array(ed), gl.STATIC_DRAW); b.wc = ed.length; }
@@ -225,7 +227,7 @@
       var c = [(m.lo[0] + m.hi[0]) / 2, (m.lo[1] + m.hi[1]) / 2, (m.lo[2] + m.hi[2]) / 2], size = Math.max(m.hi[0] - m.lo[0], m.hi[1] - m.lo[1], m.hi[2] - m.lo[2]) || 1;
       model.c = c; model.size = size; model.h = m.hi[1] - m.lo[1]; model.foot = Math.max(m.hi[0] - m.lo[0], m.hi[2] - m.lo[2]) / 2 + size * .02; model.floorY = m.lo[1];
       state.dist = size * 2.25; state.base = state.dist; if (!floorBuf) { floorBuf = upload(fl); }
-      paintBg(); return m;
+      paintBg(); if (opts.build) api && api.replay(opts); return m;
     }
     function paintBg() {
       var L = LOOKS[state.look] || LOOKS.studio, w = host.clientWidth || 300, h = host.clientHeight || 300, dpr = Math.min(2, window.devicePixelRatio || 1); bg.width = w * dpr; bg.height = h * dpr; var c = bg.getContext("2d"); c.scale(dpr, dpr);
@@ -252,22 +254,29 @@
       var vis = host.getBoundingClientRect(); if (vis.bottom < -50 || vis.top > innerHeight + 50 || D.hidden) { requestAnimationFrame(frame); return; }
       resize(); if (!model) { requestAnimationFrame(frame); return; }
       if (state.auto && now - state.idle > 1800) state.yaw += .0042;
-      var L = LOOKS[state.look] || LOOKS.studio, W_ = canvas.width, H_ = canvas.height, asp = W_ / H_, fovy = (asp < .9 ? 46 : 36) * Math.PI / 180, d = state.dist, ey = model.c[1] + Math.sin(state.pitch) * d, er = Math.cos(state.pitch) * d;
-      var eye = [model.c[0] + Math.sin(state.yaw) * er, ey, model.c[2] + Math.cos(state.yaw) * er], tgt = [model.c[0], model.c[1] - model.size * .02, model.c[2]];
+      var L = LOOKS[state.look] || LOOKS.studio, W_ = canvas.width, H_ = canvas.height, asp = W_ / H_, fovy = (asp < .9 ? 46 : 36) * Math.PI / 180, d = state.dist, cy = model.c[1] - model.floorY, ey = cy + Math.sin(state.pitch) * d, er = Math.cos(state.pitch) * d;
+      var eye = [model.c[0] + Math.sin(state.yaw) * er, ey, model.c[2] + Math.cos(state.yaw) * er], tgt = [model.c[0], cy - model.size * .02, model.c[2]];
       var VP = M4.mul(M4.persp(fovy, asp, model.size * .05, model.size * 40), M4.look(eye, tgt, [0, 1, 0]));
       gl.viewport(0, 0, W_, H_); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST); gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.disable(gl.CULL_FACE);
       gl.useProgram(pr); gl.uniformMatrix4fv(U.uVP, false, VP); gl.uniform3fv(U.uCam, eye); gl.uniform1f(U.uTime, t); gl.uniform1f(U.uMode, L.mode); gl.uniform3fv(U.uSky, L.sky); gl.uniform3fv(U.uHor, L.hor); gl.uniform3fv(U.uGnd, L.gnd); gl.uniform1f(U.uH, model.h); gl.uniform1f(U.uFloor, 0);
       // model sits on y = floorY; shift world so that floor is y=0 by translating model matrices once (done via base offset)
       var lift = -model.floorY, ins = model.inst;
       var saveC = model.c; model.c = [saveC[0], saveC[1] + lift, saveC[2]];
-      var ID = ins; // draw with lift applied through a temp matrix
-      function drawAll(flip, fade, alphaPass) { ins.forEach(function (it) { var tr = it.mat.alpha < 1 || it.mat.glass; if (alphaPass ? !tr : tr) return; var M0 = it.M; it.M = M4.mul(M4.T(0, lift, 0), M0); var c0 = it.cen; it.cen = [c0[0], c0[1] + lift, c0[2]]; draw(it, VP, t, flip, fade, state.wire); it.M = M0; it.cen = c0; }); }
+      var bd = null, B = state.build;
+      if (B) {
+        if (B.t0 == null) B.t0 = now;
+        var el = (now - B.t0) / 1000, idx = Math.min(model.nparts - 1, Math.floor(el / B.per)); bd = { el: el, per: B.per, pop: Math.min(.8, B.per * 1.6) };
+        if (idx !== B.last) { B.last = idx; try { B.onStep && B.onStep(idx, model.nparts, nameOf(idx)); } catch (e) {} }
+        if (el > B.per * model.nparts + bd.pop) { state.build = null; bd = null; try { B.onDone && B.onDone(); } catch (e) {} }
+      }
+      function nameOf(i) { for (var j = 0; j < ins.length; j++) if (ins[j].pi === i) return ins[j].nm; return ""; }
+      function drawAll(flip, fade, alphaPass) { ins.forEach(function (it) { var tr = it.mat.alpha < 1 || it.mat.glass; if (alphaPass ? !tr : tr) return; var M0 = it.M, c0 = it.cen, MM = M0, k = 1, dy = 0; if (bd) { var ti = bd.el - it.pi * bd.per; if (ti <= 0) return; var q = Math.min(1, ti / bd.pop), e = q - 1; k = Math.max(.001, 1 + 2.2 * e * e * e + 1.2 * e * e); dy = (1 - q) * model.size * .22; MM = M4.mul(M4.T(c0[0], c0[1], c0[2]), M4.mul(M4.S(k, k, k), M4.mul(M4.T(-c0[0], -c0[1], -c0[2]), M0))); } it.M = M4.mul(M4.T(0, lift + dy, 0), MM); it.cen = [c0[0], c0[1] + lift + dy, c0[2]]; draw(it, VP, t, flip, fade, state.wire); it.M = M0; it.cen = c0; }); }
       // 1) mirror reflection (opaque parts only, fading)
-      if (!state.wire) { gl.depthMask(true); gl.cullFace(gl.FRONT); drawAll(true, .32, false); }
+      if (!state.wire && !opts.noFloor) { gl.depthMask(true); gl.cullFace(gl.FRONT); drawAll(true, .32, false); }
       // 2) floor + contact shadow
       gl.depthMask(false); gl.uniform1f(U.uFlip, 0); gl.uniform1f(U.uSize, model.size * 3.2); gl.uniform3fv(U.uFloorC, L.floor);
       function floorDraw(mode, sc) { gl.uniform1f(U.uFloor, mode); gl.uniform1f(U.uSize, sc); var M = M4.S(sc, 1, sc); gl.uniformMatrix4fv(U.uM, false, M); gl.uniformMatrix3fv(U.uN, false, M4.n3(M)); gl.bindBuffer(gl.ARRAY_BUFFER, floorBuf.p); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0); gl.bindBuffer(gl.ARRAY_BUFFER, floorBuf.n); gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, floorBuf.i); gl.drawElements(gl.TRIANGLES, floorBuf.cnt, floorBuf.type, 0); }
-      if (!state.wire) { floorDraw(1, model.size * 3.2); gl.uniform3fv(U.uFloorC, [0, 0, 0]); floorDraw(2, Math.max(model.foot * 5.2, model.size * .5)); }
+      if (!state.wire && !opts.noFloor) { floorDraw(1, model.size * 3.2); gl.uniform3fv(U.uFloorC, [0, 0, 0]); floorDraw(2, Math.max(model.foot * 5.2, model.size * .5)); }
       gl.uniform1f(U.uFloor, 0);
       // 3) opaque then transparent
       gl.depthMask(true); drawAll(false, 1, false); gl.depthMask(false); drawAll(false, 1, true); gl.depthMask(true);
@@ -283,7 +292,7 @@
     canvas.addEventListener("webglcontextlost", function (e) { e.preventDefault(); state.dead = true; host.setAttribute("data-lost", "1"); });
     if (window.ResizeObserver) new ResizeObserver(function () { resize(); }).observe(host);
     var api = {
-      state: state, set: setModel, look: function (l) { state.look = l; paintBg(); }, auto: function (v) { state.auto = v; }, wire: function (v) { state.wire = v; }, explode: function (v) { state.expl = v; },
+      state: state, replay: function (cb) { if (!model) return; state.build = { t0: null, per: Math.max(.28, Math.min(.7, 7 / Math.max(1, model.nparts))), last: -1, onStep: cb && cb.onStep, onDone: cb && cb.onDone }; state.yaw = .6; }, set: setModel, look: function (l) { state.look = l; paintBg(); }, auto: function (v) { state.auto = v; }, wire: function (v) { state.wire = v; }, explode: function (v) { state.expl = v; },
       png: function () { var o = D.createElement("canvas"); o.width = canvas.width; o.height = canvas.height; var c = o.getContext("2d"); c.drawImage(bg, 0, 0, o.width, o.height); c.drawImage(canvas, 0, 0); return o.toDataURL("image/png"); },
       stats: function () { return model ? { parts: model.inst.length, tris: model.tris } : {}; },
       destroy: function () { state.dead = true; try { gl.getExtension("WEBGL_lose_context") && gl.getExtension("WEBGL_lose_context").loseContext(); } catch (e) {} }
@@ -308,27 +317,42 @@
   var PROMPT = "3D MODELS: when the user asks you to draw, design, build or show a physical OBJECT, vehicle, creature, building, machine, product or scene (rocket, car, house, chair, robot, plane, lamp…) reply with ONE short friendly line in THEIR language, then exactly one fenced block ```model3d containing ONLY valid JSON (no comments). The app renders it as a real, rotatable, lit 3D model with metal/glass/emissive materials. Do NOT use the imagine block or SVG for these requests (only for posters, photos, wallpapers, logos, avatars, portraits). " +
     "SPEC: {\"title\":str,\"env\":\"studio|space|sunset\",\"parts\":[part,…]}. Units are metres, +Y up, the model's lowest point is auto-placed on the floor. Each part: {\"n\":name,\"t\":type,…,\"pos\":[x,y,z],\"rot\":[degX,degY,degZ],\"scale\":num|[x,y,z],\"color\":\"#rrggbb\",\"metal\":0-1,\"rough\":0.05-1,\"seg\":3-96,\"emissive\":\"#hex\",\"glow\":num,\"glass\":true,\"opacity\":0-1,\"anim\":\"spin|flicker|bob\",\"mirror\":\"x|y|z\",\"panels\":{\"ny\":rows,\"nth\":cols},\"bands\":[[y0,y1,\"#hex\"],…≤3 paint rings in the part's local Y]}. " +
     "TYPES: cylinder{r|rb,rt,h} (centered on pos, along Y), cone{rb,h}, sphere{r}, capsule{r,h}, torus{R,r}, box{size:[x,y,z]}, lathe{profile:[[radius,y],…] or \"ogive(r,h)\" | \"dome(r)\" | \"bell(r0,r1,h)\" | \"capsule(r,h)\" | \"vase(r,h)\"} (revolved around Y from its own origin up), extrude{shape:[[x,y],…] polygon in XY,depth} for fins/wings/plates/brackets, tube{path:[[x,y,z],…],r} for pipes/cables/antennas. Repeat a part around an axis with {\"t\":\"array\",\"n\":4,\"axis\":\"y\",\"start\":deg,\"of\":{part placed at its radius}}. " +
-    "QUALITY RULES: real proportions; build 15-60 parts with the small details that make it believable (rings, seams, panels, struts, vents, rivets via arrays, lights, windows as glass, nozzles, wheels with torus tyres + cylinder hubs, handles, antennas); use metal 0.6-1 + rough 0.2-0.45 for metal, rough 0.5-0.9 for plastic/paint/wood, glass for windows, emissive + anim for fire/lights; keep a coherent 3-colour palette; never use flat primitives alone (a rocket is NOT a square + triangle). Example (rocket): ```model3d\n" + EXAMPLE + "\n```";
+    "OUTPUT RULES: the ```model3d block is REQUIRED — never answer with only text like \"here is the car\". Write COMPACT minified JSON (numbers with ≤2 decimals, no indentation, no comments), at most ~45 parts (use mirror and array for symmetric/repeated parts), nothing after the block. QUALITY RULES: real proportions; build 15-60 parts with the small details that make it believable (rings, seams, panels, struts, vents, rivets via arrays, lights, windows as glass, nozzles, wheels with torus tyres + cylinder hubs, handles, antennas); use metal 0.6-1 + rough 0.2-0.45 for metal, rough 0.5-0.9 for plastic/paint/wood, glass for windows, emissive + anim for fire/lights; keep a coherent 3-colour palette; never use flat primitives alone (a rocket is NOT a square + triangle). Example (rocket): ```model3d\n" + EXAMPLE + "\n```";
 
   /* ================================================================ chat widget */
   function parseSpec(raw) {
     var s = String(raw || "").trim().replace(/^```(?:json|model3d)?\s*|\s*```$/g, ""), a = s.indexOf("{"), b = s.lastIndexOf("}"); if (a < 0 || b < 0) throw new Error("no JSON found"); s = s.slice(a, b + 1);
-    try { return JSON.parse(s); } catch (e) { s = s.replace(/\/\/[^\n]*/g, "").replace(/,\s*([}\]])/g, "$1"); return JSON.parse(s); }
+    try { return JSON.parse(s); } catch (e) { s = s.replace(/\/\/[^\n]*/g, "").replace(/,\s*([}\]])/g, "$1"); try { return JSON.parse(s); } catch (e2) { return repair(String(raw)); } }
   }
+  /* truncated output (model ran out of tokens): keep every complete part and close the brackets */
+  function repair(raw) {
+    var t = String(raw).replace(/^```(?:json|model3d)?\s*/i, "").replace(/```\s*$/, ""), a = t.indexOf("{"); if (a < 0) throw new Error("no JSON found"); t = t.slice(a);
+    var pi = t.indexOf('"parts"'); if (pi < 0) throw new Error("truncated JSON");
+    var arr = t.indexOf("[", pi), depth = 0, inS = false, esc = false, last = -1, i;
+    for (i = arr + 1; i < t.length; i++) { var c = t[i]; if (inS) { if (esc) esc = false; else if (c === "\\") esc = true; else if (c === '"') inS = false; continue; } if (c === '"') inS = true; else if (c === "{" || c === "[") depth++; else if (c === "}" || c === "]") { if (depth === 0) { last = i - 1; break; } depth--; if (depth === 0 && c === "}") last = i; } }
+    if (last < 0) throw new Error("truncated JSON");
+    var head = t.slice(0, arr + 1), body = t.slice(arr + 1, last + 1).replace(/,\s*$/, "");
+    return JSON.parse((head + body + "]}").replace(/\/\/[^\n]*/g, "").replace(/,\s*([}\]])/g, "$1"));
+  }
+  function sniff(str) { return /"parts"\s*:\s*\[/.test(str) && /"t"\s*:\s*"(cylinder|cone|sphere|capsule|torus|box|lathe|extrude|tube|array)"/.test(str); }
   async function ai(sys, usr) { if (typeof window.fetchAI !== "function") throw new Error("AI unavailable"); var r = await window.fetchAI([{ role: "system", content: sys }, { role: "user", content: usr }], false, false); return String(typeof r === "string" ? r : (r && r.content) || ""); }
   var CSS = ".m3{color:#F4EBDD}.m3-st{position:relative;height:min(62vh,400px);min-height:280px;overflow:hidden;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08);background:#0c0a08}.m3-st.full{position:fixed;inset:0;z-index:10040;height:auto;border:0}.m3-hint{position:absolute;left:0;right:0;bottom:8px;text-align:center;font:500 11px 'Space Grotesk','Vazirmatn',sans-serif;color:rgba(255,255,255,.45);pointer-events:none}.m3-info{position:absolute;left:12px;top:10px;font:600 10.5px 'Space Mono',monospace;color:rgba(255,255,255,.5);letter-spacing:.06em;pointer-events:none}" +
-    ".m3-bar{display:flex;gap:6px;padding:10px 12px 4px;overflow-x:auto;scrollbar-width:none;align-items:center}.m3-bar::-webkit-scrollbar{display:none}.m3-b{flex:none;height:34px;padding:0 12px;border-radius:11px;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.06);color:#F4EBDD;font:600 12.5px 'Space Grotesk','Vazirmatn',sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent}.m3-b.on{background:#F4D98B;color:#1a1206;border-color:transparent}.m3-bar label{flex:none;display:flex;align-items:center;gap:8px;font:600 12px 'Space Grotesk','Vazirmatn',sans-serif;opacity:.85}.m3-bar input[type=range]{width:96px;accent-color:#F4D98B}" +
+    ".m3-info.bld{color:#F4D98B}.m3-bar{display:flex;gap:6px;padding:10px 12px 4px;overflow-x:auto;scrollbar-width:none;align-items:center}.m3-bar::-webkit-scrollbar{display:none}.m3-b{flex:none;height:34px;padding:0 12px;border-radius:11px;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.06);color:#F4EBDD;font:600 12.5px 'Space Grotesk','Vazirmatn',sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent}.m3-b.on{background:#F4D98B;color:#1a1206;border-color:transparent}.m3-bar label{flex:none;display:flex;align-items:center;gap:8px;font:600 12px 'Space Grotesk','Vazirmatn',sans-serif;opacity:.85}.m3-bar input[type=range]{width:96px;accent-color:#F4D98B}" +
     ".m3-in{display:flex;gap:8px;padding:6px 12px 12px}.m3-in input{flex:1;min-width:0;height:42px;border-radius:13px;border:1px solid rgba(244,217,139,.3);background:rgba(255,255,255,.06);color:#fff;padding:0 13px;font:14px 'Space Grotesk','Vazirmatn',sans-serif;outline:0;-webkit-user-select:text;user-select:text}.m3-in .m3-b{height:42px}.m3-err{padding:14px;font-size:13.5px;line-height:1.6;color:#ff8d7f}.m3-st .m3-x{position:absolute;right:10px;top:10px;z-index:3;width:34px;height:34px;border-radius:50%;border:0;background:rgba(0,0,0,.5);color:#fff;font-size:15px;cursor:pointer;display:none}.m3-st.full .m3-x{display:block}";
   var st = D.createElement("style"); st.id = "m3-css"; st.textContent = CSS; D.head.appendChild(st);
 
   function widget(root, raw) {
     var spec, hist = [], api = null, cfgRaw = raw;
     root.classList.add("m3");
-    root.innerHTML = '<div class="phr-w-head"><span class="phr-w-badge">' + esc(T("b")) + '</span><span class="phr-w-title"></span></div><div class="m3-st"><div class="m3-info"></div><button class="m3-x" data-a="full">✕</button><div class="m3-hint">' + esc(T("hint")) + '</div></div><div class="m3-bar"><button class="m3-b on" data-a="auto">' + esc(T("auto")) + '</button><button class="m3-b" data-a="wire">' + esc(T("wire")) + '</button><label>' + esc(T("explode")) + ' <input type="range" min="0" max="100" value="0" data-a="expl"></label><button class="m3-b" data-a="look">' + esc(T("look")) + ': studio</button><button class="m3-b" data-a="png">' + esc(T("png")) + '</button><button class="m3-b" data-a="full">⤢</button><button class="m3-b" data-a="undo" hidden>' + esc(T("undo")) + '</button><button class="m3-b" data-a="copy">' + esc(T("copy")) + '</button></div><div class="m3-in"><input type="text" placeholder="' + esc(T("change")) + '"><button class="m3-b on" data-a="apply">' + esc(T("go")) + "</button></div>";
+    root.innerHTML = '<div class="phr-w-head"><span class="phr-w-badge">' + esc(T("b")) + '</span><span class="phr-w-title"></span></div><div class="m3-st"><div class="m3-info"></div><button class="m3-x" data-a="full">✕</button><div class="m3-hint">' + esc(T("hint")) + '</div></div><div class="m3-bar"><button class="m3-b on" data-a="auto">' + esc(T("auto")) + '</button><button class="m3-b" data-a="wire">' + esc(T("wire")) + '</button><label>' + esc(T("explode")) + ' <input type="range" min="0" max="100" value="0" data-a="expl"></label><button class="m3-b" data-a="look">' + esc(T("look")) + ': studio</button><button class="m3-b" data-a="replay">' + esc(T("replay")) + '</button><button class="m3-b" data-a="png">' + esc(T("png")) + '</button><button class="m3-b" data-a="full">⤢</button><button class="m3-b" data-a="undo" hidden>' + esc(T("undo")) + '</button><button class="m3-b" data-a="copy">' + esc(T("copy")) + '</button></div><div class="m3-in"><input type="text" placeholder="' + esc(T("change")) + '"><button class="m3-b on" data-a="apply">' + esc(T("go")) + "</button></div>";
     var stage = root.querySelector(".m3-st"), info = root.querySelector(".m3-info"), looks = ["studio", "space", "sunset"], li = 0;
-    function show(sp) {
+    function seenKey(sp) { try { var h = 0, t = JSON.stringify(sp); for (var i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0; return "m3_" + h; } catch (e) { return ""; } }
+    function fresh(sp) { try { if (window.matchMedia && matchMedia("(prefers-reduced-motion:reduce)").matches) return false; var k = seenKey(sp), L = JSON.parse(localStorage.getItem("phr_m3_seen") || "[]"); if (L.indexOf(k) >= 0) return false; L.push(k); localStorage.setItem("phr_m3_seen", JSON.stringify(L.slice(-150))); return true; } catch (e) { return true; } }
+    function stats() { var s = api.stats(); info.textContent = s.parts + " " + T("parts") + " · " + Math.round(s.tris / 1000) + "k " + T("tris"); }
+    function play() { if (!api) return; info.classList.add("bld"); api.replay({ onStep: function (i, n, nm) { info.textContent = T("building") + " · " + nm + "  " + (i + 1) + "/" + n; }, onDone: function () { info.classList.remove("bld"); stats(); } }); }
+    function show(sp, anim) {
       if (api) { try { api.destroy(); } catch (e) {} } stage.querySelectorAll("canvas").forEach(function (c) { c.remove(); }); var er = stage.querySelector(".m3-err"); if (er) er.remove();
-      try { api = mount(stage, sp, { look: sp.env }); li = Math.max(0, looks.indexOf(api.state.look)); var s = api.stats(); info.textContent = s.parts + " " + T("parts") + " · " + Math.round(s.tris / 1000) + "k " + T("tris"); root.querySelector(".phr-w-title").textContent = sp.title || ""; root.querySelector('[data-a="look"]').textContent = T("look") + ": " + api.state.look; spec = sp; return true; }
+      try { api = mount(stage, sp, { look: sp.env }); if (anim !== false && fresh(sp)) play(); li = Math.max(0, looks.indexOf(api.state.look)); if (!info.classList.contains("bld")) stats(); root.querySelector(".phr-w-title").textContent = sp.title || ""; root.querySelector('[data-a="look"]').textContent = T("look") + ": " + api.state.look; spec = sp; return true; }
       catch (e) { console.warn("[model3d]", e); var d = D.createElement("div"); d.className = "m3-err"; d.innerHTML = esc(T("err")) + ": " + esc(e.message || e) + '<div style="margin-top:10px"><button class="m3-b on" data-a="fix">' + esc(T("fix")) + "</button></div>"; stage.appendChild(d); return false; }
     }
     try { spec = parseSpec(raw); } catch (e) { spec = null; }
@@ -345,6 +369,7 @@
       if (a === "auto") { var on = !b.classList.contains("on"); b.classList.toggle("on", on); api && api.auto(on); }
       else if (a === "wire") { var w = !b.classList.contains("on"); b.classList.toggle("on", w); api && api.wire(w); }
       else if (a === "look") { li = (li + 1) % looks.length; api && api.look(looks[li]); b.textContent = T("look") + ": " + looks[li]; }
+      else if (a === "replay") { play(); }
       else if (a === "png") { if (!api) return; var u = api.png(), l = D.createElement("a"); l.href = u; l.download = ((spec && spec.title) || "model").replace(/[^\w-]+/g, "-") + ".png"; D.body.appendChild(l); l.click(); l.remove(); }
       else if (a === "full") { var f = stage.classList.toggle("full"); D.body.style.overflow = f ? "hidden" : ""; }
       else if (a === "undo") { var p = hist.pop(); if (p) show(p); b.hidden = !hist.length; }
@@ -360,5 +385,5 @@
     var oldKind = W.kindOf; W.kindOf = function (l) { return /^(model3d|3d|model-3d)$/i.test(String(l || "")) ? "model3d" : oldKind(l); }; W.kinds.model3d = 1;
     W.builders.model3d = function (root) { var raw = ""; try { raw = decodeURIComponent(root.getAttribute("data-cfg") || ""); } catch (e) {} widget(root, raw); };
   }
-  window.PHR_MODEL3D = { prompt: function () { return PROMPT; }, example: EXAMPLE, mount: mount, parse: parseSpec, build: build };
+  window.PHR_MODEL3D = { sniff: sniff, repair: repair, prompt: function () { return PROMPT; }, example: EXAMPLE, mount: mount, parse: parseSpec, build: build };
 })();

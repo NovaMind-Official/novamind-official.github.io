@@ -113,6 +113,39 @@
   }
   if (!wrapGuide()) { var n3 = 0, t3 = setInterval(function () { if (wrapGuide() || ++n3 > 60) clearInterval(t3); }, 500); }
 
+
+  /* ───── rescue: object request answered with text only → offer a one-tap 3D build ───── */
+  function rescueTick() {
+    try {
+      if (!on("phr_3d", true) || !W.PHR_MODEL3D || !W.PHRW) return;
+      if (typeof W.PHR_busy === "function" && W.PHR_busy()) return;
+      var cb = D.getElementById("chat-box"); if (!cb) return;
+      var us = cb.querySelectorAll(".msg.user"), as = cb.querySelectorAll(".msg.ai"); if (!us.length || !as.length) return;
+      var u = us[us.length - 1], a = as[as.length - 1];
+      if (!(u.compareDocumentPosition(a) & 4)) return; /* answer must come after the question */
+      var txt = (u.textContent || "").trim();
+      if (!OBJ.test(txt) || NOT.test(txt)) return;
+      var wrap = a.closest(".msg-wrap") || a.parentNode;
+      if (a.querySelector(".m3,.phr-w,pre") || wrap.querySelector(".a2-3d") || (a.textContent || "").length > 2500) return;
+      var d = D.createElement("div"); d.className = "a2-3d"; d.style.cssText = "margin:8px 0 4px";
+      d.innerHTML = '<button style="border:0;border-radius:99px;padding:9px 16px;background:#E8C468;color:#15110a;font:700 13px -apple-system,sans-serif;cursor:pointer">' + (fa(txt) ? "◆ بساز سه‌بعدی" : "◆ Build it in 3D") + "</button>";
+      wrap.appendChild(d);
+      var btn = d.firstChild;
+      btn.onclick = async function () {
+        btn.disabled = true; btn.textContent = fa(txt) ? "در حال ساخت…" : "Building…";
+        try {
+          var sys = W.PHR_MODEL3D.prompt() + "\n\nReply with ONLY one ```model3d block, nothing else.";
+          var r = await W.fetchAI([{ role: "system", content: sys }, { role: "user", content: txt }], false, false); r = String(r || "");
+          var m = r.match(/```(?:model3d|json)?\s*([\s\S]*?)(?:```|$)/); var raw = m ? m[1] : r;
+          W.PHR_MODEL3D.parse(raw); /* throws if unusable (truncated JSON is repaired inside) */
+          var h = D.createElement("div"); h.innerHTML = W.PHRW.html("model3d", raw); var node = h.firstElementChild;
+          d.replaceWith(node); if (W.PHRW.mount) W.PHRW.mount(node);
+        } catch (e) { btn.disabled = false; btn.textContent = (fa(txt) ? "دوباره امتحان کن" : "Try again") + " ↻"; try { W.showToast && W.showToast("3D: " + String(e && e.message || e).slice(0, 80)); } catch (x) {} }
+      };
+    } catch (e) {}
+  }
+  setInterval(rescueTick, 1800);
+
   /* ───── hub sheet ───── */
   function css() {
     if (D.getElementById("a2-css")) return; var s = D.createElement("style"); s.id = "a2-css";

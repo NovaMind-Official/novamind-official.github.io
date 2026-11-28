@@ -90,6 +90,7 @@
 <script src="plan2.js" defer></script>
 <script src="dash2.js" defer></script>
 <script src="docstudio.js" defer></script>
+<script src="stepsui.js" defer></script>
 <script src="model3d.js" defer></script>
 <script src="agent2.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -4433,7 +4434,7 @@ const _phrCode=function(code,lang){
   const raw=typeof code==="object"?(code.text||""):(code||"");
   const str=String(raw);const lines=str.split("\n").length;const l=(lang||"code").toLowerCase();const enc=safeEnc(str);
   if(l==="capture"&&window.PHR_CAPTURE)return PHR_CAPTURE.html(str);if(l==="premortem"&&window.PHR_PM)return PHR_PM.html(str);if(l==="council"&&window.PHR_COUNCIL)return PHR_COUNCIL.html(str);if((l==="imagine"||l==="image")&&window.PHR_IMG&&/"prompt"/.test(str))return PHR_IMG.html(str);
-  { const _k=window.PHRW&&PHRW.kindOf(l); if(_k)return PHRW.html(_k,str,!!window.PHR_STREAMING); } // study artifacts (graph / sim / solution / quiz / flashcards)
+  { let _k=window.PHRW&&PHRW.kindOf(l); if(!_k&&window.PHR_MODEL3D&&PHR_MODEL3D.sniff&&/^(json|js|javascript|text|txt|)$/i.test(l||"")&&PHR_MODEL3D.sniff(str))_k="model3d"; if(_k)return PHRW.html(_k,str,!!window.PHR_STREAMING); } // study artifacts (graph / sim / solution / quiz / flashcards)
   if(l==="svg"&&str.trim().startsWith("<svg")){
     return`<div class="design-card code-block-wrapper">
       <div class="code-header"><span style="display:flex;align-items:center;gap:8px"><span style="font-size:12px;color:#888;font-family:'Space Mono',monospace;letter-spacing:0.5px">✦ design</span></span><div class="code-tools"><button class="code-tool-btn" onclick="downloadDesignSVG(this)">⇩ SVG</button><button class="code-tool-btn" onclick="downloadDesignPNG(this)">⇩ PNG</button><button class="code-tool-btn" onclick="toggleFsCode(this)">⛶ Full</button></div></div>
